@@ -514,10 +514,6 @@ window.viewDetail = (id, skipHistory = false) => {
                 <div><span class="detail-label">Item name:</span><h2 class="detail-product-name capitalize">${p.name}</h2></div>
                 <div class="flex items-center gap-10 mt-8 mb-10 pb-10 border-b border-gray-100">
                     <div><span class="detail-label">Listing Price</span><p class="detail-price-text">${p.price} AED</p></div>
-                    <div class="h-10 w-px bg-gray-100"></div>
-                    <div><span class="detail-label">Availability</span><p class="text-sm font-bold text-black flex items-center gap-2">
-                        ${p.inStock !== false ? '<span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> In Stock' : '<span class="w-2 h-2 bg-red-500 rounded-full"></span> Out of Stock'}
-                    </p></div>
                 </div>
                 <div class="flex flex-wrap gap-4 mb-12">
                     ${p.size ? `<div class="spec-badge"><i class="fa-solid fa-maximize text-[10px] text-gray-400"></i><span>${p.size}</span></div>` : ''}
@@ -905,15 +901,12 @@ window.renderAdminUI = () => {
     const pList = document.getElementById('admin-product-list');
     const cList = document.getElementById('admin-category-list');
     if (!pList || !cList) return;
-    const searchEl = document.getElementById('admin-search');
     const filterEl = document.getElementById('admin-cat-filter');
-    const searchQuery = searchEl ? searchEl.value.toLowerCase() : "";
     const catFilter = filterEl ? filterEl.value : "all";
 
     let products = DATA.p.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchQuery);
         const matchesCat = catFilter === 'all' || p.catId === catFilter;
-        return matchesSearch && matchesCat;
+        return matchesCat;
     });
 
     const grouped = {};
@@ -1071,7 +1064,6 @@ window.resetForm = () => {
     document.getElementById('p-form-title').innerText = "Product Details";
     document.getElementById('c-form-title').innerText = "New Category";
 
-    if (document.getElementById('admin-search')) document.getElementById('admin-search').value = "";
     if (document.getElementById('admin-cat-filter')) document.getElementById('admin-cat-filter').value = "all";
 };
 
