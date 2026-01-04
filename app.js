@@ -307,8 +307,20 @@ function renderHome() {
             if (categorySelector) categorySelector.classList.remove('hidden');
 
             let cHtml = `<div class="category-item ${state.filter === 'all' ? 'active' : ''}" onclick="applyFilter('all', event)"><div class="category-img-box flex items-center justify-center bg-gray-50 text-[10px] font-black text-gray-300">All</div><p class="category-label">Explore</p></div>`;
-            DATA.c.forEach(c => {
-                cHtml += `<div class="category-item ${state.filter === c.id ? 'active' : ''}" onclick="applyFilter('${c.id}', event)"><div class="category-img-box"><img src="${c.img}" onerror="this.src='https://placehold.co/100x100?text=Gift'"></div><p class="category-label truncate px-1 w-full">${c.name}</p></div>`;
+            let categories = [...DATA.c].sort((a, b) => {
+                const pinA = a.isPinned ? 1 : 0;
+                const pinB = b.isPinned ? 1 : 0;
+                return pinB - pinA;
+            });
+
+            categories.forEach(c => {
+                cHtml += `<div class="category-item ${state.filter === c.id ? 'active' : ''}" onclick="applyFilter('${c.id}', event)">
+                    <div class="category-img-box">
+                        <img src="${c.img}" onerror="this.src='https://placehold.co/100x100?text=Gift'">
+                        ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm"><i class="fa-solid fa-thumbtack text-[6px]"></i></div>' : ''}
+                    </div>
+                    <p class="category-label truncate px-1 w-full">${c.name}</p>
+                </div>`;
             });
             if (catRow) {
                 catRow.innerHTML = cHtml;
@@ -536,7 +548,11 @@ window.saveProduct = async () => {
 window.saveCategory = async () => {
     const id = document.getElementById('edit-cat-id')?.value;
     const btn = document.getElementById('c-save-btn');
-    const data = { name: document.getElementById('c-name')?.value, img: document.getElementById('c-img')?.value };
+    const data = {
+        name: document.getElementById('c-name')?.value,
+        img: document.getElementById('c-img')?.value,
+        isPinned: document.getElementById('c-pinned')?.checked || false
+    };
     if (!data.name) return showToast("Name required");
     if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
     try { if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id), data); else await addDoc(catCol, data); showToast("Category Synced"); resetForm(); DATA.p = []; refreshData(); }
@@ -589,11 +605,13 @@ window.editCategory = (id) => {
     const editCatId = document.getElementById('edit-cat-id');
     const cName = document.getElementById('c-name');
     const cImg = document.getElementById('c-img');
+    const cPinned = document.getElementById('c-pinned');
     const cFormTitle = document.getElementById('c-form-title');
 
     if (editCatId) editCatId.value = item.id;
     if (cName) cName.value = item.name;
     if (cImg) cImg.value = item.img;
+    if (cPinned) cPinned.checked = item.isPinned || false;
     if (cFormTitle) cFormTitle.innerText = "Editing: " + item.name;
     switchAdminTab('categories');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -919,8 +937,11 @@ window.renderAdminUI = () => {
     pList.innerHTML = pHtml || `<div class="col-span-full py-40 text-center"><p class="text-[12px] text-gray-300 font-bold uppercase tracking-widest italic">No items found.</p></div>`;
 
     cList.innerHTML = DATA.c.map(c => `
-<div class="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] border border-gray-100">
-    <img src="${c.img}" class="w-14 h-14 rounded-full object-cover border-4 border-white shadow-sm" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+<div class="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 relative">
+    <div class="relative shrink-0">
+        <img src="${c.img}" class="w-14 h-14 rounded-full object-cover border-4 border-white shadow-sm" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+        ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-lg"><i class="fa-solid fa-thumbtack text-[8px]"></i></div>' : ''}
+    </div>
     <div class="flex-1 font-bold text-[13px] uppercase">${c.name}</div>
     <div class="flex gap-2">
         <button onclick="editCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-lg text-gray-400 hover:text-black transition-all">
@@ -1019,6 +1040,7 @@ window.resetForm = () => {
     document.getElementById('c-img').value = "img/";
     document.getElementById('p-stock').checked = true;
     document.getElementById('p-pinned').checked = false;
+    document.getElementById('c-pinned').checked = false;
     document.getElementById('p-form-title').innerText = "Product Details";
     document.getElementById('c-form-title').innerText = "New Category";
 
