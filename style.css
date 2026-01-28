@@ -13,18 +13,19 @@
 
     /* DETAIL VIEW PAGE SETTINGS */
     --detail-page-bg: #ffffff;
-    --detail-name-font: 'Inter', sans-serif;
+    --detail-name-font: 'Plus Jakarta Sans', sans-serif;
     --detail-name-color: #111111;
-    --detail-name-weight: 600;
-    --detail-name-size-mob: 1.75rem;
-    --detail-name-size-desk: 3rem;
+    --detail-name-weight: 800;
+    --detail-name-size-mob: 1.5rem;
+    --detail-name-size-desk: 2.5rem;
     --detail-price-font: 'Inter', sans-serif;
-    --detail-price-color: #111111;
-    --detail-price-size: 1.5rem;
-    --detail-label-color: #b0b0b0;
-    --detail-label-font-size: 10px;
-    --detail-desc-color: #555555;
-    --detail-desc-size: 14px;
+    --detail-price-color: #D4AF37;
+    /* Premium Aesthetic Gold */
+    --detail-price-size: 1.25rem;
+    --detail-label-color: #9ca3af;
+    --detail-label-font-size: 9px;
+    --detail-desc-color: #4b5563;
+    --detail-desc-size: 13.5px;
 
     --font-main: 'Inter', sans-serif;
 }
@@ -55,7 +56,8 @@ body {
     color: var(--detail-name-color);
     font-weight: var(--detail-name-weight);
     font-size: var(--detail-name-size-mob);
-    line-height: 1.2;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
 }
 
 @media (min-width: 768px) {
@@ -73,10 +75,10 @@ body {
 
 .detail-label {
     font-size: var(--detail-label-font-size);
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    font-weight: 900;
+    letter-spacing: 0.15em;
     color: var(--detail-label-color);
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     display: block;
     text-transform: uppercase;
 }
@@ -366,14 +368,14 @@ img[src=""] {
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 20;
+    z-index: 24;
     border: 1px solid #eee;
     transition: 0.3s;
 }
@@ -388,22 +390,52 @@ img[src=""] {
 .wish-btn {
     position: absolute;
     top: 8px;
-    left: 8px;
-    width: 22px;
-    height: 22px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 21;
+    z-index: 25;
     border: 1px solid #eee;
     transition: 0.3s;
     color: #ccc;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 767px) {
+    .wish-btn~.select-btn {
+        top: 42px;
+        /* Shift tick down only on mobile if heart exists */
+    }
 }
 
 .wish-active .wish-btn {
     color: var(--wishlist-red);
+}
+
+@media (min-width: 768px) {
+    .product-card .wish-btn {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: auto !important;
+        height: auto !important;
+        font-size: 16px;
+        color: #ddd;
+        padding: 0;
+        margin-left: 10px;
+    }
+
+    .product-card .wish-btn i {
+        font-size: 16px;
+    }
+
+    .wish-active .product-card .wish-btn {
+        color: var(--wishlist-red) !important;
+    }
 }
 
 /* SELECTION BAR - Compact Centered */
@@ -524,17 +556,18 @@ img[src=""] {
 }
 
 .spec-badge {
-    background: #fff;
-    border: 1px solid #eee;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #333;
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #374151;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .drop-zone {
@@ -586,6 +619,132 @@ img[src=""] {
 #admin-product-list-container::-webkit-scrollbar-thumb {
     background: #ddd;
     border-radius: 10px;
+}
+
+/* DESC TRUNCATION CUSTOM LINE CLAMP (Standard CSS fallback) */
+.desc-content.line-clamp-4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 4;
+}
+
+/* RELATED PRODUCTS SECTION */
+.recommendations-title {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: #9ca3af;
+    margin-bottom: 2rem;
+    border-left: 2px solid #000;
+    padding-left: 1rem;
+    line-height: 1;
+}
+
+.related-scroll-wrapper {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin: 0 -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.related-grid {
+    display: flex;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .related-scroll-wrapper {
+        overflow: visible;
+        margin: 0;
+        padding: 0;
+    }
+
+    .related-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2rem;
+    }
+}
+
+#detail-share-btn:hover {
+    background-color: #111 !important;
+    color: #fff !important;
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-slow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* PRODUCT BADGES */
+.p-badge-card {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.detail-badge {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: white;
+}
+
+.badge-new {
+    background: #10b981;
+}
+
+/* Emerald */
+.badge-best {
+    background: #f59e0b;
+}
+
+/* Amber */
+.badge-limited {
+    background: #ef4444;
+}
+
+/* Red */
+.badge-sale {
+    background: #6366f1;
+}
+
+/* Indigo */
+.badge-trending {
+    background: #ec4899;
+}
+
+/* Pink */
+
+.mb-0-imp {
+    margin-bottom: 0 !important;
 }
 
 .admin-list-category-header {
@@ -784,4 +943,222 @@ img[src=""] {
 
 .admin-action-btn.delete:hover {
     background: #ff4757;
+}
+
+/* SIDEBAR STATE CLASSES */
+#favorites-sidebar.open {
+    transform: translateX(0);
+}
+
+#favorites-sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* SIDEBAR ITEM STYLING */
+.sidebar-item {
+    display: flex;
+    gap: 15px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #f8f8f8;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-item:hover {
+    border-color: #000;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-img-box {
+    width: 70px;
+    height: 70px;
+    border-radius: 15px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #fdfdfd;
+}
+
+.sidebar-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sidebar-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.sidebar-item-name {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #111;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.sidebar-item-price {
+    font-size: 10px;
+    font-weight: 800;
+    color: #999;
+}
+
+.sidebar-remove-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff5f5;
+    color: #ff4757;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.sidebar-remove-btn:hover {
+    background: #ff4757;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* MOBILE BOTTOM NAV */
+.mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #999;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.mobile-nav-btn i {
+    font-size: 16px;
+}
+
+.mobile-nav-btn span {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mobile-nav-btn:active {
+    transform: scale(0.9);
+}
+
+.mobile-nav-btn.active {
+    color: #111;
+}
+
+.mobile-nav-btn:hover {
+    color: #111;
+}
+
+/* Specific styling for WhatsApp Expert */
+.mobile-nav-btn i.fa-whatsapp {
+    color: #25D366;
+}
+
+@media (min-width: 768px) {
+    #mobile-bottom-nav {
+        display: none !important;
+    }
+}
+
+/* SIZE VARIATION BADGES */
+.size-badge {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.size-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.size-badge.active,
+.color-badge.active {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+}
+
+/* COLOR VARIATION BADGES & SWATCHES */
+.color-badge,
+.color-swatch {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.color-swatch {
+    cursor: pointer;
+    position: relative;
+    border: 2px solid #fff !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.color-swatch::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border: 1.5px solid transparent;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+/* Selected state using the border-black class or active class */
+.color-swatch.border-black::after {
+    border-color: #000;
+}
+
+.color-swatch:hover {
+    transform: scale(1.15);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+/* DASHBOARD MULTI-IMAGE STYLES */
+#p-image-grid,
+.vc-image-grid,
+.v-image-grid {
+    min-height: 50px;
+}
+
+.drop-zone.uploading {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+}
+
+.drop-zone.uploading::after {
+    content: 'Uploading...';
+    position: absolute;
+    font-size: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.color-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }

@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -21,7 +21,7 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 
 let DATA = { p: [], c: [] };
-let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0 };
+let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
 let clicks = 0, lastClickTime = 0;
 
 const startSync = async () => {
@@ -90,31 +90,76 @@ async function loadWishlist() {
 
 function updateWishlistBadge() {
     const badge = document.getElementById('nav-wishlist-count');
-    if (!badge) return;
+    const sidebarCount = document.getElementById('sidebar-count');
     const count = state.wishlist.length;
-    if (count > 0) {
-        badge.innerText = count;
-        badge.classList.remove('hidden');
-    } else {
-        badge.classList.add('hidden');
+
+    if (badge) {
+        if (count > 0) {
+            badge.innerText = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    if (sidebarCount) {
+        sidebarCount.innerText = `${count} ${count === 1 ? 'Item' : 'Items'} Saved`;
+    }
+
+    const mobBadge = document.getElementById('nav-wishlist-count-mob');
+    if (mobBadge) {
+        if (count > 0) {
+            mobBadge.innerText = count;
+            mobBadge.classList.remove('hidden');
+        } else {
+            mobBadge.classList.add('hidden');
+        }
     }
 }
 
 window.toggleWishlist = async (e, id) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (!state.user) return showToast("Authenticating...");
-    const card = e.target.closest('.product-card');
-    if (state.wishlist.includes(id)) {
-        state.wishlist = state.wishlist.filter(x => x !== id);
-        if (card) card.classList.remove('wish-active');
+
+    // Find if product exists in wishlist
+    const existingIndex = state.wishlist.findIndex(x => (typeof x === 'string' ? x : x.id) === id);
+
+    if (existingIndex > -1) {
+        state.wishlist.splice(existingIndex, 1);
     } else {
-        state.wishlist.push(id);
-        if (card) card.classList.add('wish-active');
+        const entry = { id };
+        if (state.currentVar) entry.var = { ...state.currentVar };
+        state.wishlist.push(entry);
     }
+
+    // UI Updates
     updateWishlistBadge();
+
+    // Helper to check if any version of ID is in wishlist
+    const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
+
+    // Update main grid cards if visible
+    const gridCards = document.querySelectorAll(`.product-card[data-id="${id}"]`);
+    gridCards.forEach(card => {
+        card.classList.toggle('wish-active', isInWishlist(id));
+    });
+
+    // Update detail view heart icon
+    const detailHeart = document.getElementById('detail-wish-btn');
+    if (detailHeart && detailHeart.getAttribute('data-id') === id) {
+        const icon = detailHeart.querySelector('i');
+        if (isInWishlist(id)) {
+            icon.className = 'fa-solid fa-heart text-red-500 text-xl';
+        } else {
+            icon.className = 'fa-regular fa-heart text-xl';
+        }
+    }
+
+    if (state.filter === 'wishlist') renderHome();
+    if (document.getElementById('favorites-sidebar')?.classList.contains('open')) renderFavoritesSidebar();
+
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist });
-        if (state.filter === 'wishlist') renderHome();
     } catch (err) { showToast("Sync Error"); }
 };
 
@@ -128,7 +173,13 @@ async function refreshData(isNavigationOnly = false) {
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('s');
         const prodId = urlParams.get('p');
+        const catId = urlParams.get('c');
+        const query = urlParams.get('q');
         const isAdminOpen = !document.getElementById('admin-panel').classList.contains('hidden');
+
+        // Sync state from URL
+        state.filter = catId || 'all';
+        state.search = query || '';
 
         if (!isAdminOpen) {
             if (prodId && DATA.p.length > 0) {
@@ -200,10 +251,13 @@ async function refreshData(isNavigationOnly = false) {
 const safePushState = (params, replace = false) => {
     try {
         const url = new URL(window.location.href);
-        if (params.p === null) url.searchParams.delete('p');
-        if (params.s === null) url.searchParams.delete('s');
-        Object.keys(params).forEach(key => {
-            if (params[key] !== null) url.searchParams.set(key, params[key]);
+        // Clear conflicting params if needed, or just handle all
+        const keys = ['p', 's', 'c', 'q'];
+        keys.forEach(key => {
+            if (params.hasOwnProperty(key)) {
+                if (params[key] === null) url.searchParams.delete(key);
+                else url.searchParams.set(key, params[key]);
+            }
         });
         const finalPath = url.pathname + url.search;
         if (replace) window.history.replaceState({}, '', finalPath);
@@ -248,8 +302,9 @@ window.goBackToHome = (forceReset = false) => {
         state.selectionId = null;
         state.selected = [];
         state.filter = 'all';
+        state.search = '';
         state.scrollPos = 0;
-        safePushState({ s: null, p: null });
+        safePushState({ s: null, p: null, c: null, q: null });
     } else {
         safePushState({ p: null });
     }
@@ -330,7 +385,7 @@ function renderHome() {
             categories.forEach(c => {
                 cHtml += `<div class="category-item ${state.filter === c.id ? 'active' : ''}" onclick="applyFilter('${c.id}', event)">
                     <div class="category-img-box">
-                        <img src="${getOptimizedUrl(c.img)}" onerror="this.src='https://placehold.co/100x100?text=Gift'">
+                        <img src="${getOptimizedUrl(c.img, 200)}" onerror="this.src='https://placehold.co/100x100?text=Gift'">
                         ${c.isPinned && isAdminVisible ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm"><i class="fa-solid fa-thumbtack text-[6px]"></i></div>' : ''}
                     </div>
                     <p class="category-label truncate px-1 w-full">${c.name}</p>
@@ -369,7 +424,7 @@ function renderHome() {
         let filtered = [];
         const stockFilter = (items) => items.filter(p => p.inStock !== false);
         if (state.selectionId) filtered = DATA.p.filter(p => state.selected.includes(p.id));
-        else if (state.filter === 'wishlist') filtered = DATA.p.filter(p => state.wishlist.includes(p.id));
+        else if (state.filter === 'wishlist') filtered = DATA.p.filter(p => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === p.id));
         else if (state.filter !== 'all') filtered = stockFilter(DATA.p.filter(p => p.catId === state.filter));
         else filtered = stockFilter(DATA.p);
 
@@ -419,23 +474,44 @@ function renderHome() {
             if (state.selectionId) selectAllBtn.parentElement?.classList.add('hidden');
         }
         if (grid) {
-            grid.innerHTML = filtered.map((p, idx) => `
-        <div class="product-card group fade-in ${state.selected.includes(p.id) ? 'selected' : ''} ${state.wishlist.includes(p.id) ? 'wish-active' : ''}" onclick="viewDetail('${p.id}')">
-            <div class="wish-btn shadow-sm" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-            ${!state.selectionId && !state.filter.includes('wishlist') ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
-            <div class="img-container mb-4 shadow-sm">
-                <img src="${getOptimizedUrl(p.img)}" 
-                     ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
-                     decoding="async"
-                     onload="this.classList.add('loaded')"
-                     alt="${p.name}">
-            </div>
-            <div class="px-1 text-left">
-                <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
-                <p class="price-tag mt-2 font-bold">${p.price} AED</p>
-            </div>
-        </div>
-    `).join('') || `<p class="col-span-full text-center py-40 text-gray-300 italic text-[11px]">No items found.</p>`;
+            const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
+
+            grid.innerHTML = filtered.map((p, idx) => {
+                let displayP = { ...p };
+                let savedVar = null;
+                if (state.filter === 'wishlist') {
+                    const entry = state.wishlist.find(x => (typeof x === 'string' ? x : x.id) === p.id);
+                    if (entry && typeof entry === 'object' && entry.var) {
+                        displayP = { ...displayP, ...entry.var };
+                        savedVar = entry.var;
+                    }
+                }
+
+                const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
+
+                return `
+                <div class="product-card group fade-in ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
+                    <div class="img-container mb-4 shadow-sm relative">
+                        ${badgeHtml}
+                        <div class="wish-btn shadow-sm md:hidden" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
+                        ${!state.selectionId && !state.filter.includes('wishlist') ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
+                        <img src="${getOptimizedUrl(displayP.img, 600)}" 
+                             ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
+                             decoding="async"
+                             onload="this.classList.add('loaded')"
+                             alt="${displayP.name}">
+                    </div>
+                    <div class="px-1 text-left flex justify-between items-start mt-4">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${displayP.name}</h3>
+                            <p class="price-tag mt-2 font-bold">${displayP.price} AED</p>
+                        </div>
+                        <div class="wish-btn relative !top-0 !right-0 !left-auto hidden md:flex" onclick="toggleWishlist(event, '${p.id}')">
+                            <i class="fa-solid fa-heart"></i>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('') || `<p class="col-span-full text-center py-40 text-gray-300 italic text-[11px]">No items found.</p>`;
         }
 
         // 5. Update Search & Sort UI
@@ -447,6 +523,17 @@ function renderHome() {
         if (mobileSort) mobileSort.value = state.sort;
 
         updateSelectionBar();
+
+        // Update Mobile Nav Active State
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
+        if (state.search) {
+            document.querySelector('.mobile-nav-btn:nth-child(2)')?.classList.add('active');
+        } else if (state.filter === 'wishlist') {
+            document.querySelector('.mobile-nav-btn:nth-child(3)')?.classList.add('active');
+        } else if (state.filter === 'all' && !state.selectionId && !new URLSearchParams(window.location.search).has('p')) {
+            document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
+        }
+
         if (!state.selectionId && state.filter !== 'wishlist' && !state.search) window.scrollTo({ top: state.scrollPos });
         else if (!state.search) window.scrollTo({ top: 0 });
     } catch (e) {
@@ -470,83 +557,319 @@ window.updateSelectionBar = () => {
     }
 };
 
-window.viewDetail = (id, skipHistory = false) => {
+window.viewDetail = (id, skipHistory = false, preSelect = null) => {
     const p = DATA.p.find(x => x.id === id);
     if (!p) return;
+    state.currentVar = preSelect; // Initialize with saved variation if any
     if (!skipHistory) {
         const isAlreadyInDetail = new URLSearchParams(window.location.search).has('p');
         state.scrollPos = isAlreadyInDetail ? state.scrollPos : window.scrollY;
         safePushState({ p: id }, isAlreadyInDetail);
+
+        // Track View (Only if not just going back in history)
+        trackProductView(id);
     }
     const appMain = document.getElementById('app');
     if (!appMain) return;
+    const allImages = [...(p.images || [])];
+    [p.img, p.img2, p.img3].forEach(img => {
+        if (img && img !== 'img/' && !allImages.includes(img)) allImages.push(img);
+    });
+
     appMain.innerHTML = `
-<div class="max-w-5xl mx-auto py-8 md:py-16 fade-in px-4 pb-64 detail-view-container text-left">
-    <button onclick="goBackToHome()" class="mb-12 text-[10px] font-bold text-gray-400 flex items-center gap-2 uppercase tracking-widest hover:text-black transition-all">
-        <i class="fa-solid fa-arrow-left"></i> Back to ${state.filter === 'wishlist' ? 'Favorites' : (state.selectionId ? 'Selection' : 'Catalogue')}
-    </button>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+<div class="max-w-5xl mx-auto py-8 md:py-16 fade-in px-4 pb-20 detail-view-container text-left">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         <div>
-            <div class="zoom-img-container aspect-square" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${p.img}')">
-                <img src="${getOptimizedUrl(p.img)}" id="main-detail-img" class="w-full h-full object-cover" fetchpriority="high" loading="eager">
+            <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || p.img}')">
+                <img src="${getOptimizedUrl(allImages[0] || p.img, 1200)}" id="main-detail-img" class="w-full h-full object-cover" fetchpriority="high" loading="eager">
             </div>
-            <div class="thumb-grid justify-center lg:justify-start">
-                <div class="thumb-box active" onclick="switchImg('${p.img}', this)"><img src="${getOptimizedUrl(p.img)}"></div>
-                ${p.img2 && p.img2 !== 'img/' ? `<div class="thumb-box" onclick="switchImg('${p.img2}', this)"><img src="${getOptimizedUrl(p.img2)}"></div>` : ''}
-                ${p.img3 && p.img3 !== 'img/' ? `<div class="thumb-box" onclick="switchImg('${p.img3}', this)"><img src="${getOptimizedUrl(p.img3)}"></div>` : ''}
+            <div class="thumb-grid justify-center lg:justify-start mt-4" id="detail-thumb-grid">
+                ${allImages.map((img, i) => `
+                    <div class="thumb-box ${i === 0 ? 'active' : ''}" onclick="switchImg('${img}', this)">
+                        <img src="${getOptimizedUrl(img, 300)}">
+                    </div>
+                `).join('')}
             </div>
         </div>
-        <div class="py-2">
-            <span class="text-[9px] font-bold text-gray-300 tracking-[0.05em] uppercase mb-8 block">Exclusive Selection</span>
-            <div class="space-y-12">
-                <div><span class="detail-label">Item name:</span><h2 class="detail-product-name capitalize">${p.name}</h2></div>
-                <div class="flex items-center gap-10 mt-8 mb-10 pb-10 border-b border-gray-100">
-                    <div><span class="detail-label">Listing Price</span><p class="detail-price-text">${p.price} AED</p></div>
+        <div class="flex flex-col h-full justify-between">
+            <div class="space-y-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <h2 class="detail-product-name capitalize !mb-0">${p.name}</h2>
+                        ${p.badge ? `<span class="detail-badge badge-${p.badge}">${getBadgeLabel(p.badge)}</span>` : ''}
+                    </div>
+                    <p class="detail-price-text text-xl md:text-2xl">${p.price} AED</p>
                 </div>
-                <div class="flex flex-wrap gap-4 mb-12">
-                    ${p.size ? `<div class="spec-badge"><i class="fa-solid fa-maximize text-[10px] text-gray-400"></i><span>${p.size}</span></div>` : ''}
-                    ${p.material ? `<div class="spec-badge"><i class="fa-solid fa-layer-group text-[10px] text-gray-400"></i><span>${p.material}</span></div>` : ''}
+
+                <div class="space-y-6 pt-4 border-t border-gray-50">
+                    <!-- VARIATION: COLORS FIRST -->
+                    ${p.colorVariations && p.colorVariations.length > 0 ? `
+                    <div class="variation-section">
+                        <span class="detail-label mb-2">Available Colors</span>
+                        <div class="flex flex-wrap gap-4">
+                            ${p.colorVariations.map((v, i) => `
+                                <div class="flex flex-col items-center gap-2 group cursor-pointer" onclick='window.selectColor("${v.price}", "${v.color}", ${JSON.stringify(v.images || v.img)}, this)'>
+                                    <div class="color-swatch w-9 h-9 rounded-full border-2 ${i === 0 && (!p.variations || p.variations.length === 0) ? 'border-black scale-110' : 'border-white'} transition-all hover:scale-110" 
+                                         style="background-color: ${v.hex || '#000'}">
+                                    </div>
+                                    <span class="text-[7.5px] font-black uppercase tracking-tighter text-gray-400 group-hover:text-black transition-colors">${v.color}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- VARIATION: SIZES SECOND -->
+                    ${p.variations && p.variations.length > 0 ? `
+                    <div class="variation-section">
+                        <span class="detail-label mb-2">Available Sizes</span>
+                        <div class="flex flex-wrap gap-2">
+                            ${p.variations.map((v, i) => `
+                                <button onclick='window.selectSize("${v.price}", "${v.size}", ${JSON.stringify(v.images || v.img)}, this)' 
+                                    class="size-badge px-4 py-3 rounded-xl border ${i === 0 ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-100'} font-bold text-[9px] uppercase tracking-widest transition-all">
+                                    ${v.size}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- STATIC SPECS THIRD -->
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        ${p.size && (!p.variations || p.variations.length === 0) ? `<div class="spec-badge"><i class="fa-solid fa-maximize text-[10px] text-gray-400"></i><span>${p.size}</span></div>` : ''}
+                        ${p.material ? `<div class="spec-badge"><i class="fa-solid fa-layer-group text-[10px] text-gray-400"></i><span>${p.material}</span></div>` : ''}
+                    </div>
                 </div>
-                <div class="mb-14">
-                    <span class="detail-label">Product Story</span>
-                    <p class="detail-description-text mt-4 whitespace-pre-line">${p.desc || 'Premium handcrafted selection curated specifically for our collection.'}</p>
+
+                <div class="pt-6 border-t border-gray-50">
+                    <span class="detail-label mb-3">Product Story</span>
+                    <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600 space-y-4 overflow-hidden relative" id="desc-container">
+                        ${(() => {
+            const desc = p.desc || 'Premium handcrafted selection curated specifically for our collection.';
+            const paragraphs = desc.split('\n').filter(line => line.trim());
+            const fullHtml = paragraphs.map(p => `<p>${p}</p>`).join('');
+
+            if (desc.length > 280) {
+                return `
+                                    <div class="desc-content line-clamp-4 transition-all duration-500">${fullHtml}</div>
+                                    <button onclick="window.toggleDescription(this)" class="text-[10px] font-black uppercase tracking-widest text-black mt-2 hover:underline">Read More</button>
+                                `;
+            }
+            return fullHtml;
+        })()}
+                    </div>
                 </div>
-                <button onclick="inquireOnWhatsApp('${p.id}')" class="hidden md:flex w-full bg-black text-white py-6 rounded-3xl font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl items-center justify-center gap-3 hover:scale-[1.02] transition-all">
-                    <i class="fa-brands fa-whatsapp text-lg"></i>
-                    INQUIRE ON WHATSAPP
+            </div>
+
+            <div class="flex gap-3 mt-10 lg:mt-auto pt-6">
+                <button id="main-inquiry-btn" onclick="inquireOnWhatsApp('${p.id}'${p.variations && p.variations.length > 0 ? `, '${p.variations[0].size}', '${p.variations[0].price}'` : (p.colorVariations && p.colorVariations.length > 0 ? `, null, '${p.colorVariations[0].price}', '${p.colorVariations[0].color}'` : '')})" class="flex-[3] bg-black text-white py-4 rounded-2xl shadow-xl flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 transition-all">
+                    <i class="fa-brands fa-whatsapp text-3xl text-[#25D366]"></i>
+                    <div class="flex flex-col items-start leading-tight">
+                        <span class="text-[8px] font-bold opacity-60 uppercase tracking-[0.2em]">Enquire Via</span>
+                        <span class="text-[13px] font-black uppercase tracking-widest leading-none mt-0.5">WhatsApp</span>
+                    </div>
+                </button>
+                <button id="detail-share-btn" onclick="window.shareProduct('${p.id}', '${p.name.replace(/'/g, "\\'")}')" 
+                    class="flex-1 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-black hover:bg-gray-100 transition-all active:scale-90 border border-gray-100">
+                    <i class="fa-solid fa-share-nodes text-xl"></i>
+                </button>
+                <button id="detail-wish-btn" data-id="${p.id}" onclick="window.toggleWishlist(event, '${p.id}')" 
+                    class="flex-1 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90 border border-gray-100">
+                    <i class="${state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === p.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl"></i>
                 </button>
             </div>
         </div>
     </div>
-</div>
-<div class="fixed md:hidden bottom-0 left-0 w-full flex justify-center p-3 z-[70]">
-    <div class="w-11/12 bg-white/80 backdrop-blur-xl border border-white/20 p-1.5 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.15)] premium-btn-anim">
-        <button onclick="inquireOnWhatsApp('${p.id}')" class="w-full bg-black text-white py-3.5 rounded-full font-bold text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-3 active:scale-95 transition-all">
-            <i class="fa-brands fa-whatsapp text-lg text-green-400"></i>
-            INQUIRE ON WHATSAPP
-        </button>
-    </div>
+
+    <!-- RELATED PRODUCTS -->
+    ${(() => {
+            const currentCatId = String(p.catId || "");
+            const related = DATA.p.filter(item => String(item.catId) === currentCatId && item.id !== p.id && item.inStock !== false).slice(0, 6);
+            if (related.length === 0) return '';
+            return `
+            <div class="mt-20 pt-12 border-t border-gray-50">
+                <div class="flex items-center justify-between mb-8 pr-4">
+                    <h3 class="recommendations-title mb-0-imp">Recommendations</h3>
+                    <div class="lg:hidden flex items-center gap-2 text-gray-300 animate-pulse-slow">
+                        <span class="text-[8px] font-black uppercase tracking-widest">Swipe</span>
+                        <i class="fa-solid fa-arrow-right-long text-[10px]"></i>
+                    </div>
+                </div>
+                <div class="related-scroll-wrapper no-scrollbar">
+                    <div class="related-grid px-1">
+                        ${related.map(rp => {
+                const rpImg = [rp.img, ...(rp.images || []), rp.img2, rp.img3].find(u => u && u !== 'img/') || 'https://placehold.co/400x500?text=Gift';
+                return `
+                            <div class="product-card group flex-shrink-0 w-[160px] md:w-[220px]" data-id="${rp.id}" onclick="viewDetail('${rp.id}')">
+                                <div class="img-container mb-4 shadow-sm aspect-[4/5] rounded-xl overflow-hidden bg-gray-50 relative">
+                                    <img src="${getOptimizedUrl(rpImg, 400)}" 
+                                         alt="${rp.name}" 
+                                         class="w-full h-full object-cover transition-opacity duration-300 opacity-0"
+                                         onload="this.style.opacity='1'"
+                                         onerror="this.src='https://placehold.co/400x500?text=Image+Error'">
+                                </div>
+                                <div class="px-1 text-left">
+                                    <h3 class="capitalize truncate leading-none text-gray-900 font-semibold text-[11px] md:text-[13px]">${rp.name}</h3>
+                                    <p class="mt-2 font-bold text-[10px] text-gray-400">${rp.price} AED</p>
+                                </div>
+                            </div>
+                        `;
+            }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        })()}
 </div>
 `;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Handle Pre-selection after render
+    if (state.currentVar) {
+        const { color, size } = state.currentVar;
+        setTimeout(() => {
+            if (color) {
+                const swatches = document.querySelectorAll('.color-swatch');
+                swatches.forEach(s => {
+                    const container = s.closest('.cursor-pointer');
+                    const label = container?.querySelector('span')?.innerText;
+                    if (label && label.trim() === color.trim()) container.click();
+                });
+            }
+            if (size) {
+                const badges = document.querySelectorAll('.size-badge');
+                badges.forEach(b => {
+                    if (b.innerText.trim() === size.trim()) b.click();
+                });
+            }
+        }, 100);
+    }
+};
+
+window.addColorVariationRow = (colorName = '', price = '', images = [], hex = '#000000') => {
+    const container = document.getElementById('color-variation-rows');
+    if (!container) return;
+    const rowId = 'v-color-' + Date.now() + Math.random().toString(36).substr(2, 5);
+    const div = document.createElement('div');
+    div.className = 'color-variation-row bg-white p-4 rounded-xl border border-gray-100 space-y-3 relative fade-in';
+    div.innerHTML = `
+        <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+            <input type="text" class="vc-color admin-input !bg-gray-50" placeholder="Color Name" value="${colorName}">
+                <input type="text" class="vc-price admin-input !bg-gray-50" placeholder="Price" value="${price}">
+                </div>
+                <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                    <span class="text-[9px] font-black uppercase text-gray-400 ml-2">Visual Color:</span>
+                    <input type="color" class="vc-hex h-8 w-12 rounded cursor-pointer bg-transparent border-none" value="${hex}">
+                        <span class="text-[10px] font-mono text-gray-400">${hex}</span>
+                </div>
+                <div class="space-y-2">
+                    <div id="${rowId}-grid" class="grid grid-cols-4 gap-2 vc-image-grid"></div>
+                    <div class="drop-zone flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-gray-100 group hover:border-black transition-all" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleMultiDrop(event, '${rowId}-grid')">
+                        <i class="fa-solid fa-images text-gray-200 group-hover:text-black transition-all"></i>
+                        <button type="button" onclick="window.cloudinaryMultiUpload('${rowId}-grid')" class="text-[8px] font-black uppercase px-3 py-2 bg-gray-100 rounded-lg hover:bg-black hover:text-white transition-all">Add Photos</button>
+                    </div>
+                </div>
+                `;
+
+    // Update hex text on change
+    const picker = div.querySelector('.vc-hex');
+    picker.addEventListener('input', (e) => {
+        e.target.nextElementSibling.innerText = e.target.value.toUpperCase();
+    });
+
+    container.appendChild(div);
+    if (images && images.length > 0) {
+        images.forEach(img => addImageToGrid(`${rowId}-grid`, img));
+    } else if (typeof images === 'string' && images !== 'img/') {
+        // Handle legacy single image string
+        addImageToGrid(`${rowId}-grid`, images);
+    }
+};
+
+window.addVariationRow = (size = '', price = '', images = []) => {
+    const container = document.getElementById('variation-rows');
+    if (!container) return;
+    const rowId = 'v-size-' + Date.now() + Math.random().toString(36).substr(2, 5);
+    const div = document.createElement('div');
+    div.className = 'variation-row bg-white p-4 rounded-xl border border-gray-100 space-y-3 relative fade-in';
+    div.innerHTML = `
+                <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" class="v-size admin-input !bg-gray-50" placeholder="Size" value="${size}">
+                        <input type="text" class="v-price admin-input !bg-gray-50" placeholder="Price" value="${price}">
+                        </div>
+                        <div class="space-y-2">
+                            <div id="${rowId}-grid" class="grid grid-cols-4 gap-2 v-image-grid"></div>
+                            <div class="drop-zone flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-gray-100 group hover:border-black transition-all" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleMultiDrop(event, '${rowId}-grid')">
+                                <i class="fa-solid fa-images text-gray-200 group-hover:text-black transition-all"></i>
+                                <button type="button" onclick="window.cloudinaryMultiUpload('${rowId}-grid')" class="text-[8px] font-black uppercase px-3 py-2 bg-gray-100 rounded-lg hover:bg-black hover:text-white transition-all">Add Photos</button>
+                            </div>
+                        </div>
+                        `;
+    container.appendChild(div);
+    if (images && images.length > 0) {
+        images.forEach(img => addImageToGrid(`${rowId}-grid`, img));
+    } else if (typeof images === 'string' && images !== 'img/') {
+        // Handle legacy single image string
+        addImageToGrid(`${rowId}-grid`, images);
+    }
 };
 
 window.saveProduct = async () => {
     const id = document.getElementById('edit-id')?.value;
     const btn = document.getElementById('p-save-btn');
+
+    // Collect images
+    const images = collectImagesFromGrid('p-image-grid');
+    const primaryImg = images[0] || 'img/';
+
+    // Collect size variations
+    const variationRows = document.querySelectorAll('.variation-row');
+    const variations = Array.from(variationRows).map(row => {
+        const gridId = row.querySelector('.v-image-grid').id;
+        const varImages = collectImagesFromGrid(gridId);
+        return {
+            size: row.querySelector('.v-size').value,
+            price: row.querySelector('.v-price').value,
+            images: varImages,
+            img: varImages[0] || 'img/' // fallback for existing logic
+        };
+    }).filter(v => v.size || v.price);
+
+    // Collect color variations
+    const colorRows = document.querySelectorAll('.color-variation-row');
+    const colorVariations = Array.from(colorRows).map(row => {
+        const gridId = row.querySelector('.vc-image-grid').id;
+        const varImages = collectImagesFromGrid(gridId);
+        return {
+            color: row.querySelector('.vc-color').value,
+            price: row.querySelector('.vc-price').value,
+            images: varImages,
+            img: varImages[0] || 'img/', // fallback
+            hex: row.querySelector('.vc-hex').value
+        };
+    }).filter(v => v.color || v.price);
+
     const data = {
         name: document.getElementById('p-name')?.value,
         price: document.getElementById('p-price')?.value,
         size: document.getElementById('p-size')?.value,
         material: document.getElementById('p-material')?.value,
         inStock: document.getElementById('p-stock')?.checked,
-        img: document.getElementById('p-img')?.value,
-        img2: document.getElementById('p-img2')?.value,
-        img3: document.getElementById('p-img3')?.value,
+        img: primaryImg,
+        images: images,
         catId: document.getElementById('p-cat-id')?.value,
+        badge: document.getElementById('p-badge')?.value, // Collect badge
         desc: document.getElementById('p-desc')?.value,
         keywords: document.getElementById('p-keywords')?.value,
         isPinned: document.getElementById('p-pinned')?.checked || false,
+        variations: variations,
+        colorVariations: colorVariations,
         updatedAt: Date.now()
     };
     if (!data.name || !data.img) return showToast("Required info missing");
@@ -583,10 +906,8 @@ window.editProduct = (id) => {
     const pMaterial = document.getElementById('p-material');
     const pStock = document.getElementById('p-stock');
     const pPinned = document.getElementById('p-pinned');
-    const pImg = document.getElementById('p-img');
-    const pImg2 = document.getElementById('p-img2');
-    const pImg3 = document.getElementById('p-img3');
     const pCatId = document.getElementById('p-cat-id');
+    const pBadge = document.getElementById('p-badge'); // Added
     const pDesc = document.getElementById('p-desc');
     const pKeywords = document.getElementById('p-keywords');
     const pFormTitle = document.getElementById('p-form-title');
@@ -598,14 +919,48 @@ window.editProduct = (id) => {
     if (pMaterial) pMaterial.value = item.material || "";
     if (pStock) pStock.checked = item.inStock !== false;
     if (pPinned) pPinned.checked = item.isPinned || false;
-    if (pImg) pImg.value = item.img || "img/";
-    if (pImg2) pImg2.value = item.img2 || "img/";
-    if (pImg3) pImg3.value = item.img3 || "img/";
     if (pCatId) pCatId.value = item.catId || "";
+    if (pBadge) pBadge.value = item.badge || ""; // Added
 
     if (pDesc) pDesc.value = item.desc;
     if (pKeywords) pKeywords.value = item.keywords || "";
     if (pFormTitle) pFormTitle.innerText = "Editing: " + item.name;
+
+    document.getElementById('p-pinned').checked = item.isPinned || false;
+    document.getElementById('p-keywords').value = item.keywords || '';
+
+    // Load images
+    const pGrid = document.getElementById('p-image-grid');
+    if (pGrid) {
+        pGrid.innerHTML = '';
+        const allImages = [...(item.images || [])];
+        // Migration: Add legacy images if not in array
+        [item.img, item.img2, item.img3].forEach(img => {
+            if (img && img !== 'img/' && !allImages.includes(img)) {
+                allImages.push(img);
+            }
+        });
+        allImages.forEach(url => window.addImageToGrid('p-image-grid', url));
+    }
+
+    // Load size variations
+    const varRows = document.getElementById('variation-rows');
+    if (varRows) {
+        varRows.innerHTML = '';
+        if (item.variations && item.variations.length > 0) {
+            item.variations.forEach(v => window.addVariationRow(v.size, v.price, v.images || v.img));
+        }
+    }
+
+    // Load color variations
+    const colorRows = document.getElementById('color-variation-rows');
+    if (colorRows) {
+        colorRows.innerHTML = '';
+        if (item.colorVariations && item.colorVariations.length > 0) {
+            item.colorVariations.forEach(v => window.addColorVariationRow(v.color, v.price, v.images || v.img, v.hex || '#000000'));
+        }
+    }
+
     switchAdminTab('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -681,7 +1036,9 @@ window.copyUniversalJSON = () => {
                 stockStatus: p.inStock !== false ? "instock" : "outofstock",
                 specs: { size: p.size || "", material: p.material || "" },
                 description: p.desc || "",
-                images: [p.img, p.img2, p.img3].filter(u => u && u !== 'img/')
+                images: p.images || [p.img, p.img2, p.img3].filter(u => u && u !== 'img/'),
+                variations: p.variations || [],
+                colorVariations: p.colorVariations || []
             }))
         };
 
@@ -758,22 +1115,33 @@ window.importData = (event) => {
                         name: p.name || "",
                         price: p.price || "",
                         catId: finalCatId,
+                        badge: p.badge || "", // Added badge
                         desc: p.desc || p.description || "",
                         size: (p.specs ? p.specs.size : (p.size || "")),
                         material: (p.specs ? p.specs.material : (p.material || "")),
                         inStock: p.inStock !== undefined ? p.inStock : (p.stockStatus !== "outofstock"),
                         isPinned: p.isPinned || false,
-                        updatedAt: p.updatedAt || Date.now()
+                        keywords: p.keywords || "",
+                        updatedAt: p.updatedAt || Date.now(),
+                        // New fields
+                        images: p.images || [],
+                        variations: p.variations || [],
+                        colorVariations: p.colorVariations || []
                     };
 
+                    // Legacy image mapping for backward compatibility
                     if (p.images && Array.isArray(p.images)) {
                         cleanProd.img = p.images[0] || "img/";
                         cleanProd.img2 = p.images[1] || "img/";
                         cleanProd.img3 = p.images[2] || "img/";
-                    } else {
+                    } else if (p.img) {
                         cleanProd.img = p.img || "img/";
                         cleanProd.img2 = p.img2 || "img/";
                         cleanProd.img3 = p.img3 || "img/";
+                        // Auto-migrate to images array if missing
+                        if (!cleanProd.images || cleanProd.images.length === 0) {
+                            cleanProd.images = [p.img, p.img2, p.img3].filter(u => u && u !== 'img/');
+                        }
                     }
 
                     await addDoc(prodCol, cleanProd);
@@ -823,24 +1191,41 @@ window.shareSelection = async () => {
 };
 
 window.sendBulkInquiry = () => {
-    const items = state.selected.map(id => DATA.p.find(p => p.id === id)).filter(x => x);
-    let msg = `*Hello Speed Gifts!*\nI am interested in these items:\n\n`;
-    items.forEach((item, i) => { const pUrl = `${window.location.origin}${window.location.pathname}?p=${item.id}`; msg += `${i + 1}. *${item.name}* - ${item.price} AED\nLink: ${pUrl}\n\n`; });
+    // Determine which list to use (Selected items for sharing OR Wishlist for sidebar)
+    const isSidebarOpen = document.getElementById('favorites-sidebar')?.classList.contains('open');
+    const sourceIds = isSidebarOpen ? state.wishlist : state.selected;
+
+    if (sourceIds.length === 0) return showToast("No items to inquire");
+
+    const items = sourceIds.map(id => DATA.p.find(p => p.id === id)).filter(x => x);
+    let msg = `*Hello Speed Gifts!*\nI am interested in these items from my ${isSidebarOpen ? 'Favorites' : 'Selection'}:\n\n`;
+
+    items.forEach((item, i) => {
+        const pUrl = `${window.location.origin}${window.location.pathname}?p=${item.id}`;
+        msg += `${i + 1}. *${item.name}* - ${item.price} AED\nLink: ${pUrl}\n\n`;
+    });
+
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
-window.inquireOnWhatsApp = (id) => {
+window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selectedColor = null) => {
     const p = DATA.p.find(x => x.id === id);
     if (!p) return;
     const pUrl = `${window.location.origin}${window.location.pathname}?p=${p.id}`;
-    const msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${p.price} AED\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
+    const price = selectedPrice || p.price;
+    let details = "";
+    if (selectedSize) details += `\n*Size:* ${selectedSize}`;
+    if (selectedColor) details += `\n*Color:* ${selectedColor}`;
+    if (!selectedSize && !selectedColor && p.size) details += `\n*Size:* ${p.size}`;
+
+    const msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${price} AED${details}\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
 window.switchImg = (src, el) => {
     const main = document.getElementById('main-detail-img');
     if (main) {
-        main.src = getOptimizedUrl(src);
+        main.src = getOptimizedUrl(src, 1200);
         // Update click handler for full-screen preview
         main.closest('.zoom-img-container')?.setAttribute('onclick', `openFullScreen('${src}')`);
     }
@@ -877,6 +1262,19 @@ window.openFullScreen = (src) => {
     }
 };
 
+window.toggleDescription = (btn) => {
+    const content = btn.parentElement.querySelector('.desc-content');
+    if (content.classList.contains('line-clamp-4')) {
+        content.classList.remove('line-clamp-4');
+        btn.innerText = "Read Less";
+    } else {
+        content.classList.add('line-clamp-4');
+        btn.innerText = "Read More";
+        // Optional: scroll back to top of container if it was long
+        btn.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
 window.closeFullScreen = () => {
     const overlay = document.getElementById('img-full-preview');
     if (overlay) {
@@ -888,7 +1286,13 @@ window.closeFullScreen = () => {
 window.renderAdminUI = () => {
     const pList = document.getElementById('admin-product-list');
     const cList = document.getElementById('admin-category-list');
-    if (!pList || !cList) return;
+    const iList = document.getElementById('admin-insights-list');
+    if (!pList || !cList || !iList) return;
+
+    if (state.adminTab === 'insights') {
+        renderInsights(iList);
+        return;
+    }
     const filterEl = document.getElementById('admin-cat-filter');
     const catFilter = filterEl ? filterEl.value : "all";
 
@@ -914,53 +1318,59 @@ window.renderAdminUI = () => {
 
         grouped[cat].forEach(p => {
             const stockTag = p.inStock !== false ? '<span class="stock-badge in">In Stock</span>' : '<span class="stock-badge out">Out of Stock</span>';
-            const pinIcon = p.isPinned ? '<div class="absolute top-3 left-3 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg"><i class="fa-solid fa-thumbtack text-[10px]"></i></div>' : '';
+            const pinIcon = p.isPinned ? '<div class="absolute top-3 left-3 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg z-20"><i class="fa-solid fa-thumbtack text-[10px]"></i></div>' : '';
+            const badgeHtml = p.badge ? `<div class="absolute top-3 left-10 px-3 py-1 bg-black text-white text-[8px] font-black uppercase rounded-full shadow-lg z-10">${getBadgeLabel(p.badge)}</div>` : '';
+            const viewCount = p.views || 0;
 
             pHtml += `
-        <div class="admin-product-card group">
-            <div class="admin-product-img-box">
-                <img src="${getOptimizedUrl(p.img)}" alt="${p.name}">
-                ${pinIcon}
-                <div class="admin-card-actions">
-                    <button onclick="editProduct('${p.id}')" class="admin-action-btn" title="Edit Item">
-                        <i class="fa-solid fa-pen-to-square text-[11px]"></i>
-                    </button>
-                    <button onclick="deleteProduct('${p.id}')" class="admin-action-btn delete" title="Delete Item">
-                        <i class="fa-solid fa-trash text-[11px]"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="admin-product-info">
-                <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
-                <div class="flex items-center justify-between mt-1">
-                    <p class="text-[10px] text-gray-500 font-black tracking-widest uppercase">${p.price} AED</p>
-                    ${stockTag}
-                </div>
-            </div>
-        </div>
-    `;
+                        <div class="admin-product-card group">
+                            <div class="admin-product-img-box">
+                                <img src="${getOptimizedUrl(p.img, 400)}" alt="${p.name}">
+                                ${pinIcon}
+                                ${badgeHtml}
+                                <div class="absolute bottom-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-[8px] font-bold text-gray-500 shadow-sm flex items-center gap-1">
+                                    <i class="fa-solid fa-eye text-[9px]"></i> ${viewCount}
+                                </div>
+                                <div class="admin-card-actions">
+                                    <button onclick="editProduct('${p.id}')" class="admin-action-btn" title="Edit Item">
+                                        <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+                                    </button>
+                                    <button onclick="deleteProduct('${p.id}')" class="admin-action-btn delete" title="Delete Item">
+                                        <i class="fa-solid fa-trash text-[11px]"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="admin-product-info">
+                                <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
+                                <div class="flex items-center justify-between mt-1">
+                                    <p class="text-[10px] text-gray-500 font-black tracking-widest uppercase">${p.price} AED</p>
+                                    ${stockTag}
+                                </div>
+                            </div>
+                        </div>
+                        `;
         });
     });
 
     pList.innerHTML = pHtml || `<div class="col-span-full py-40 text-center"><p class="text-[12px] text-gray-300 font-bold uppercase tracking-widest italic">No items found.</p></div>`;
 
     cList.innerHTML = DATA.c.map(c => `
-<div class="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 relative">
-    <div class="relative shrink-0">
-        <img src="${getOptimizedUrl(c.img)}" class="w-14 h-14 rounded-full object-cover border-4 border-white shadow-sm" onerror="this.src='https://placehold.co/100x100?text=Icon'">
-        ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-lg"><i class="fa-solid fa-thumbtack text-[8px]"></i></div>' : ''}
-    </div>
-    <div class="flex-1 font-bold text-[13px] uppercase">${c.name}</div>
-    <div class="flex gap-2">
-        <button onclick="editCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-lg text-gray-400 hover:text-black transition-all">
-            <i class="fa-solid fa-pen text-[10px]"></i>
-        </button>
-        <button onclick="deleteCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-red-50 rounded-full text-red-200 hover:text-red-500 transition-all">
-            <i class="fa-solid fa-trash text-[10px]"></i>
-        </button>
-    </div>
-</div>
-`).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
+                        <div class="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 relative">
+                            <div class="relative shrink-0">
+                                <img src="${getOptimizedUrl(c.img, 100)}" class="w-14 h-14 rounded-full object-cover border-4 border-white shadow-sm" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+                                    ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-lg"><i class="fa-solid fa-thumbtack text-[8px]"></i></div>' : ''}
+                            </div>
+                            <div class="flex-1 font-bold text-[13px] uppercase">${c.name}</div>
+                            <div class="flex gap-2">
+                                <button onclick="editCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-lg text-gray-400 hover:text-black transition-all">
+                                    <i class="fa-solid fa-pen text-[10px]"></i>
+                                </button>
+                                <button onclick="deleteCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-red-50 rounded-full text-red-200 hover:text-red-500 transition-all">
+                                    <i class="fa-solid fa-trash text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                        `).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
 };
 
 window.handleCategoryRowScroll = (el) => {
@@ -971,10 +1381,18 @@ window.handleCategoryRowScroll = (el) => {
     else container.classList.remove('scrolled-end');
 };
 
-window.applyFilter = (id) => {
+window.applyFilter = (id, e) => {
+    if (e) e.stopPropagation();
     state.filter = id;
     state.search = '';
     state.scrollPos = 0;
+
+    // Only push state if not already in that filter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('c') !== id) {
+        safePushState({ c: id === 'all' ? null : id, q: null, p: null });
+    }
+
     renderHome();
 };
 window.showSearchSuggestions = (show) => {
@@ -997,8 +1415,16 @@ window.applyCustomerSearch = (val) => {
 
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
+        // Push state for search (replace if same type to avoid polluting history with every letter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentQ = urlParams.get('q') || '';
+        if (val !== currentQ) {
+            // Use replaceState if we are just refining a search, pushState for a new search
+            const isRefining = currentQ && val.startsWith(currentQ);
+            safePushState({ q: val || null, c: 'all', p: null }, isRefining);
+        }
         renderHome();
-    }, 100);
+    }, 400); // Slightly longer for search history comfort
 
     // Update Clear Button UI immediately with safety
     const clearBtn = document.getElementById('app')?.querySelector('#clear-search-btn');
@@ -1018,15 +1444,27 @@ window.showAdminPanel = () => { document.getElementById('admin-panel').classList
 window.hideAdminPanel = () => { document.getElementById('admin-panel').classList.add('hidden'); document.body.style.overflow = 'auto'; };
 
 window.switchAdminTab = (tab) => {
+    state.adminTab = tab;
     const isProd = tab === 'products';
+    const isCat = tab === 'categories';
+    const isInsight = tab === 'insights';
+
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
-    document.getElementById('admin-category-section').classList.toggle('hidden', isProd);
+    document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
+    document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
+
     document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
-    document.getElementById('admin-category-list').classList.toggle('hidden', isProd);
+    document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
+    document.getElementById('admin-insights-list').classList.toggle('hidden', !isInsight);
+
     document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
+
     document.getElementById('tab-p').className = isProd ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
-    document.getElementById('tab-c').className = !isProd ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : "Existing Categories";
+    document.getElementById('tab-c').className = isCat ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
+    document.getElementById('tab-i').className = isInsight ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
+
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : "Popularity Insights");
+    renderAdminUI();
 };
 
 /* CATEGORY PICKER LOGIC */
@@ -1042,26 +1480,109 @@ function populateAdminCatFilter() {
 }
 
 window.resetForm = () => {
-    const fields = ['edit-id', 'edit-cat-id', 'p-name', 'p-price', 'p-size', 'p-material', 'p-desc', 'p-keywords', 'c-name'];
-    fields.forEach(f => { const el = document.getElementById(f); if (el) el.value = ""; });
-    document.getElementById('p-img').value = "img/"; document.getElementById('p-img2').value = "img/"; document.getElementById('p-img3').value = "img/";
-    document.getElementById('c-img').value = "img/";
-    document.getElementById('p-stock').checked = true;
-    document.getElementById('p-pinned').checked = false;
-    document.getElementById('c-pinned').checked = false;
-    document.getElementById('p-form-title').innerText = "Product Details";
-    document.getElementById('c-form-title').innerText = "New Category";
+    // Basic fields
+    const fields = ['edit-id', 'p-name', 'p-price', 'p-size', 'p-material', 'p-desc', 'p-keywords', 'c-name', 'p-badge']; // Added 'p-badge'
+    fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) el.value = "";
+    });
 
-    if (document.getElementById('admin-cat-filter')) document.getElementById('admin-cat-filter').value = "all";
+    // Reset checkboxes
+    const checkboxes = ['p-stock', 'p-pinned', 'c-pinned'];
+    checkboxes.forEach(c => {
+        const el = document.getElementById(c);
+        if (el) el.checked = (c === 'p-stock'); // Default stock to true, others false
+    });
+
+    // Reset titles
+    const pTitle = document.getElementById('p-form-title');
+    if (pTitle) pTitle.innerText = "Product Details";
+    const cTitle = document.getElementById('c-form-title');
+    if (cTitle) cTitle.innerText = "New Category";
+
+    // Clear dynamic grids
+    const grids = ['variation-rows', 'color-variation-rows', 'p-image-grid'];
+    grids.forEach(g => {
+        const el = document.getElementById(g);
+        if (el) el.innerHTML = '';
+    });
+
+    // Reset selects
+    const catSelect = document.getElementById('p-cat-id');
+    if (catSelect) catSelect.value = "";
+    const filter = document.getElementById('admin-cat-filter');
+    if (filter) filter.value = "all";
 };
 
+// MULTI-IMAGE HELPERS
+window.addImageToGrid = (containerId, url) => {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
+    const div = document.createElement('div');
+    div.className = 'relative aspect-square border-2 border-gray-100 rounded-xl overflow-hidden group hover:border-black transition-all bg-white';
+    div.innerHTML = `
+                        <img src="${getOptimizedUrl(url, 300)}" class="w-full h-full object-cover">
+                            <input type="hidden" class="grid-img-url" value="${url}">
+                                <button type="button" onclick="this.parentElement.remove()" class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-all">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                                `;
+    grid.appendChild(div);
+};
+
+window.handleMultiDrop = async (e, containerId) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+
+    showToast(`Uploading ${files.length} images...`);
+    for (const file of files) {
+        try {
+            const url = await directCloudinaryUpload(file);
+            addImageToGrid(containerId, url);
+        } catch (err) {
+            showToast("One or more uploads failed.");
+        }
+    }
+    showToast("Upload Complete!");
+};
+
+window.cloudinaryMultiUpload = (containerId) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        showToast(`Uploading ${files.length} images...`);
+        for (const file of files) {
+            try {
+                const url = await directCloudinaryUpload(file);
+                addImageToGrid(containerId, url);
+            } catch (err) {
+                showToast("One or more uploads failed.");
+            }
+        }
+        showToast("Upload Complete!");
+    };
+    input.click();
+};
+
+function collectImagesFromGrid(containerId) {
+    const grid = document.getElementById(containerId);
+    if (!grid) return [];
+    return Array.from(grid.querySelectorAll('.grid-img-url')).map(input => input.value);
+}
+
+// Ensure handleDragOver/Leave are accessible
 window.handleDragOver = (e) => {
     e.preventDefault();
-    e.currentTarget.classList.add('dragging');
+    e.currentTarget.classList.add('border-black', 'bg-gray-50');
 };
-
 window.handleDragLeave = (e) => {
-    e.currentTarget.classList.remove('dragging');
+    e.currentTarget.classList.remove('border-black', 'bg-gray-50');
 };
 
 window.handleDrop = async (e, fieldId) => {
@@ -1075,6 +1596,25 @@ window.handleDrop = async (e, fieldId) => {
     try {
         const url = await directCloudinaryUpload(file);
         document.getElementById(fieldId).value = url;
+        showToast("Image Uploaded!");
+    } catch (err) {
+        showToast("Upload Failed.");
+    } finally {
+        zone.classList.remove('uploading');
+    }
+};
+
+window.handleVariationDrop = async (e, zone) => {
+    e.preventDefault();
+    zone.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return showToast("Please drop an image file.");
+
+    zone.classList.add('uploading');
+    try {
+        const url = await directCloudinaryUpload(file);
+        const input = zone.querySelector('.v-img, .vc-img');
+        if (input) input.value = url;
         showToast("Image Uploaded!");
     } catch (err) {
         showToast("Upload Failed.");
@@ -1099,10 +1639,10 @@ async function directCloudinaryUpload(file) {
 }
 
 let cloudinaryWidget = null;
-let cloudinaryTargetField = null;
+let cloudinaryTarget = null; // Can be ID string or input element
 
-window.cloudinaryUpload = (fieldId) => {
-    cloudinaryTargetField = fieldId;
+window.cloudinaryUpload = (target) => {
+    cloudinaryTarget = target;
     if (cloudinaryWidget) {
         cloudinaryWidget.open();
         return;
@@ -1112,21 +1652,144 @@ window.cloudinaryUpload = (fieldId) => {
         apiKey: '749457642941763',
         uploadPreset: 'speed_preset',
         sources: ['local', 'url', 'camera'],
-        showAdvancedOptions: false,
-        cropping: false,
         multiple: false,
-        defaultSource: 'local',
         styles: {
             palette: { window: '#FFFFFF', windowBorder: '#90A0B3', tabIcon: '#000000', menuIcons: '#5A616A', textDark: '#000000', textLight: '#FFFFFF', link: '#000000', action: '#111111', inactiveTabIcon: '#0E2F5A', error: '#F44235', inProgress: '#0078FF', complete: '#20B832', sourceBg: '#E4EBF1' }
         }
     }, (error, result) => {
         if (!error && result && result.event === "success") {
-            document.getElementById(cloudinaryTargetField).value = result.info.secure_url;
+            if (typeof cloudinaryTarget === 'string') {
+                const el = document.getElementById(cloudinaryTarget);
+                if (el) el.value = result.info.secure_url;
+            } else if (cloudinaryTarget instanceof HTMLElement) {
+                cloudinaryTarget.value = result.info.secure_url;
+            }
             showToast("Image Uploaded!");
         }
     });
     cloudinaryWidget.open();
 };
+
+window.cloudinaryUploadForVariation = (btn) => {
+    window.cloudinaryUpload(btn.parentElement.querySelector('.v-img, .vc-img'));
+};
+
+window.selectSize = (price, size, imgs, el) => {
+    // Update price
+    const priceDisplay = document.querySelector('.detail-price-text');
+    if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+
+    // Handle images
+    const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
+    if (images.length > 0) {
+        const mainImg = document.getElementById('main-detail-img');
+        if (mainImg) {
+            mainImg.src = getOptimizedUrl(images[0], 1200);
+            mainImg.closest('.zoom-img-container')?.setAttribute('onclick', `openFullScreen('${images[0]}')`);
+        }
+
+        // Update thumbnail grid
+        const thumbGrid = document.getElementById('detail-thumb-grid');
+        if (thumbGrid) {
+            thumbGrid.innerHTML = images.map((img, i) => `
+                <div class="thumb-box ${i === 0 ? 'active' : ''}" onclick="switchImg('${img}', this)">
+                    <img src="${getOptimizedUrl(img, 300)}">
+                </div>
+            `).join('');
+        }
+    }
+
+    // Highlight selected size badge
+    document.querySelectorAll('.size-badge').forEach(b => {
+        b.classList.remove('bg-black', 'text-white', 'border-black');
+        b.classList.add('bg-white', 'text-black', 'border-gray-200');
+    });
+    el.classList.remove('bg-white', 'text-black', 'border-gray-200');
+    el.classList.add('bg-black', 'text-white', 'border-black');
+
+    // Update state for wishlist
+    state.currentVar = { size, price, img: images[0] };
+
+    // Update WhatsApp inquiry button state
+    updateInquiryButton(size, price, null);
+
+    // Auto-scroll on mobile
+    if (window.innerWidth < 768) {
+        const container = document.querySelector('.detail-view-container');
+        if (container) window.scrollTo({ top: container.offsetTop, behavior: 'smooth' });
+    }
+};
+
+window.selectColor = (price, color, imgs, el) => {
+    // Update price
+    const priceDisplay = document.querySelector('.detail-price-text');
+    if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+
+    // Handle images
+    const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
+    if (images.length > 0) {
+        const mainImg = document.getElementById('main-detail-img');
+        if (mainImg) {
+            mainImg.src = getOptimizedUrl(images[0], 1200);
+            mainImg.closest('.zoom-img-container')?.setAttribute('onclick', `openFullScreen('${images[0]}')`);
+        }
+
+        // Update thumbnail grid
+        const thumbGrid = document.getElementById('detail-thumb-grid');
+        if (thumbGrid) {
+            thumbGrid.innerHTML = images.map((img, i) => `
+                <div class="thumb-box ${i === 0 ? 'active' : ''}" onclick="switchImg('${img}', this)">
+                    <img src="${getOptimizedUrl(img, 300)}">
+                </div>
+            `).join('');
+        }
+    }
+
+    // Highlight selected color swatch
+    document.querySelectorAll('.color-swatch').forEach(b => {
+        b.classList.remove('border-black', 'scale-110');
+        b.classList.add('border-white');
+    });
+
+    const swatch = el.querySelector('.color-swatch');
+    if (swatch) {
+        swatch.classList.remove('border-white');
+        swatch.classList.add('border-black', 'scale-110');
+    }
+
+    // Update state for wishlist
+    state.currentVar = { color, price, img: images[0] };
+
+    // Update WhatsApp inquiry button state
+    updateInquiryButton(null, price, color);
+
+    // Auto-scroll on mobile
+    if (window.innerWidth < 768) {
+        const container = document.querySelector('.detail-view-container');
+        if (container) window.scrollTo({ top: container.offsetTop, behavior: 'smooth' });
+    }
+};
+
+function updateInquiryButton(selectedSize, selectedPrice, selectedColor) {
+    const inquiryBtn = document.getElementById('main-inquiry-btn');
+    if (!inquiryBtn) return;
+
+    // Extract existing values if not provided
+    const match = inquiryBtn.getAttribute('onclick').match(/inquireOnWhatsApp\('([^']+)'(?:, '([^']*)')?(?:, '([^']*)')?(?:, '([^']*)')?\)/);
+    if (!match) return;
+
+    const id = match[1];
+    const currentSize = selectedSize !== null ? selectedSize : (match[2] !== 'null' ? match[2] : null);
+    const currentPrice = selectedPrice !== null ? selectedPrice : (match[3] !== 'null' ? match[3] : null);
+    const currentColor = selectedColor !== null ? selectedColor : (match[4] !== 'null' ? match[4] : null);
+
+    let args = `'${id}'`;
+    if (currentSize) args += `, '${currentSize}'`; else args += `, null`;
+    if (currentPrice) args += `, '${currentPrice}'`; else args += `, null`;
+    if (currentColor) args += `, '${currentColor}'`;
+
+    inquiryBtn.setAttribute('onclick', `inquireOnWhatsApp(${args})`);
+}
 
 function showToast(msg) {
     const t = document.getElementById('toast'); if (!t) return;
@@ -1134,11 +1797,194 @@ function showToast(msg) {
     setTimeout(() => { t.style.display = 'none'; }, 3000);
 }
 
-function getOptimizedUrl(url) {
+window.shareProduct = async (id, name) => {
+    const url = `${window.location.origin}${window.location.pathname}?p=${id}`;
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: name, url: url });
+        } catch (err) { console.log('Share Cancelled'); }
+    } else {
+        try {
+            await navigator.clipboard.writeText(url);
+            showToast("Link Copied to Clipboard");
+        } catch (err) { showToast("Copy Failed"); }
+    }
+};
+
+window.handleFavoritesClick = () => {
+    if (window.innerWidth < 768) {
+        window.openFavoritesSidebar();
+    } else {
+        applyFilter('wishlist');
+    }
+};
+
+window.openFavoritesSidebar = () => {
+    const sidebar = document.getElementById('favorites-sidebar');
+    const overlay = document.getElementById('favorites-sidebar-overlay');
+    if (sidebar && overlay) {
+        renderFavoritesSidebar();
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+};
+
+window.closeFavoritesSidebar = () => {
+    const sidebar = document.getElementById('favorites-sidebar');
+    const overlay = document.getElementById('favorites-sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+        document.body.style.overflow = 'auto';
+    }
+};
+
+window.renderFavoritesSidebar = () => {
+    const container = document.getElementById('sidebar-items');
+    if (!container) return;
+
+    if (state.wishlist.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-20 text-center px-6">
+                <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-heart text-gray-200 text-2xl"></i>
+                </div>
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Your list is empty</p>
+                <p class="text-[9px] text-gray-300 mt-2 leading-relaxed">Add items you love to find them here easily.</p>
+            </div>
+        `;
+        document.getElementById('sidebar-inquiry-btn')?.classList.add('hidden');
+        return;
+    }
+
+    document.getElementById('sidebar-inquiry-btn')?.classList.remove('hidden');
+
+    const items = state.wishlist.map(entry => {
+        const id = typeof entry === 'string' ? entry : entry.id;
+        const p = DATA.p.find(x => x.id === id);
+        if (!p) return null;
+
+        let displayP = { ...p };
+        let preSelect = null;
+        if (entry.var) {
+            displayP = { ...displayP, ...entry.var };
+            preSelect = entry.var;
+        }
+        return { ...displayP, originalId: id, preSelect };
+    }).filter(x => x);
+
+    container.innerHTML = items.map(p => `
+                                <div class="sidebar-item group" onclick="window.closeFavoritesSidebar(); viewDetail('${p.originalId}', false, ${p.preSelect ? JSON.stringify(p.preSelect) : 'null'})">
+                                    <div class="sidebar-img-box">
+                                        <img src="${getOptimizedUrl(p.img, 300)}" alt="${p.name}">
+                                    </div>
+                                    <div class="sidebar-info">
+                                        <h4 class="sidebar-item-name">${p.name}</h4>
+                                        <p class="sidebar-item-price">${p.price} AED</p>
+                                    </div>
+                                    <button onclick="event.stopPropagation(); window.toggleWishlist(null, '${p.originalId}')"
+                                        class="sidebar-remove-btn shadow-sm">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                                `).join('');
+};
+
+function getOptimizedUrl(url, width) {
     if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return url;
-    if (url.includes('f_auto,q_auto')) return url;
-    // Inject f_auto,q_auto after /upload/
-    return url.replace('/upload/', '/upload/f_auto,q_auto/');
+
+    const baseTransform = 'f_auto,q_auto';
+    const widthTransform = width ? `,w_${width},c_limit` : '';
+    const fullTransform = baseTransform + widthTransform;
+
+    if (url.includes('/upload/f_auto,q_auto')) {
+        if (width && !url.includes(',w_')) {
+            return url.replace('/upload/f_auto,q_auto', `/upload/${fullTransform}`);
+        }
+        return url;
+    }
+
+    return url.replace('/upload/', `/upload/${fullTransform}/`);
 }
+
+async function trackProductView(id) {
+    if (!id || typeof id !== 'string') return;
+    try {
+        const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+        await updateDoc(pRef, {
+            views: increment(1)
+        });
+    } catch (e) {
+        console.error("View tracking error:", e);
+    }
+}
+
+function getBadgeLabel(badge) {
+    const labels = {
+        'new': 'New Arrival',
+        'best': 'Best Seller',
+        'limited': 'Limited Stock',
+        'sale': 'On Sale',
+        'trending': 'Trending'
+    };
+    return labels[badge] || badge;
+}
+
+function renderInsights(container) {
+    const topProducts = [...DATA.p]
+        .filter(p => (p.views || 0) > 0)
+        .sort((a, b) => (b.views || 0) - (a.views || 0))
+        .slice(0, 15);
+
+    if (topProducts.length === 0) {
+        container.innerHTML = `<div class="py-40 text-center"><p class="text-[12px] text-gray-300 font-bold uppercase tracking-widest italic">No data available yet.</p></div>`;
+        return;
+    }
+
+    let html = `
+        <div class="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 mb-8 flex items-center justify-between">
+            <div>
+                <h5 class="text-[10px] font-black uppercase tracking-widest text-blue-400">Total Insights Tracking</h5>
+                <p class="text-[20px] font-black text-blue-900">${DATA.p.reduce((acc, p) => acc + (p.views || 0), 0)} Total Views</p>
+            </div>
+            <i class="fa-solid fa-chart-line text-blue-200 text-3xl"></i>
+        </div>
+        <div class="space-y-3">
+    `;
+
+    html += topProducts.map((p, i) => `
+        <div class="flex items-center gap-5 p-4 bg-white rounded-[2rem] border border-gray-100 hover:border-black transition-all group">
+            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center font-black text-[12px] text-gray-400 group-hover:bg-black group-hover:text-white transition-all shadow-inner">${i + 1}</div>
+            <img src="${getOptimizedUrl(p.img, 200)}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+            <div class="flex-1 min-w-0">
+                <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
+                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">${DATA.c.find(c => c.id === p.catId)?.name || 'Uncategorized'}</p>
+            </div>
+            <div class="text-right px-4 border-l border-gray-50">
+                <p class="text-[18px] font-black tracking-tighter text-black leading-none">${p.views || 0}</p>
+                <p class="text-[8px] font-black uppercase text-gray-300 tracking-[0.1em] mt-1">Views</p>
+            </div>
+        </div>
+    `).join('');
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+window.focusSearch = () => {
+    // Navigate home first if we're not there
+    if (new URLSearchParams(window.location.search).has('p') || state.filter === 'wishlist' || state.selectionId) {
+        window.goBackToHome(true);
+    }
+
+    setTimeout(() => {
+        const searchInput = document.getElementById('customer-search');
+        if (searchInput) {
+            searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            searchInput.focus();
+        }
+    }, 300);
+};
 
 startSync();
