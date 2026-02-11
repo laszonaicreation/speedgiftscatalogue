@@ -19,8 +19,9 @@ const appId = firebaseConfig.projectId;
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
+const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
 
-let DATA = { p: [], c: [] };
+let DATA = { p: [], c: [], s: [] };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
 let clicks = 0, lastClickTime = 0;
 
@@ -166,9 +167,17 @@ window.toggleWishlist = async (e, id) => {
 async function refreshData(isNavigationOnly = false) {
     try {
         if (!isNavigationOnly || DATA.p.length === 0) {
-            const [pSnap, cSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
+            const [pSnap, cSnap, sSnap] = await Promise.all([
+                getDocs(prodCol),
+                getDocs(catCol),
+                getDocs(sliderCol).catch(e => {
+                    console.error("Slider fetch failed:", e);
+                    return { docs: [] };
+                })
+            ]);
             DATA.p = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            DATA.s = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         }
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('s');
@@ -513,6 +522,8 @@ function renderHome() {
                 </div>`;
             }).join('') || `<p class="col-span-full text-center py-40 text-gray-300 italic text-[11px]">No items found.</p>`;
         }
+
+        renderSlider();
 
         // 5. Update Search & Sort UI
         if (discSearch && discSearch !== document.activeElement) discSearch.value = state.search;
@@ -875,7 +886,7 @@ window.saveProduct = async () => {
     if (!data.name || !data.img) return showToast("Required info missing");
     if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
     try { if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id), data); else await addDoc(prodCol, data); showToast("Synced Successfully"); resetForm(); DATA.p = []; refreshData(); }
-    catch (e) { showToast("Save Error"); } finally { if (btn) { btn.disabled = false; btn.innerText = "Sync Product"; } }
+    catch (e) { console.error("Save Error:", e); showToast("Save Error"); } finally { if (btn) { btn.disabled = false; btn.innerText = "Sync Product"; } }
 };
 
 window.saveCategory = async () => {
@@ -890,7 +901,7 @@ window.saveCategory = async () => {
     if (!data.name) return showToast("Name required");
     if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
     try { if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id), data); else await addDoc(catCol, data); showToast("Category Synced"); resetForm(); DATA.p = []; refreshData(); }
-    catch (e) { showToast("Category Error"); } finally { if (btn) { btn.disabled = false; btn.innerText = "Sync Category"; } }
+    catch (e) { console.error("Category Error:", e); showToast("Category Error"); } finally { if (btn) { btn.disabled = false; btn.innerText = "Sync Category"; } }
 };
 
 window.deleteProduct = async (id) => { if (!confirm("Are you sure?")) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id)); showToast("Deleted"); refreshData(); } catch (e) { showToast("Delete Error"); } };
@@ -1447,23 +1458,27 @@ window.switchAdminTab = (tab) => {
     state.adminTab = tab;
     const isProd = tab === 'products';
     const isCat = tab === 'categories';
+    const isSlider = tab === 'sliders';
     const isInsight = tab === 'insights';
 
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
+    document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
     document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
 
     document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
+    document.getElementById('admin-slider-list').classList.toggle('hidden', !isSlider);
     document.getElementById('admin-insights-list').classList.toggle('hidden', !isInsight);
 
     document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
 
     document.getElementById('tab-p').className = isProd ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
     document.getElementById('tab-c').className = isCat ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
+    document.getElementById('tab-s').className = isSlider ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
     document.getElementById('tab-i').className = isInsight ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : "Popularity Insights");
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : "Popularity Insights"));
     renderAdminUI();
 };
 
@@ -1481,7 +1496,7 @@ function populateAdminCatFilter() {
 
 window.resetForm = () => {
     // Basic fields
-    const fields = ['edit-id', 'p-name', 'p-price', 'p-size', 'p-material', 'p-desc', 'p-keywords', 'c-name', 'p-badge']; // Added 'p-badge'
+    const fields = ['edit-id', 'p-name', 'p-price', 'p-size', 'p-material', 'p-desc', 'p-keywords', 'c-name', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order']; // Added 'p-badge'
     fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) el.value = "";
@@ -1499,6 +1514,12 @@ window.resetForm = () => {
     if (pTitle) pTitle.innerText = "Product Details";
     const cTitle = document.getElementById('c-form-title');
     if (cTitle) cTitle.innerText = "New Category";
+    const sTitle = document.getElementById('s-form-title');
+    if (sTitle) sTitle.innerText = "New Slider Image";
+    const sImgField = document.getElementById('s-img');
+    if (sImgField) sImgField.value = "img/";
+    const sMobileImgField = document.getElementById('s-mobileImg');
+    if (sMobileImgField) sMobileImgField.value = "img/";
 
     // Clear dynamic grids
     const grids = ['variation-rows', 'color-variation-rows', 'p-image-grid'];
@@ -1987,4 +2008,288 @@ window.focusSearch = () => {
     }, 300);
 };
 
+// SLIDER LOGIC
+let sliderInterval;
+let currentSlide = 0;
+
+function renderSlider() {
+    const container = document.getElementById('app')?.querySelector('#home-slider-container');
+    const slider = document.getElementById('app')?.querySelector('#home-slider');
+    const dots = document.getElementById('app')?.querySelector('#slider-dots');
+
+    if (!slider || !DATA.s.length || state.filter !== 'all' || state.search || state.selectionId) {
+        if (container) container.classList.add('hidden');
+        return;
+    }
+
+    if (container) container.classList.remove('hidden');
+
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    const sortedSliders = [...DATA.s].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
+    // RELAXED FILTERING: Block only the default placeholder
+    const isUrl = (val) => val && typeof val === 'string' && val.trim() !== '' && val !== 'img/';
+
+    const visibleSliders = sortedSliders.filter(s => {
+        const hasMobile = isUrl(s.mobileImg);
+        const hasDesktop = isUrl(s.img);
+        return isMobile ? hasMobile : hasDesktop;
+    });
+
+    if (!visibleSliders.length) {
+        if (container) container.classList.add('hidden');
+        return;
+    }
+
+    slider.innerHTML = visibleSliders.map((s, i) => {
+        const displayImg = isMobile ? s.mobileImg : s.img;
+        return `
+            <div class="slider-slide" data-index="${i}">
+                <img src="${getOptimizedUrl(displayImg, isMobile ? 800 : 1920)}" alt="${s.title || ''}" onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" style="${s.link ? 'cursor:pointer' : ''}">
+                ${s.title ? `<div class="absolute bottom-12 left-8 md:left-12 text-white z-20">
+                    <h2 class="text-2xl md:text-5xl font-black uppercase tracking-tighter">${s.title}</h2>
+                </div>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    if (dots) {
+        dots.innerHTML = visibleSliders.map((_, i) => `
+            <div class="slider-dot ${i === 0 ? 'active' : ''}" onclick="window.goToSlide(${i})"></div>
+        `).join('');
+    }
+
+    currentSlide = 0;
+    startSliderAutoPlay();
+}
+
+window.moveSlider = (dir) => {
+    const slider = document.getElementById('home-slider');
+    if (!slider) return;
+    const slides = slider.querySelectorAll('.slider-slide');
+    currentSlide = (currentSlide + dir + slides.length) % slides.length;
+    updateSliderUI();
+};
+
+window.goToSlide = (index) => {
+    currentSlide = index;
+    updateSliderUI();
+};
+
+function updateSliderUI() {
+    const slider = document.getElementById('home-slider');
+    const dots = document.querySelectorAll('.slider-dot');
+    if (!slider) return;
+
+    slider.scrollTo({
+        left: slider.offsetWidth * currentSlide,
+        behavior: 'smooth'
+    });
+
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentSlide);
+    });
+
+    startSliderAutoPlay(); // Reset timer
+}
+
+function startSliderAutoPlay() {
+    clearInterval(sliderInterval);
+    sliderInterval = setInterval(() => {
+        window.moveSlider(1);
+    }, 5000);
+}
+
+// ADMIN SLIDER FUNCTIONS
+window.saveSlider = async () => {
+    const id = document.getElementById('edit-slider-id').value;
+    const sliderData = {
+        img: document.getElementById('s-img').value.trim(),
+        mobileImg: document.getElementById('s-mobileImg').value.trim(),
+        title: document.getElementById('s-title').value.trim(),
+        link: document.getElementById('s-link').value.trim(),
+        order: Number(document.getElementById('s-order').value) || 0,
+        updatedAt: Date.now()
+    };
+
+    const isUrl = (val) => val && typeof val === 'string' && val.trim() !== '' && val !== 'img/';
+    const hasImg = isUrl(sliderData.img);
+    const hasMobileImg = isUrl(sliderData.mobileImg);
+
+    if (!hasImg && !hasMobileImg) return showToast("Image is required");
+
+    try {
+        if (id) {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sliders', id), sliderData);
+            showToast("Slider Updated");
+        } else {
+            await addDoc(sliderCol, sliderData);
+            showToast("Slider Added");
+        }
+        resetForm();
+        DATA.s = []; // Clear local to force refresh
+        refreshData();
+    } catch (e) {
+        console.error("Slider Save Error:", e);
+        showToast("Error saving slider");
+    }
+};
+
+window.cloudinaryBulkSliderUpload = (type) => {
+    cloudinary.openUploadWidget({
+        cloudName: 'dxkcvm2yh',
+        uploadPreset: 'speed_preset',
+        multiple: true,
+        maxFiles: 20,
+        sources: ['local', 'url', 'camera']
+    }, async (error, result) => {
+        if (!error && result && result.event === "success") {
+            const url = result.info.secure_url;
+            showToast(`Saving ${type} image...`);
+
+            const sliderData = {
+                title: "",
+                link: "",
+                order: DATA.s.length + 1,
+                updatedAt: Date.now()
+            };
+
+            if (type === 'desktop') {
+                sliderData.img = url;
+                sliderData.mobileImg = "img/";
+            } else {
+                sliderData.img = "img/";
+                sliderData.mobileImg = url;
+            }
+
+            try {
+                await addDoc(sliderCol, sliderData);
+                DATA.s = []; // Trigger full refresh
+                refreshData();
+                showToast(`New ${type} slider added!`);
+            } catch (err) {
+                console.error("Bulk Upload Save Error:", err);
+                showToast("Save failed");
+            }
+        }
+    });
+};
+
+window.handleSliderBulkDrop = async (e, type) => {
+    e.preventDefault();
+    const zone = e.currentTarget;
+    zone.classList.remove('border-black', 'bg-gray-50');
+
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (!files.length) return showToast("No images found.");
+
+    showToast(`Uploading ${files.length} ${type} images...`);
+
+    for (const file of files) {
+        try {
+            const url = await directCloudinaryUpload(file);
+            const sliderData = {
+                title: "",
+                link: "",
+                order: DATA.s.length + 1,
+                updatedAt: Date.now(),
+                img: type === 'desktop' ? url : "img/",
+                mobileImg: type === 'mobile' ? url : "img/"
+            };
+            await addDoc(sliderCol, sliderData);
+        } catch (err) {
+            console.error("Bulk Drop Error:", err);
+            showToast("One or more uploads failed");
+        }
+    }
+
+    DATA.s = [];
+    refreshData();
+    showToast("Bulk Upload Complete!");
+};
+
+window.editSlider = (id) => {
+    const s = DATA.s.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('edit-slider-id').value = s.id;
+    document.getElementById('s-img').value = s.img;
+    document.getElementById('s-mobileImg').value = s.mobileImg || "img/";
+    document.getElementById('s-title').value = s.title || "";
+    document.getElementById('s-link').value = s.link || "";
+    document.getElementById('s-order').value = s.order || 0;
+    document.getElementById('slider-form-title').innerText = "Edit Slider Image";
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.deleteSlider = async (id) => {
+    if (!confirm("Are you sure?")) return;
+    try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sliders', id));
+        showToast("Slider Deleted");
+        refreshData();
+    } catch (e) {
+        showToast("Error deleting slider");
+    }
+};
+
+function renderAdminSliders(container) {
+    const sorted = [...DATA.s].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+    container.innerHTML = sorted.map(s => {
+        const hasMobile = s.mobileImg && s.mobileImg !== 'img/';
+        const hasDesktop = s.img && s.img !== 'img/';
+
+        return `
+            <div class="admin-slider-card">
+                <div class="flex gap-4 w-full">
+                    <div class="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 border">
+                        <img src="${getOptimizedUrl(s.img, 200)}" class="w-full h-full object-cover ${!hasDesktop ? 'opacity-20 grayscale' : ''}">
+                        <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[7px] text-center font-bold uppercase py-1">Desktop</div>
+                    </div>
+                    <div class="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 border">
+                        <img src="${getOptimizedUrl(s.mobileImg, 200)}" class="w-full h-full object-cover ${!hasMobile ? 'opacity-20 grayscale' : ''}" onerror="this.src='https://placehold.co/200x200?text=No+Mobile'">
+                        <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[7px] text-center font-bold uppercase py-1">Mobile</div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-[13px] truncate">${s.title || 'Untitled Slide'}</p>
+                        <p class="text-[9px] text-gray-400 font-black uppercase mt-1">Order: ${s.order}</p>
+                        <div class="flex gap-2 mt-2">
+                             ${hasDesktop ? '<span class="px-2 py-0.5 bg-blue-50 text-blue-400 text-[7px] font-black rounded-full uppercase">Desktop On</span>' : '<span class="px-2 py-0.5 bg-gray-50 text-gray-300 text-[7px] font-black rounded-full uppercase">Desktop Off</span>'}
+                             ${hasMobile ? '<span class="px-2 py-0.5 bg-green-50 text-green-400 text-[7px] font-black rounded-full uppercase">Mobile On</span>' : '<span class="px-2 py-0.5 bg-gray-50 text-gray-300 text-[7px] font-black rounded-full uppercase">Mobile Off</span>'}
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="editSlider('${s.id}')" class="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:text-black transition-all">
+                            <i class="fa-solid fa-pen text-[10px]"></i>
+                        </button>
+                        <button onclick="deleteSlider('${s.id}')" class="w-8 h-8 flex items-center justify-center bg-red-50 rounded-full text-red-200 hover:text-red-500 transition-all">
+                            <i class="fa-solid fa-trash text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Sliders</p>`;
+}
+
+// Update renderAdminUI to handle sliders
+const originalRenderAdminUI = window.renderAdminUI;
+window.renderAdminUI = () => {
+    originalRenderAdminUI();
+    const sList = document.getElementById('admin-slider-list');
+    if (sList && state.adminTab === 'sliders') {
+        renderAdminSliders(sList);
+    }
+};
+
 startSync();
+
+// Responsive Slider Refresh
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (document.getElementById('home-slider-container')) {
+            renderSlider();
+        }
+    }, 250);
+});

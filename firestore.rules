@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper: Check if user is authenticated (includes anonymous)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 1. Products, Categories, and Sliders: Public Read, Authenticated Write
+    match /artifacts/speed-catalogue/public/data/products/{productId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    match /artifacts/speed-catalogue/public/data/categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    match /artifacts/speed-catalogue/public/data/sliders/{sliderId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // 2. Shared Selections: Public Read, Authenticated Create
+    match /artifacts/speed-catalogue/public/data/selections/{selectionId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // 3. Wishlists: Only the owner can read/write their own wishlist
+    match /artifacts/speed-catalogue/users/{userId}/data/wishlist {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // 4. Default deny for all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
