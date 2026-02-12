@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -21,9 +21,72 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
 
-let DATA = { p: [], c: [], s: [] };
+let DATA = { p: [], c: [], s: [], stats: { adVisits: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
 let clicks = 0, lastClickTime = 0;
+
+// AD TRACKING HELPERS
+window.trackWhatsAppInquiry = async (id) => {
+    console.log(`[Ad Tracking] WhatsApp Inquiry: ${id}`);
+    if (window.gtag) {
+        window.gtag('event', 'whatsapp_inquiry', { 'product_id': id });
+    }
+
+    // Record Ad Inquiry (Conversion)
+    if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+        try {
+            console.log(`[Ad Tracking] Recording Inquiry for ${id}...`);
+            // Update Global Stats
+            const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+            await setDoc(globalStatsRef, { adInquiries: increment(1) }, { merge: true });
+
+            // Update Product-Specific Inquiries if it's a single product
+            if (id !== 'bulk_inquiry') {
+                const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+                await updateDoc(pRef, { adInquiries: increment(1) });
+            }
+            console.log("[Ad Tracking] Inquiry recorded successfully.");
+        } catch (e) {
+            console.error("[Ad Tracking] Inquiry tracking error:", e);
+        }
+    }
+};
+
+/* DEBUG MODE HELPER: Run 'checkAdData()' in console to verify tracking */
+window.checkAdData = () => {
+    console.log("--- AD TRACKING DEBUG ---");
+    console.log("Traffic Source Detected:", sessionStorage.getItem('traffic_source'));
+    console.log("Tracked this session?:", sessionStorage.getItem('ad_visit_tracked_v3'));
+    console.log("Current Data Memory State:", DATA.stats);
+    console.log("Global Doc in DB Fetch:", DATA.p.find(p => p.id === '_ad_stats_'));
+    const testProd = DATA.p.find(p => p.adInquiries > 0);
+    console.log("Example Product with Inquiries:", testProd ? `${testProd.name}: ${testProd.adInquiries}` : "None found yet");
+    console.log("-------------------------");
+};
+
+// REFERRAL DETECTION
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('gclid') || urlParams.get('utm_source') === 'google') {
+    sessionStorage.setItem('traffic_source', 'Google Ads');
+} else if (urlParams.has('utm_source')) {
+    sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+}
+
+async function trackAdVisit() {
+    const sessionKey = 'ad_visit_tracked_v3';
+    if (sessionStorage.getItem(sessionKey)) return;
+    try {
+        console.log("[Ad Tracking] Attempting to record visit in products/_ad_stats_...");
+        // Path: artifacts/speed-catalogue/public/data/products/_ad_stats_
+        // Using 'products' collection because write permissions are confirmed there
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        await setDoc(statsRef, { adVisits: increment(1) }, { merge: true });
+        sessionStorage.setItem(sessionKey, 'true');
+        console.log("[Ad Tracking] SUCCESS: Visit recorded.");
+    } catch (e) {
+        console.error("[Ad Tracking] PERMISSION DENIED: Still blocked by Firebase Rules.", e);
+    }
+}
 
 const startSync = async () => {
     try { await signInAnonymously(auth); }
@@ -33,8 +96,12 @@ const startSync = async () => {
 onAuthStateChanged(auth, async (u) => {
     state.user = u;
     if (u) {
+        // Track Ad Visit once authenticated
+        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+            await trackAdVisit();
+        }
         await loadWishlist();
-        refreshData();
+        await refreshData();
     }
 });
 
@@ -178,6 +245,13 @@ async function refreshData(isNavigationOnly = false) {
             DATA.p = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.s = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Extract stats from products collection
+            const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
+            DATA.stats = statsDoc || { adVisits: 0 };
+            // Remove the stats document and any other internal stats docs from the products list
+            DATA.p = DATA.p.filter(p => p.id !== '_ad_stats_' && p.id !== '--global-stats--');
+            console.log("[Ad Tracking] UI Refreshed. Counter is now:", DATA.stats.adVisits);
         }
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('s');
@@ -476,6 +550,9 @@ function renderHome() {
         }
         if (activeCatTitle) activeCatTitle.innerText = catNameDisplay;
         if (activeCatTitleMob) activeCatTitleMob.innerText = catNameDisplay;
+
+        // Dynamic Page Title for Ads/SEO
+        document.title = `${catNameDisplay} | Speed Gifts Catalogue`;
         if (selectAllBtn) {
             const visibleIds = filtered.map(p => p.id);
             const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
@@ -579,6 +656,9 @@ window.viewDetail = (id, skipHistory = false, preSelect = null) => {
 
         // Track View (Only if not just going back in history)
         trackProductView(id);
+
+        // Dynamic Page Title for Detail View
+        document.title = `${p.name} | Speed Gifts Catalogue`;
     }
     const appMain = document.getElementById('app');
     if (!appMain) return;
@@ -1216,6 +1296,10 @@ window.sendBulkInquiry = () => {
         msg += `${i + 1}. *${item.name}* - ${item.price} AED\nLink: ${pUrl}\n\n`;
     });
 
+    const source = sessionStorage.getItem('traffic_source');
+    if (source) msg += `\n\n[Source: ${source}]`;
+
+    window.trackWhatsAppInquiry('bulk_inquiry');
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
@@ -1229,7 +1313,12 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
     if (selectedColor) details += `\n*Color:* ${selectedColor}`;
     if (!selectedSize && !selectedColor && p.size) details += `\n*Size:* ${p.size}`;
 
-    const msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${price} AED${details}\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
+    let msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${price} AED${details}\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
+
+    const source = sessionStorage.getItem('traffic_source');
+    if (source) msg += `\n\n[Source: ${source}]`;
+
+    window.trackWhatsAppInquiry(p.id);
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
@@ -1933,9 +2022,16 @@ async function trackProductView(id) {
     if (!id || typeof id !== 'string') return;
     try {
         const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-        await updateDoc(pRef, {
+        const updateData = {
             views: increment(1)
-        });
+        };
+
+        // Check if visitor is from Google Ads
+        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+            updateData.adViews = increment(1);
+        }
+
+        await updateDoc(pRef, updateData);
     } catch (e) {
         console.error("View tracking error:", e);
     }
@@ -1958,40 +2054,130 @@ function renderInsights(container) {
         .sort((a, b) => (b.views || 0) - (a.views || 0))
         .slice(0, 15);
 
-    if (topProducts.length === 0) {
-        container.innerHTML = `<div class="py-40 text-center"><p class="text-[12px] text-gray-300 font-bold uppercase tracking-widest italic">No data available yet.</p></div>`;
-        return;
-    }
-
     let html = `
-        <div class="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 mb-8 flex items-center justify-between">
-            <div>
-                <h5 class="text-[10px] font-black uppercase tracking-widest text-blue-400">Total Insights Tracking</h5>
-                <p class="text-[20px] font-black text-blue-900">${DATA.p.reduce((acc, p) => acc + (p.views || 0), 0)} Total Views</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div class="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 flex items-center justify-between group">
+                <div>
+                    <h5 class="text-[10px] font-black uppercase tracking-widest text-blue-400">Total Catalog Usage</h5>
+                    <div class="flex items-baseline gap-3">
+                        <p class="text-[20px] font-black text-blue-900">${DATA.p.reduce((acc, p) => acc + (p.views || 0), 0)} Total Views</p>
+                        <button onclick="resetAllAnalytics()" class="text-[9px] font-black uppercase text-blue-300 hover:text-red-500 transition-all ml-2 underline underline-offset-4 decoration-blue-200 hover:decoration-red-200">
+                            Master Reset
+                        </button>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chart-line text-blue-200 text-3xl"></i>
             </div>
-            <i class="fa-solid fa-chart-line text-blue-200 text-3xl"></i>
+            <div class="bg-purple-50 p-6 rounded-[2rem] border border-purple-100 flex items-center justify-between group">
+                <div>
+                    <h5 class="text-[10px] font-black uppercase tracking-widest text-purple-400">Google Ads Performance</h5>
+                    <div class="space-y-1">
+                        <div class="flex items-baseline gap-3">
+                            <p class="text-[20px] font-black text-purple-900">${DATA.stats.adVisits || 0} Ad Visitors</p>
+                            <button onclick="resetAdTraffic()" class="text-[9px] font-black uppercase text-purple-300 hover:text-red-500 transition-all ml-2 underline underline-offset-4 decoration-purple-200 hover:decoration-red-200">
+                                Reset
+                            </button>
+                        </div>
+                        <p class="text-[12px] font-black text-purple-600 flex items-center gap-2">
+                            <i class="fa-brands fa-whatsapp"></i> ${DATA.stats.adInquiries || 0} Leads (Inquiries)
+                        </p>
+                    </div>
+                </div>
+                <i class="fa-brands fa-google text-purple-200 text-3xl"></i>
+            </div>
         </div>
-        <div class="space-y-3">
     `;
 
-    html += topProducts.map((p, i) => `
-        <div class="flex items-center gap-5 p-4 bg-white rounded-[2rem] border border-gray-100 hover:border-black transition-all group">
-            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center font-black text-[12px] text-gray-400 group-hover:bg-black group-hover:text-white transition-all shadow-inner">${i + 1}</div>
-            <img src="${getOptimizedUrl(p.img, 200)}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
-            <div class="flex-1 min-w-0">
-                <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
-                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">${DATA.c.find(c => c.id === p.catId)?.name || 'Uncategorized'}</p>
+    if (topProducts.length === 0) {
+        html += `<div class="py-20 text-center"><p class="text-[11px] text-gray-300 font-bold uppercase tracking-widest italic">No product views recorded yet.</p></div>`;
+    } else {
+        html += `<div class="space-y-3">`;
+        html += topProducts.map((p, i) => `
+            <div class="flex items-center gap-5 p-4 bg-white rounded-[2rem] border border-gray-100 hover:border-black transition-all group">
+                <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center font-black text-[12px] text-gray-400 group-hover:bg-black group-hover:text-white transition-all shadow-inner">${i + 1}</div>
+                <img src="${getOptimizedUrl(p.img, 200)}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">${DATA.c.find(c => c.id === p.catId)?.name || 'Uncategorized'}</p>
+                </div>
+                <div class="flex items-center gap-4 px-4 border-l border-gray-50">
+                    <div class="text-right">
+                        <p class="text-[12px] font-black tracking-tighter text-black leading-none">${p.views || 0}</p>
+                        <p class="text-[6px] font-black uppercase text-gray-300 tracking-[0.1em] mt-1">Views</p>
+                    </div>
+                    <div class="text-right pl-4 border-l border-gray-50">
+                        <p class="text-[12px] font-black tracking-tighter text-purple-600 leading-none">${p.adViews || 0}</p>
+                        <p class="text-[6px] font-black uppercase text-purple-300 tracking-[0.1em] mt-1">Ad Cnt</p>
+                    </div>
+                    <div class="text-right pl-4 border-l border-gray-50">
+                        <p class="text-[12px] font-black tracking-tighter text-green-600 leading-none">${p.adInquiries || 0}</p>
+                        <p class="text-[6px] font-black uppercase text-green-300 tracking-[0.1em] mt-1">Leads</p>
+                    </div>
+                </div>
             </div>
-            <div class="text-right px-4 border-l border-gray-50">
-                <p class="text-[18px] font-black tracking-tighter text-black leading-none">${p.views || 0}</p>
-                <p class="text-[8px] font-black uppercase text-gray-300 tracking-[0.1em] mt-1">Views</p>
-            </div>
-        </div>
-    `).join('');
+        `).join('');
+        html += `</div>`;
+    }
 
-    html += `</div>`;
     container.innerHTML = html;
 }
+
+window.resetAdTraffic = async () => {
+    if (!confirm("Are you sure you want to reset all Ad Traffic and Inquiry data to zero?")) return;
+    try {
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        await setDoc(statsRef, { adVisits: 0, adInquiries: 0 }, { merge: true });
+        DATA.stats.adVisits = 0;
+        DATA.stats.adInquiries = 0;
+        renderAdminUI();
+        showToast("Ad Data Reset Successfully");
+    } catch (e) {
+        console.error("Reset Error:", e);
+        showToast("Error resetting counter");
+    }
+};
+
+window.resetAllAnalytics = async () => {
+    if (!confirm("CRITICAL: This will reset ALL VIEWS, AD TRAFFIC, and LEADS for ALL products to zero. This cannot be undone. Proceed?")) return;
+
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = 'flex';
+
+    try {
+        const batch = writeBatch(db);
+
+        // 1. Reset Global Ad Stats
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        batch.set(statsRef, { adVisits: 0, adInquiries: 0 }, { merge: true });
+
+        // 2. Reset All Products (Views, AdViews, AdInquiries)
+        // Note: Firestore batch limit is 500. If more items exist, we do them in chunks.
+        const products = DATA.p;
+        products.forEach(p => {
+            const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', p.id);
+            batch.update(pRef, { views: 0, adViews: 0, adInquiries: 0 });
+        });
+
+        await batch.commit();
+
+        // Update Local memory
+        DATA.stats.adVisits = 0;
+        DATA.stats.adInquiries = 0;
+        DATA.p.forEach(p => {
+            p.views = 0;
+            p.adViews = 0;
+            p.adInquiries = 0;
+        });
+
+        renderAdminUI();
+        showToast("All Analytics Reset to Zero");
+    } catch (e) {
+        console.error("Master Reset Error:", e);
+        showToast("Error during Master Reset");
+    } finally {
+        if (loader) loader.style.display = 'none';
+    }
+};
 
 window.focusSearch = () => {
     // Navigate home first if we're not there
