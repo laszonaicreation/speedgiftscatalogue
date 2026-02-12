@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <!-- UI UPDATE: 2026-01-03 17:45 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Speed Gifts</title>
+    <title>Speed Gifts - Premium Gift Collection</title>
+    <meta name="description"
+        content="Discover premium gifts and personalized items at Speed Gifts. From engraved wood to custom cushions, find the perfect gift for every occasion.">
+    <meta name="keywords" content="gifts, personalized gifts, wood engraving, custom printing, Speed Gifts">
     <link rel="icon" type="image/png"
         href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
 
@@ -15,18 +18,17 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <!-- Cloudinary Widget deferred to only load when Admin panel is called -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript" defer></script>
 
-    <!-- GOOGLE ADS: Paste your Global Tag (gtag.js) here -->
-    <!-- 
+    <!-- GOOGLE ADS: Global Tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YOUR_ID"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-YOUR_ID');
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-YOUR_ID');
     </script>
-    -->
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -82,17 +84,6 @@
         </div>
     </nav>
 
-    <div id="loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center">
-        <div class="w-6 h-6 border-2 border-gray-100 border-t-black rounded-full animate-spin"></div>
-        <p class="mt-6 text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 animate-pulse">Loading Speed
-            Gifts Catalogue</p>
-    </div>
-    <script>
-        // Instant hide for shared links
-        if (window.location.search.includes('p=') || window.location.search.includes('s=')) {
-            document.getElementById('loader').style.display = 'none';
-        }
-    </script>
 
     <main id="app" class="max-w-7xl mx-auto px-5 pt-4 pb-48 min-h-screen">
         <!-- Unified App Container -->
@@ -521,33 +512,6 @@
     <!-- Instant Bypass & Security Warning -->
     <script>
         (function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const isDirectLink = urlParams.has('p') || urlParams.has('s');
-            const loader = document.getElementById('loader');
-
-            if (isDirectLink && loader) {
-                loader.style.display = 'none';
-            }
-
-            // Global Safety Timeout
-            setTimeout(() => {
-                const loader = document.getElementById('loader');
-                if (loader && loader.style.display !== 'none') {
-                    loader.style.display = 'none';
-
-                    // Show helpful message only if it seems blocked by CORS or loading error
-                    if (window.location.protocol === 'file:') {
-                        const lBox = document.querySelector('.loader-box');
-                        if (lBox) {
-                            const msg = document.createElement('p');
-                            msg.style.cssText = "position:absolute;bottom:15%;width:100%;text-align:center;font-size:10px;color:#ff4d4d;font-family:sans-serif;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:0 20px;";
-                            msg.innerText = "CORS Block: External JS requires a local server or hosting to work.";
-                            lBox.appendChild(msg);
-                        }
-                    }
-                }
-            }, 5000);
-
             if (window.location.protocol === 'file:') {
                 console.warn("Local file mode: Modular JS (app.js) might be blocked by CORS.");
             }

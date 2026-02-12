@@ -101,6 +101,7 @@ onAuthStateChanged(auth, async (u) => {
             await trackAdVisit();
         }
         await loadWishlist();
+        // Since we refreshData at start, this might be redundant but keeps state synced for logged in users
         await refreshData();
     }
 });
@@ -111,8 +112,6 @@ const handleReentry = () => {
         const pId = urlParams.get('p');
         if (pId) viewDetail(pId, true);
         else renderHome();
-        const loader = document.getElementById('loader');
-        if (loader) loader.style.display = 'none';
     } else if (auth.currentUser) {
         refreshData();
     }
@@ -136,14 +135,6 @@ window.onpopstate = () => {
     refreshData(true);
 };
 
-// GLOBAL SAFETY: Hide loader no matter what after 4 seconds
-setTimeout(() => {
-    const loader = document.getElementById('loader');
-    if (loader && loader.style.display !== 'none') {
-        console.warn("Safety loader hide triggered.");
-        loader.style.display = 'none';
-    }
-}, 4000);
 
 async function loadWishlist() {
     if (!state.user) return;
@@ -287,47 +278,33 @@ async function refreshData(isNavigationOnly = false) {
         populateAdminCatFilter();
         renderAdminUI();
 
-        const loader = document.getElementById('loader');
-        if (loader) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const isDirectLink = urlParams.has('p') || urlParams.has('s');
 
-            if (isDirectLink) {
-                loader.style.display = 'none';
-            } else {
-                // HIDE LOADER IMMEDIATELY as soon as data (links) are ready
-                loader.style.display = 'none';
+        // Preload in background (non-blocking)
+        const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img)).filter(u => u && u !== 'img/').slice(0, 10);
+        const stockFilter = (items) => items.filter(p => p.inStock !== false);
+        let filteredForPreload = [];
+        if (state.selectionId) filteredForPreload = DATA.p.filter(p => state.selected.includes(p.id));
+        else if (state.filter === 'wishlist') filteredForPreload = DATA.p.filter(p => state.wishlist.includes(p.id));
+        else if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
+        else filteredForPreload = stockFilter(DATA.p);
 
-                // Preload in background (non-blocking)
-                const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img)).filter(u => u && u !== 'img/').slice(0, 10);
-                const stockFilter = (items) => items.filter(p => p.inStock !== false);
-                let filteredForPreload = [];
-                if (state.selectionId) filteredForPreload = DATA.p.filter(p => state.selected.includes(p.id));
-                else if (state.filter === 'wishlist') filteredForPreload = DATA.p.filter(p => state.wishlist.includes(p.id));
-                else if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
-                else filteredForPreload = stockFilter(DATA.p);
+        filteredForPreload.sort((a, b) => {
+            const pinA = a.isPinned ? 1 : 0;
+            const pinB = b.isPinned ? 1 : 0;
+            if (pinA !== pinB) return pinB - pinA;
+            return (b.updatedAt || 0) - (a.updatedAt || 0);
+        });
 
-                filteredForPreload.sort((a, b) => {
-                    const pinA = a.isPinned ? 1 : 0;
-                    const pinB = b.isPinned ? 1 : 0;
-                    if (pinA !== pinB) return pinB - pinA;
-                    return (b.updatedAt || 0) - (a.updatedAt || 0);
-                });
+        const prodsToLoad = filteredForPreload.slice(0, 8).map(p => getOptimizedUrl(p.img)).filter(u => u && u !== 'img/');
+        const allToPreload = [...new Set([...prodsToLoad, ...iconsToLoad])];
 
-                const prodsToLoad = filteredForPreload.slice(0, 8).map(p => getOptimizedUrl(p.img)).filter(u => u && u !== 'img/');
-                const allToPreload = [...new Set([...prodsToLoad, ...iconsToLoad])];
-
-                // Fire and forget (don't await)
-                allToPreload.forEach(url => {
-                    const img = new Image();
-                    img.src = url;
-                });
-            }
-        }
+        // Fire and forget (don't await)
+        allToPreload.forEach(url => {
+            const img = new Image();
+            img.src = url;
+        });
     } catch (err) {
         console.error(err);
-        const loader = document.getElementById('loader');
-        if (loader) loader.style.display = 'none';
     }
 }
 
@@ -552,7 +529,7 @@ function renderHome() {
         if (activeCatTitleMob) activeCatTitleMob.innerText = catNameDisplay;
 
         // Dynamic Page Title for Ads/SEO
-        document.title = `${catNameDisplay} | Speed Gifts Catalogue`;
+        document.title = `${catNameDisplay} | Speed Gifts Website`;
         if (selectAllBtn) {
             const visibleIds = filtered.map(p => p.id);
             const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
@@ -658,7 +635,7 @@ window.viewDetail = (id, skipHistory = false, preSelect = null) => {
         trackProductView(id);
 
         // Dynamic Page Title for Detail View
-        document.title = `${p.name} | Speed Gifts Catalogue`;
+        document.title = `${p.name} | Speed Gifts Website`;
     }
     const appMain = document.getElementById('app');
     if (!appMain) return;
@@ -2468,6 +2445,7 @@ window.renderAdminUI = () => {
 };
 
 startSync();
+refreshData();
 
 // Responsive Slider Refresh
 let resizeTimer;
