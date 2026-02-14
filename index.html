@@ -1,8 +1,18 @@
 <!DOCTYPE html>
-<html lang="ml">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');</script>
+    <!-- End Google Tag Manager -->
     <!-- UI UPDATE: 2026-01-03 17:45 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Speed Gifts - Premium Gift Collection</title>
@@ -11,6 +21,7 @@
     <meta name="keywords" content="gifts, personalized gifts, wood engraving, custom printing, Speed Gifts">
     <link rel="icon" type="image/png"
         href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <link rel="canonical" href="https://speedgifts.ae/">
 
     <link rel="preconnect" href="https://res.cloudinary.com">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,18 +33,23 @@
     <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript" defer></script>
 
     <!-- GOOGLE ADS: Global Tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YOUR_ID"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-789546339"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-        gtag('config', 'G-YOUR_ID');
+        gtag('config', 'AW-789546339');
+        gtag('config', 'G-98ZMG3ZF7Z');
     </script>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="selection:bg-black selection:text-white">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P6WMHVN6" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
 
     <div id="toast"
         class="bg-black text-white px-8 py-4 rounded-xl shadow-2xl text-[10px] font-black tracking-widest uppercase">
@@ -87,6 +103,41 @@
 
     <main id="app" class="max-w-7xl mx-auto px-5 pt-4 pb-48 min-h-screen">
         <!-- Unified App Container -->
+        <!-- Static Skeleton UI for SEO & Ads bots -->
+        <div class="animate-pulse space-y-8 mt-8">
+            <div class="h-10 bg-gray-100 rounded-xl w-48"></div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Skeleton Item 1 -->
+                <div class="space-y-4">
+                    <div class="aspect-[4/5] bg-gray-100 rounded-2xl w-full"></div>
+                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                </div>
+                <!-- Skeleton Item 2 -->
+                <div class="space-y-4">
+                    <div class="aspect-[4/5] bg-gray-100 rounded-2xl w-full"></div>
+                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                </div>
+                <!-- Skeleton Item 3 -->
+                <div class="space-y-4">
+                    <div class="aspect-[4/5] bg-gray-100 rounded-2xl w-full"></div>
+                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                </div>
+                <!-- Skeleton Item 4 -->
+                <div class="space-y-4">
+                    <div class="aspect-[4/5] bg-gray-100 rounded-2xl w-full"></div>
+                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="hidden">
+                <h1>Speed Gifts Website - Premium Personalized Gifts</h1>
+                <p>Loading our latest collection of custom gifts, engraved wood, and personalized items. Please wait a
+                    moment while we fetch the best deals for you.</p>
+            </div>
+        </div>
     </main>
 
     <!-- Templates -->
@@ -246,18 +297,22 @@
                             <input type="hidden" id="edit-id">
                             <input type="text" id="p-name" class="admin-input" placeholder="Item Name">
                             <input type="text" id="p-price" class="admin-input" placeholder="Price (AED 50)">
-                            <select id="p-cat-id" class="admin-input cursor-pointer">
-                                <option value="">Select Category</option>
-                                <option value="new">New Arrival</option>
-                                <option value="best">Best Seller</option>
-                                <option value="limited">Limited Stock</option>
-                                <option value="sale">On Sale</option>
-                                <option value="trending">Trending</option>
-                            </select>
+                            <div class="grid grid-cols-2 gap-3">
+                                <select id="p-cat-id" class="admin-input cursor-pointer">
+                                    <option value="">Select Category</option>
+                                </select>
+                                <select id="p-badge" class="admin-input cursor-pointer">
+                                    <option value="">No Badge</option>
+                                    <option value="new">New Arrival</option>
+                                    <option value="best">Best Seller</option>
+                                    <option value="limited">Limited Stock</option>
+                                    <option value="sale">On Sale</option>
+                                    <option value="trending">Trending</option>
+                                </select>
+                            </div>
 
                             <div class="grid grid-cols-2 gap-3">
-                                <input type="text" id="p-size" class="admin-input"
-                                    placeholder="Static Size (Optional - Hide if variations used)">
+                                <input type="text" id="p-size" class="admin-input" placeholder="Static Size (Optional)">
                                 <input type="text" id="p-material" class="admin-input" placeholder="Material">
                             </div>
 

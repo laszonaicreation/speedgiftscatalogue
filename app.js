@@ -25,11 +25,43 @@ let DATA = { p: [], c: [], s: [], stats: { adVisits: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
 let clicks = 0, lastClickTime = 0;
 
-// AD TRACKING HELPERS
+// SEO HELPERS
+function updateMetaDescription(description) {
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = "description";
+        document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', description);
+}
+
+function updateCanonicalURL(queryString) {
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.rel = "canonical";
+        document.head.appendChild(canonical);
+    }
+    const baseUrl = 'https://speedgifts.ae/';
+    canonical.setAttribute('href', baseUrl + queryString);
+}
+
+let lastWhatsAppTrackTime = 0;
 window.trackWhatsAppInquiry = async (id) => {
+    const now = Date.now();
+    if (now - lastWhatsAppTrackTime < 2000) return; // Cooldown: Prevent multiple events within 2 seconds
+    lastWhatsAppTrackTime = now;
+
     console.log(`[Ad Tracking] WhatsApp Inquiry: ${id}`);
-    if (window.gtag) {
-        window.gtag('event', 'whatsapp_inquiry', { 'product_id': id });
+
+    // GTM / Google Ads Event -> We now use ONLY dataLayer for GTM to avoid duplicates
+    // If you have configured GTM to handle GA4 and Google Ads, this push is enough.
+    if (window.dataLayer) {
+        window.dataLayer.push({
+            'event': 'whatsapp_inquiry',
+            'product_id': id
+        });
     }
 
     // Record Ad Inquiry (Conversion)
@@ -66,7 +98,8 @@ window.checkAdData = () => {
 
 // REFERRAL DETECTION
 const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.has('gclid') || urlParams.get('utm_source') === 'google') {
+// Detect Google Ads traffic from various parameters (gclid, gbraid, wbraid, utm_source)
+if (urlParams.has('gclid') || urlParams.has('gbraid') || urlParams.has('wbraid') || urlParams.get('utm_source') === 'google') {
     sessionStorage.setItem('traffic_source', 'Google Ads');
 } else if (urlParams.has('utm_source')) {
     sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
@@ -111,7 +144,11 @@ const handleReentry = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const pId = urlParams.get('p');
         if (pId) viewDetail(pId, true);
-        else renderHome();
+        else {
+            renderHome();
+            updateMetaDescription("Discover premium gifts and personalized items at Speed Gifts. From engraved wood to custom cushions, find the perfect gift for every occasion.");
+            updateCanonicalURL('');
+        }
     } else if (auth.currentUser) {
         refreshData();
     }
@@ -254,6 +291,18 @@ async function refreshData(isNavigationOnly = false) {
         // Sync state from URL
         state.filter = catId || 'all';
         state.search = query || '';
+
+        // SMART CATEGORY MATCHING: If state.filter is not 'all', check if it's a Name instead of an ID
+        if (state.filter !== 'all' && state.filter !== 'wishlist') {
+            const foundById = DATA.c.find(c => c.id === state.filter);
+            if (!foundById) {
+                // Try matching by name (case-insensitive)
+                const foundByName = DATA.c.find(c => c.name.toLowerCase() === state.filter.toLowerCase());
+                if (foundByName) {
+                    state.filter = foundByName.id;
+                }
+            }
+        }
 
         if (!isAdminOpen) {
             if (prodId && DATA.p.length > 0) {
@@ -530,6 +579,12 @@ function renderHome() {
 
         // Dynamic Page Title for Ads/SEO
         document.title = `${catNameDisplay} | Speed Gifts Website`;
+        try {
+            updateMetaDescription(`Explore our ${catNameDisplay} collection at Speed Gifts. Premium selection of personalized gifts.`);
+            const cId = (state.filter !== 'all' && state.filter !== 'wishlist') ? state.filter : '';
+            updateCanonicalURL(cId ? `?c=${cId}` : '');
+        } catch (e) { console.error("SEO Update failed:", e); }
+
         if (selectAllBtn) {
             const visibleIds = filtered.map(p => p.id);
             const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
@@ -574,7 +629,18 @@ function renderHome() {
                         </div>
                     </div>
                 </div>`;
-            }).join('') || `<p class="col-span-full text-center py-40 text-gray-300 italic text-[11px]">No items found.</p>`;
+            }).join('') || `
+                <div class="col-span-full text-center py-40 px-6">
+                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fa-solid fa-box-open text-gray-200 text-xl"></i>
+                    </div>
+                    <h3 class="text-gray-900 font-bold text-[14px] mb-2 uppercase tracking-widest">Collection Coming Soon</h3>
+                    <p class="text-gray-400 text-[11px] mb-8 max-w-xs mx-auto">We are currently updating this category with premium new products. Explore our other collections in the meantime.</p>
+                    <button onclick="window.applyFilter('all')" class="bg-black text-white px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-105 active:scale-95 transition-all">
+                        View All Collections
+                    </button>
+                </div>
+            `;
         }
 
         renderSlider();
@@ -636,6 +702,10 @@ window.viewDetail = (id, skipHistory = false, preSelect = null) => {
 
         // Dynamic Page Title for Detail View
         document.title = `${p.name} | Speed Gifts Website`;
+        try {
+            updateMetaDescription(`Buy ${p.name} at Speed Gifts. ${p.desc ? p.desc.substring(0, 150) : 'Premium personalized gift item'}.`);
+            updateCanonicalURL(`?p=${p.id}`);
+        } catch (e) { console.error("SEO Update failed:", e); }
     }
     const appMain = document.getElementById('app');
     if (!appMain) return;
@@ -924,20 +994,20 @@ window.saveProduct = async () => {
     }).filter(v => v.color || v.price);
 
     const data = {
-        name: document.getElementById('p-name')?.value,
-        price: document.getElementById('p-price')?.value,
-        size: document.getElementById('p-size')?.value,
-        material: document.getElementById('p-material')?.value,
-        inStock: document.getElementById('p-stock')?.checked,
-        img: primaryImg,
-        images: images,
-        catId: document.getElementById('p-cat-id')?.value,
-        badge: document.getElementById('p-badge')?.value, // Collect badge
-        desc: document.getElementById('p-desc')?.value,
-        keywords: document.getElementById('p-keywords')?.value,
+        name: document.getElementById('p-name')?.value || "",
+        price: document.getElementById('p-price')?.value || "",
+        size: document.getElementById('p-size')?.value || "",
+        material: document.getElementById('p-material')?.value || "",
+        inStock: document.getElementById('p-stock')?.checked ?? true,
+        img: primaryImg || "img/",
+        images: images || [],
+        catId: document.getElementById('p-cat-id')?.value || "",
+        badge: document.getElementById('p-badge')?.value || "",
+        desc: document.getElementById('p-desc')?.value || "",
+        keywords: document.getElementById('p-keywords')?.value || "",
         isPinned: document.getElementById('p-pinned')?.checked || false,
-        variations: variations,
-        colorVariations: colorVariations,
+        variations: variations || [],
+        colorVariations: colorVariations || [],
         updatedAt: Date.now()
     };
     if (!data.name || !data.img) return showToast("Required info missing");
