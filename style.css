@@ -946,13 +946,67 @@ img[src=""] {
 }
 
 /* SIDEBAR STATE CLASSES */
-#favorites-sidebar.open {
+#favorites-sidebar.open,
+#categories-sidebar.open {
     transform: translateX(0);
 }
 
-#favorites-sidebar-overlay.open {
+#favorites-sidebar-overlay.open,
+#categories-sidebar-overlay.open {
     opacity: 1;
     pointer-events: auto;
+}
+
+.sidebar-cat-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid #f8f8f8;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.sidebar-cat-item:active {
+    background: #fdfdfd;
+    transform: scale(0.98);
+    border-color: #000;
+}
+
+.sidebar-cat-img-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #fdfdfd;
+    border: 1px solid #eee;
+}
+
+.sidebar-cat-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sidebar-cat-name {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #111;
+    flex: 1;
+}
+
+.sidebar-cat-count {
+    font-size: 9px;
+    font-weight: 700;
+    color: #999;
+    background: #f9f9f9;
+    padding: 4px 8px;
+    border-radius: 8px;
 }
 
 /* SIDEBAR ITEM STYLING */
@@ -998,6 +1052,15 @@ img[src=""] {
     gap: 4px;
 }
 
+.announcement-text {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: block;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 .sidebar-item-name {
     font-size: 11px;
     font-weight: 700;
@@ -1037,19 +1100,31 @@ img[src=""] {
     transform: scale(1.1);
 }
 
+#mobile-bottom-nav {
+    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease;
+    will-change: transform, opacity;
+}
+
+#mobile-bottom-nav.nav-hidden {
+    transform: translateY(110%);
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* MOBILE BOTTOM NAV */
 .mobile-nav-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    color: #999;
+    color: #A0A0A0;
+    /* Slightly lighter gray for aesthetic */
     transition: all 0.3s ease;
     cursor: pointer;
     flex: 1;
     background: none;
     border: none;
-    padding: 0;
+    padding: 8px 0;
 }
 
 .mobile-nav-btn i {
@@ -1162,6 +1237,7 @@ img[src=""] {
     transform: translateY(-2px);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
+
 /* HERO SLIDER STYLES */
 .slider-wrapper {
     position: relative;
@@ -1180,7 +1256,8 @@ img[src=""] {
 .slider-slide {
     flex: 0 0 100%;
     width: 100%;
-    aspect-ratio: 2/1; /* Default/Mobile */
+    aspect-ratio: 2/1;
+    /* Default/Mobile */
     overflow: hidden;
     position: relative;
     user-select: none;
@@ -1196,7 +1273,8 @@ img[src=""] {
 
 @media (min-width: 768px) {
     .slider-slide {
-        aspect-ratio: 16/5; /* Desktop */
+        aspect-ratio: 16/5;
+        /* Desktop */
     }
 }
 
@@ -1257,6 +1335,50 @@ img[src=""] {
 
 .admin-slider-card:hover {
     border-color: #000;
-    box-shadow: 0 20px 40px -20px rgba(0,0,0,0.1);
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.1);
 }
 
+/* ANNOUNCEMENT BAR */
+#announcement-bar {
+    background: #C5A059;
+    /* Pastel Dark Gold */
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+    position: relative;
+    z-index: 1000;
+    overflow: hidden;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.announcement-item {
+    display: none;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    animation: fadeInSlideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    align-items: center;
+    gap: 8px;
+}
+
+.announcement-item.active {
+    display: flex;
+}
+
+@keyframes fadeInSlideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

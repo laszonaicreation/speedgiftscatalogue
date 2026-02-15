@@ -21,7 +21,7 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
 
-let DATA = { p: [], c: [], s: [], stats: { adVisits: 0 } };
+let DATA = { p: [], c: [], s: [], announcements: [], stats: { adVisits: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
 let clicks = 0, lastClickTime = 0;
 
@@ -48,36 +48,38 @@ function updateCanonicalURL(queryString) {
 }
 
 let lastWhatsAppTrackTime = 0;
-window.trackWhatsAppInquiry = async (id) => {
+window.trackWhatsAppInquiry = async (ids) => {
+    const idList = Array.isArray(ids) ? ids : [ids];
     const now = Date.now();
     if (now - lastWhatsAppTrackTime < 2000) return; // Cooldown: Prevent multiple events within 2 seconds
     lastWhatsAppTrackTime = now;
 
-    console.log(`[Ad Tracking] WhatsApp Inquiry: ${id}`);
+    console.log(`[Ad Tracking] WhatsApp Inquiry for: ${idList.join(', ')}`);
 
-    // GTM / Google Ads Event -> We now use ONLY dataLayer for GTM to avoid duplicates
-    // If you have configured GTM to handle GA4 and Google Ads, this push is enough.
+    // GTM / Google Ads Event
     if (window.dataLayer) {
         window.dataLayer.push({
             'event': 'whatsapp_inquiry',
-            'product_id': id
+            'product_ids': idList,
+            'is_bulk': idList.length > 1
         });
     }
 
     // Record Ad Inquiry (Conversion)
     if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
         try {
-            console.log(`[Ad Tracking] Recording Inquiry for ${id}...`);
-            // Update Global Stats
+            // Update Global Stats (One inquiry event regardless of product count)
             const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
             await setDoc(globalStatsRef, { adInquiries: increment(1) }, { merge: true });
 
-            // Update Product-Specific Inquiries if it's a single product
-            if (id !== 'bulk_inquiry') {
-                const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-                await updateDoc(pRef, { adInquiries: increment(1) });
+            // Update Product-Specific Inquiries for EACH product
+            for (const id of idList) {
+                if (id !== 'bulk_inquiry') {
+                    const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+                    await updateDoc(pRef, { adInquiries: increment(1) });
+                }
             }
-            console.log("[Ad Tracking] Inquiry recorded successfully.");
+            console.log("[Ad Tracking] Multi-product Inquiry recorded successfully.");
         } catch (e) {
             console.error("[Ad Tracking] Inquiry tracking error:", e);
         }
@@ -98,8 +100,19 @@ window.checkAdData = () => {
 
 // REFERRAL DETECTION
 const urlParams = new URLSearchParams(window.location.search);
-// Detect Google Ads traffic from various parameters (gclid, gbraid, wbraid, utm_source)
-if (urlParams.has('gclid') || urlParams.has('gbraid') || urlParams.has('wbraid') || urlParams.get('utm_source') === 'google') {
+// Detect Google Ads traffic from various parameters (gclid, gbraid, wbraid, utm_source, utm_medium)
+const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
+const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
+
+if (urlParams.has('gclid') ||
+    urlParams.has('gbraid') ||
+    urlParams.has('wbraid') ||
+    utmSrc === 'google' ||
+    utmSrc === 'google_ads' ||
+    utmSrc === 'googleads' ||
+    utmMed === 'cpc' ||
+    utmMed === 'ppc' ||
+    utmMed === 'google_ads') {
     sessionStorage.setItem('traffic_source', 'Google Ads');
 } else if (urlParams.has('utm_source')) {
     sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
@@ -251,7 +264,6 @@ window.toggleWishlist = async (e, id) => {
         }
     }
 
-    if (state.filter === 'wishlist') renderHome();
     if (document.getElementById('favorites-sidebar')?.classList.contains('open')) renderFavoritesSidebar();
 
     try {
@@ -274,11 +286,17 @@ async function refreshData(isNavigationOnly = false) {
             DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.s = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+            // Fetch Announcements (from products collection with ID _announcements_)
+            const announceDoc = DATA.p.find(p => p.id === '_announcements_');
+            DATA.announcements = announceDoc ? (announceDoc.messages || []) : [];
+
             // Extract stats from products collection
             const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
             DATA.stats = statsDoc || { adVisits: 0 };
-            // Remove the stats document and any other internal stats docs from the products list
-            DATA.p = DATA.p.filter(p => p.id !== '_ad_stats_' && p.id !== '--global-stats--');
+            // Remove internal docs from the products list
+            DATA.p = DATA.p.filter(p => p.id !== '_ad_stats_' && p.id !== '--global-stats--' && p.id !== '_announcements_');
+
+            renderAnnouncementBar();
             console.log("[Ad Tracking] UI Refreshed. Counter is now:", DATA.stats.adVisits);
         }
         const urlParams = new URLSearchParams(window.location.search);
@@ -293,7 +311,7 @@ async function refreshData(isNavigationOnly = false) {
         state.search = query || '';
 
         // SMART CATEGORY MATCHING: If state.filter is not 'all', check if it's a Name instead of an ID
-        if (state.filter !== 'all' && state.filter !== 'wishlist') {
+        if (state.filter !== 'all') {
             const foundById = DATA.c.find(c => c.id === state.filter);
             if (!foundById) {
                 // Try matching by name (case-insensitive)
@@ -333,7 +351,6 @@ async function refreshData(isNavigationOnly = false) {
         const stockFilter = (items) => items.filter(p => p.inStock !== false);
         let filteredForPreload = [];
         if (state.selectionId) filteredForPreload = DATA.p.filter(p => state.selected.includes(p.id));
-        else if (state.filter === 'wishlist') filteredForPreload = DATA.p.filter(p => state.wishlist.includes(p.id));
         else if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
         else filteredForPreload = stockFilter(DATA.p);
 
@@ -424,8 +441,7 @@ window.toggleSelectAll = () => {
     if (state.selectionId) return;
     const stockFilter = (items) => items.filter(p => p.inStock !== false);
     let currentVisible = [];
-    if (state.filter === 'wishlist') currentVisible = DATA.p.filter(p => state.wishlist.includes(p.id));
-    else if (state.filter !== 'all') currentVisible = stockFilter(DATA.p.filter(p => p.catId === state.filter));
+    if (state.filter !== 'all') currentVisible = stockFilter(DATA.p.filter(p => p.catId === state.filter));
     else currentVisible = stockFilter(DATA.p);
     const visibleIds = currentVisible.map(p => p.id);
     const allVisibleSelected = visibleIds.every(id => state.selected.includes(id));
@@ -467,12 +483,6 @@ function renderHome() {
             if (categorySelector) categorySelector.classList.add('hidden');
             if (viewTitle) viewTitle.innerText = "Shared Selection";
             if (viewSubtitle) viewSubtitle.innerText = "Specially picked items for you.";
-        } else if (state.filter === 'wishlist') {
-            if (selectionHeader) selectionHeader.classList.remove('hidden');
-            if (catRow) catRow.classList.add('hidden');
-            if (categorySelector) categorySelector.classList.add('hidden');
-            if (viewTitle) viewTitle.innerText = "Your Favorites";
-            if (viewSubtitle) viewSubtitle.innerText = "Items you've saved to your favorites.";
         } else {
             if (selectionHeader) selectionHeader.classList.add('hidden');
             if (catRow) catRow.classList.remove('hidden');
@@ -533,7 +543,6 @@ function renderHome() {
         let filtered = [];
         const stockFilter = (items) => items.filter(p => p.inStock !== false);
         if (state.selectionId) filtered = DATA.p.filter(p => state.selected.includes(p.id));
-        else if (state.filter === 'wishlist') filtered = DATA.p.filter(p => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === p.id));
         else if (state.filter !== 'all') filtered = stockFilter(DATA.p.filter(p => p.catId === state.filter));
         else filtered = stockFilter(DATA.p);
 
@@ -541,7 +550,7 @@ function renderHome() {
             const q = state.search.toLowerCase().trim();
             const words = q.split(' ').filter(w => w.length > 0);
 
-            let source = (state.selectionId || state.filter === 'wishlist') ? filtered : stockFilter(DATA.p);
+            let source = state.selectionId ? filtered : stockFilter(DATA.p);
 
             filtered = source.filter(p => {
                 const name = (p.name || '').toLowerCase();
@@ -569,7 +578,6 @@ function renderHome() {
         });
         let catNameDisplay = "All Collections";
         if (state.selectionId) catNameDisplay = "Shared Selection";
-        else if (state.filter === 'wishlist') catNameDisplay = "Favorites List";
         else if (state.filter !== 'all') {
             const catObj = DATA.c.find(c => c.id === state.filter);
             if (catObj) catNameDisplay = catObj.name;
@@ -581,7 +589,7 @@ function renderHome() {
         document.title = `${catNameDisplay} | Speed Gifts Website`;
         try {
             updateMetaDescription(`Explore our ${catNameDisplay} collection at Speed Gifts. Premium selection of personalized gifts.`);
-            const cId = (state.filter !== 'all' && state.filter !== 'wishlist') ? state.filter : '';
+            const cId = state.filter !== 'all' ? state.filter : '';
             updateCanonicalURL(cId ? `?c=${cId}` : '');
         } catch (e) { console.error("SEO Update failed:", e); }
 
@@ -597,13 +605,6 @@ function renderHome() {
             grid.innerHTML = filtered.map((p, idx) => {
                 let displayP = { ...p };
                 let savedVar = null;
-                if (state.filter === 'wishlist') {
-                    const entry = state.wishlist.find(x => (typeof x === 'string' ? x : x.id) === p.id);
-                    if (entry && typeof entry === 'object' && entry.var) {
-                        displayP = { ...displayP, ...entry.var };
-                        savedVar = entry.var;
-                    }
-                }
 
                 const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
 
@@ -612,7 +613,7 @@ function renderHome() {
                     <div class="img-container mb-4 shadow-sm relative">
                         ${badgeHtml}
                         <div class="wish-btn shadow-sm md:hidden" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                        ${!state.selectionId && !state.filter.includes('wishlist') ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
+                        ${!state.selectionId ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
                         <img src="${getOptimizedUrl(displayP.img, 600)}" 
                              ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                              decoding="async"
@@ -659,13 +660,11 @@ function renderHome() {
         document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
         if (state.search) {
             document.querySelector('.mobile-nav-btn:nth-child(2)')?.classList.add('active');
-        } else if (state.filter === 'wishlist') {
-            document.querySelector('.mobile-nav-btn:nth-child(3)')?.classList.add('active');
         } else if (state.filter === 'all' && !state.selectionId && !new URLSearchParams(window.location.search).has('p')) {
             document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
         }
 
-        if (!state.selectionId && state.filter !== 'wishlist' && !state.search) window.scrollTo({ top: state.scrollPos });
+        if (!state.selectionId && !state.search) window.scrollTo({ top: state.scrollPos });
         else if (!state.search) window.scrollTo({ top: 0 });
     } catch (e) {
         console.error("Render Error:", e);
@@ -678,7 +677,7 @@ window.updateSelectionBar = () => {
     const bar = document.getElementById('selection-bar');
     const count = document.getElementById('selected-count');
     if (!bar) return;
-    if (state.selected.length > 0 && !state.selectionId && state.filter !== 'wishlist') {
+    if (state.selected.length > 0 && !state.selectionId) {
         bar.style.display = 'flex';
         bar.classList.add('animate-selection');
         if (count) count.innerText = `${state.selected.length} items`;
@@ -1331,22 +1330,37 @@ window.shareSelection = async () => {
 window.sendBulkInquiry = () => {
     // Determine which list to use (Selected items for sharing OR Wishlist for sidebar)
     const isSidebarOpen = document.getElementById('favorites-sidebar')?.classList.contains('open');
-    const sourceIds = isSidebarOpen ? state.wishlist : state.selected;
+    const sourceData = isSidebarOpen ? state.wishlist : state.selected;
 
-    if (sourceIds.length === 0) return showToast("No items to inquire");
+    if (sourceData.length === 0) return showToast("No items to inquire");
 
-    const items = sourceIds.map(id => DATA.p.find(p => p.id === id)).filter(x => x);
     let msg = `*Hello Speed Gifts!*\nI am interested in these items from my ${isSidebarOpen ? 'Favorites' : 'Selection'}:\n\n`;
 
-    items.forEach((item, i) => {
-        const pUrl = `${window.location.origin}${window.location.pathname}?p=${item.id}`;
-        msg += `${i + 1}. *${item.name}* - ${item.price} AED\nLink: ${pUrl}\n\n`;
+    sourceData.forEach((entry, i) => {
+        const id = typeof entry === 'string' ? entry : entry.id;
+        const p = DATA.p.find(x => x.id === id);
+        if (!p) return;
+
+        let details = "";
+        const price = (entry.var && entry.var.price) ? entry.var.price : p.price;
+        if (entry.var) {
+            if (entry.var.size) details += ` (Size: ${entry.var.size})`;
+            if (entry.var.color) details += ` (Color: ${entry.var.color})`;
+        }
+
+        const pUrl = `${window.location.origin}${window.location.pathname}?p=${id}`;
+        msg += `${i + 1}. *${p.name}* - ${price} AED${details}\nLink: ${pUrl}\n\n`;
     });
 
     const source = sessionStorage.getItem('traffic_source');
-    if (source) msg += `\n\n[Source: ${source}]`;
+    if (source === 'Google Ads') {
+        msg += `\n*Note: Customer joined via Google Ads* 🔍`;
+    } else if (source) {
+        msg += `\n\n[Source: ${source}]`;
+    }
 
-    window.trackWhatsAppInquiry('bulk_inquiry');
+    const productIdsToTrack = sourceData.map(entry => typeof entry === 'string' ? entry : entry.id);
+    window.trackWhatsAppInquiry(productIdsToTrack);
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
@@ -1363,7 +1377,11 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
     let msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${price} AED${details}\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
 
     const source = sessionStorage.getItem('traffic_source');
-    if (source) msg += `\n\n[Source: ${source}]`;
+    if (source === 'Google Ads') {
+        msg += `\n\n*Note: Customer joined via Google Ads* 🔍`;
+    } else if (source) {
+        msg += `\n\n[Source: ${source}]`;
+    }
 
     window.trackWhatsAppInquiry(p.id);
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
@@ -1556,7 +1574,7 @@ window.showSearchSuggestions = (show) => {
 let searchTimeout;
 window.applyCustomerSearch = (val) => {
     state.search = val;
-    if (val && state.filter !== 'wishlist' && !state.selectionId) {
+    if (val && !state.selectionId) {
         state.filter = 'all';
     }
 
@@ -1596,15 +1614,18 @@ window.switchAdminTab = (tab) => {
     const isCat = tab === 'categories';
     const isSlider = tab === 'sliders';
     const isInsight = tab === 'insights';
+    const isAnnounce = tab === 'announcements';
 
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
     document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
-    document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
+    document.getElementById('admin-insights-section').classList.toggle('hidden', !isAnnounce && !isInsight);
+    document.getElementById('admin-announcements-section').classList.toggle('hidden', !isAnnounce);
 
     document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
     document.getElementById('admin-slider-list').classList.toggle('hidden', !isSlider);
+    document.getElementById('admin-announcements-list').classList.toggle('hidden', !isAnnounce);
     document.getElementById('admin-insights-list').classList.toggle('hidden', !isInsight);
 
     document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
@@ -1612,9 +1633,10 @@ window.switchAdminTab = (tab) => {
     document.getElementById('tab-p').className = isProd ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
     document.getElementById('tab-c').className = isCat ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
     document.getElementById('tab-s').className = isSlider ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
+    document.getElementById('tab-a').className = isAnnounce ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
     document.getElementById('tab-i').className = isInsight ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : "Popularity Insights"));
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : "Popularity Insights")));
     renderAdminUI();
 };
 
@@ -1969,11 +1991,7 @@ window.shareProduct = async (id, name) => {
 };
 
 window.handleFavoritesClick = () => {
-    if (window.innerWidth < 768) {
-        window.openFavoritesSidebar();
-    } else {
-        applyFilter('wishlist');
-    }
+    window.openFavoritesSidebar();
 };
 
 window.openFavoritesSidebar = () => {
@@ -1995,6 +2013,94 @@ window.closeFavoritesSidebar = () => {
         overlay.classList.remove('open');
         document.body.style.overflow = 'auto';
     }
+};
+
+window.openCategoriesSidebar = () => {
+    const sidebar = document.getElementById('categories-sidebar');
+    const overlay = document.getElementById('categories-sidebar-overlay');
+    if (sidebar && overlay) {
+        renderCategoriesSidebar();
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+};
+
+window.closeCategoriesSidebar = () => {
+    const sidebar = document.getElementById('categories-sidebar');
+    const overlay = document.getElementById('categories-sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+        document.body.style.overflow = 'auto';
+    }
+};
+
+window.renderCategoriesSidebar = () => {
+    const container = document.getElementById('sidebar-categories-list');
+    if (!container) return;
+
+    if (DATA.c.length === 0) {
+        container.innerHTML = `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
+        return;
+    }
+
+    container.innerHTML = DATA.c.map(c => {
+        const productCount = DATA.p.filter(p => p.catId === c.id).length;
+        return `
+            <div class="sidebar-cat-item group" onclick="window.closeCategoriesSidebar(); applyFilter('${c.id}')">
+                <div class="sidebar-cat-img-box">
+                    <img src="${getOptimizedUrl(c.img, 100)}" alt="${c.name}" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+                </div>
+                <h4 class="sidebar-cat-name">${c.name}</h4>
+                <span class="sidebar-cat-count">${productCount}</span>
+            </div>
+        `;
+    }).join('');
+};
+
+window.openCategoriesSidebar = () => {
+    const sidebar = document.getElementById('categories-sidebar');
+    const overlay = document.getElementById('categories-sidebar-overlay');
+    if (sidebar && overlay) {
+        renderCategoriesSidebar();
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+};
+
+window.closeCategoriesSidebar = () => {
+    const sidebar = document.getElementById('categories-sidebar');
+    const overlay = document.getElementById('categories-sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+        document.body.style.overflow = 'auto';
+    }
+};
+
+window.renderCategoriesSidebar = () => {
+    const container = document.getElementById('sidebar-categories-list');
+    if (!container) return;
+
+    if (DATA.c.length === 0) {
+        container.innerHTML = `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
+        return;
+    }
+
+    container.innerHTML = DATA.c.map(c => {
+        const productCount = DATA.p.filter(p => p.catId === c.id).length;
+        return `
+            <div class="sidebar-cat-item group" onclick="window.closeCategoriesSidebar(); applyFilter('${c.id}')">
+                <div class="sidebar-cat-img-box">
+                    <img src="${getOptimizedUrl(c.img, 100)}" alt="${c.name}" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+                </div>
+                <h4 class="sidebar-cat-name">${c.name}</h4>
+                <span class="sidebar-cat-count">${productCount}</span>
+            </div>
+        `;
+    }).join('');
 };
 
 window.renderFavoritesSidebar = () => {
@@ -2097,9 +2203,13 @@ function getBadgeLabel(badge) {
 
 function renderInsights(container) {
     const topProducts = [...DATA.p]
-        .filter(p => (p.views || 0) > 0)
-        .sort((a, b) => (b.views || 0) - (a.views || 0))
-        .slice(0, 15);
+        .filter(p => (p.views || 0) > 0 || (p.adInquiries || 0) > 0)
+        .sort((a, b) => {
+            const scoreA = (a.views || 0) + (a.adInquiries || 0) * 5;
+            const scoreB = (b.views || 0) + (b.adInquiries || 0) * 5;
+            return scoreB - scoreA;
+        })
+        .slice(0, 30);
 
     let html = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -2228,7 +2338,7 @@ window.resetAllAnalytics = async () => {
 
 window.focusSearch = () => {
     // Navigate home first if we're not there
-    if (new URLSearchParams(window.location.search).has('p') || state.filter === 'wishlist' || state.selectionId) {
+    if (new URLSearchParams(window.location.search).has('p') || state.selectionId) {
         window.goBackToHome(true);
     }
 
@@ -2504,13 +2614,99 @@ function renderAdminSliders(container) {
     }).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Sliders</p>`;
 }
 
-// Update renderAdminUI to handle sliders
+// ANNOUNCEMENT BAR LOGIC
+let announcementInterval;
+let currentAnnouncement = 0;
+
+function renderAnnouncementBar() {
+    const bar = document.getElementById('announcement-bar');
+    if (!bar) return;
+
+    let msgs = DATA.announcements || [];
+    if (msgs.length === 0) {
+        // Default fallbacks while DB loads or if empty
+        msgs = ["Fast Delivery Across UAE \uD83D\uDE9A", "Order Any Product & Get a FREE Keychain \uD83C\uDF81"];
+    }
+    bar.style.display = 'flex';
+
+    bar.innerHTML = msgs.map((msg, idx) => `
+        <div class="announcement-item ${idx === 0 ? 'active' : ''}">
+            <span class="announcement-text">${msg}</span>
+        </div>
+    `).join('');
+
+    initAnnouncementRotation();
+}
+
+function initAnnouncementRotation() {
+    clearInterval(announcementInterval);
+    const items = document.querySelectorAll('.announcement-item');
+    if (items.length <= 1) return;
+
+    announcementInterval = setInterval(() => {
+        items[currentAnnouncement].classList.remove('active');
+        currentAnnouncement = (currentAnnouncement + 1) % items.length;
+        items[currentAnnouncement].classList.add('active');
+    }, 3000);
+}
+
+// ADMIN ANNOUNCEMENTS
+window.addAnnouncementRow = (text = "") => {
+    const container = document.getElementById('announcement-rows');
+    if (!container) return;
+    const div = document.createElement('div');
+    div.className = "flex gap-3 animate-fade-in";
+    div.innerHTML = `
+        <input type="text" class="admin-input flex-1 a-msg" placeholder="Notice text..." value="${text}">
+        <button onclick="this.parentElement.remove()" class="w-12 h-12 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+            <i class="fa-solid fa-trash-can"></i>
+        </button>
+    `;
+    container.appendChild(div);
+};
+
+window.saveAnnouncements = async () => {
+    const btn = document.getElementById('a-save-btn');
+    const msgs = Array.from(document.querySelectorAll('.a-msg')).map(i => i.value.trim()).filter(v => v);
+
+    if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
+    try {
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_announcements_');
+        await setDoc(statsRef, { messages: msgs, updatedAt: Date.now() });
+        showToast("Announcements Saved!");
+        refreshData();
+    } catch (e) {
+        console.error("Save Error:", e);
+        showToast("Error saving data");
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = "Save Announcements"; }
+    }
+};
+
+function renderAdminAnnouncements() {
+    const container = document.getElementById('announcement-rows');
+    if (!container) return;
+    container.innerHTML = '';
+    const msgs = DATA.announcements || [];
+    if (msgs.length === 0) {
+        // Add default rows for better UX if empty
+        addAnnouncementRow("Fast Delivery Across UAE \uD83D\uDE9A");
+        addAnnouncementRow("Order Any Product & Get a FREE Keychain \uD83C\uDF81");
+    } else {
+        msgs.forEach(m => addAnnouncementRow(m));
+    }
+}
+
+// Update renderAdminUI to handle announcements
 const originalRenderAdminUI = window.renderAdminUI;
 window.renderAdminUI = () => {
     originalRenderAdminUI();
     const sList = document.getElementById('admin-slider-list');
     if (sList && state.adminTab === 'sliders') {
         renderAdminSliders(sList);
+    }
+    if (state.adminTab === 'announcements') {
+        renderAdminAnnouncements();
     }
 };
 
@@ -2527,3 +2723,27 @@ window.addEventListener('resize', () => {
         }
     }, 250);
 });
+
+// Smart Mobile Nav Scroll Behavior
+let navScrollTimeout;
+window.addEventListener('scroll', () => {
+    const nav = document.getElementById('mobile-bottom-nav');
+    if (!nav || window.innerWidth >= 768) return;
+
+    const currentScroll = window.pageYOffset;
+
+    // Hide on down-scroll, show on up-scroll
+    if (currentScroll > state.scrollPos && currentScroll > 60) {
+        nav.classList.add('nav-hidden');
+    } else {
+        nav.classList.remove('nav-hidden');
+    }
+
+    state.scrollPos = currentScroll;
+
+    // Always show when scrolling stops for a moment
+    clearTimeout(navScrollTimeout);
+    navScrollTimeout = setTimeout(() => {
+        nav.classList.remove('nav-hidden');
+    }, 1000);
+}, { passive: true });
