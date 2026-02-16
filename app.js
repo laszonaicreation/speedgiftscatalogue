@@ -20,10 +20,13 @@ const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products')
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
+const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'popupSettings');
+const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
-let DATA = { p: [], c: [], s: [], announcements: [], stats: { adVisits: 0 } };
+let DATA = { p: [], c: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, stats: { adVisits: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
 let clicks = 0, lastClickTime = 0;
+let iti; // Phone input instance
 
 // SEO HELPERS
 function updateMetaDescription(description) {
@@ -51,12 +54,12 @@ let lastWhatsAppTrackTime = 0;
 window.trackWhatsAppInquiry = async (ids) => {
     const idList = Array.isArray(ids) ? ids : [ids];
     const now = Date.now();
-    if (now - lastWhatsAppTrackTime < 2000) return; // Cooldown: Prevent multiple events within 2 seconds
+    if (now - lastWhatsAppTrackTime < 2000) return;
     lastWhatsAppTrackTime = now;
 
     console.log(`[Ad Tracking] WhatsApp Inquiry for: ${idList.join(', ')}`);
 
-    // GTM / Google Ads Event
+    // GTM Event
     if (window.dataLayer) {
         window.dataLayer.push({
             'event': 'whatsapp_inquiry',
@@ -67,19 +70,18 @@ window.trackWhatsAppInquiry = async (ids) => {
 
     // Record Ad Inquiry (Conversion)
     if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+        await waitForAuth();
         try {
-            // Update Global Stats (One inquiry event regardless of product count)
             const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
             await setDoc(globalStatsRef, { adInquiries: increment(1) }, { merge: true });
 
-            // Update Product-Specific Inquiries for EACH product
             for (const id of idList) {
                 if (id !== 'bulk_inquiry') {
                     const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
                     await updateDoc(pRef, { adInquiries: increment(1) });
                 }
             }
-            console.log("[Ad Tracking] Multi-product Inquiry recorded successfully.");
+            console.log("[Ad Tracking] Inquiry recorded successfully.");
         } catch (e) {
             console.error("[Ad Tracking] Inquiry tracking error:", e);
         }
@@ -107,6 +109,7 @@ const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
 if (urlParams.has('gclid') ||
     urlParams.has('gbraid') ||
     urlParams.has('wbraid') ||
+    urlParams.has('gad_source') ||
     utmSrc === 'google' ||
     utmSrc === 'google_ads' ||
     utmSrc === 'googleads' ||
@@ -118,9 +121,27 @@ if (urlParams.has('gclid') ||
     sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
 }
 
+// Helper: Ensure authentication is ready before tracking
+async function waitForAuth() {
+    if (auth.currentUser) return auth.currentUser;
+    return new Promise(resolve => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                unsubscribe();
+                resolve(user);
+            }
+        });
+        setTimeout(() => { unsubscribe(); resolve(null); }, 6000);
+    });
+}
+
 async function trackAdVisit() {
     const sessionKey = 'ad_visit_tracked_v3';
     if (sessionStorage.getItem(sessionKey)) return;
+
+    // Ensure auth is ready
+    await waitForAuth();
+
     try {
         console.log("[Ad Tracking] Attempting to record visit in products/_ad_stats_...");
         // Path: artifacts/speed-catalogue/public/data/products/_ad_stats_
@@ -156,7 +177,7 @@ const handleReentry = () => {
     if (DATA.p.length > 0) {
         const urlParams = new URLSearchParams(window.location.search);
         const pId = urlParams.get('p');
-        if (pId) viewDetail(pId, true);
+        if (pId) viewDetail(pId, true, null, true); // skipTracking = true for re-entry
         else {
             renderHome();
             updateMetaDescription("Discover premium gifts and personalized items at Speed Gifts. From engraved wood to custom cushions, find the perfect gift for every occasion.");
@@ -687,17 +708,19 @@ window.updateSelectionBar = () => {
     }
 };
 
-window.viewDetail = (id, skipHistory = false, preSelect = null) => {
+window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = false) => {
     const p = DATA.p.find(x => x.id === id);
     if (!p) return;
     state.currentVar = preSelect; // Initialize with saved variation if any
+
+    if (!skipTracking) {
+        trackProductView(id);
+    }
+
     if (!skipHistory) {
         const isAlreadyInDetail = new URLSearchParams(window.location.search).has('p');
         state.scrollPos = isAlreadyInDetail ? state.scrollPos : window.scrollY;
         safePushState({ p: id }, isAlreadyInDetail);
-
-        // Track View (Only if not just going back in history)
-        trackProductView(id);
 
         // Dynamic Page Title for Detail View
         document.title = `${p.name} | Speed Gifts Website`;
@@ -1458,6 +1481,10 @@ window.renderAdminUI = () => {
         renderInsights(iList);
         return;
     }
+    if (state.adminTab === 'leads') {
+        renderAdminLeads();
+        return;
+    }
     const filterEl = document.getElementById('admin-cat-filter');
     const catFilter = filterEl ? filterEl.value : "all";
 
@@ -1605,7 +1632,25 @@ window.clearCustomerSearch = () => {
     if (input) input.focus();
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
-window.showAdminPanel = () => { document.getElementById('admin-panel').classList.remove('hidden'); document.body.style.overflow = 'hidden'; renderAdminUI(); };
+window.showAdminPanel = () => {
+    document.getElementById('admin-panel').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Preset Popup Settings
+    if (DATA.popupSettings) {
+        if (document.getElementById('popup-title')) document.getElementById('popup-title').value = DATA.popupSettings.title || "";
+        if (document.getElementById('popup-msg')) document.getElementById('popup-msg').value = DATA.popupSettings.msg || "";
+        if (document.getElementById('popup-img')) document.getElementById('popup-img').value = DATA.popupSettings.img || "img/";
+
+        // Success Message Fields
+        if (document.getElementById('popup-success-title'))
+            document.getElementById('popup-success-title').value = DATA.popupSettings.successTitle || "";
+        if (document.getElementById('popup-success-msg'))
+            document.getElementById('popup-success-msg').value = DATA.popupSettings.successMsg || "";
+    }
+
+    renderAdminUI();
+};
 window.hideAdminPanel = () => { document.getElementById('admin-panel').classList.add('hidden'); document.body.style.overflow = 'auto'; };
 
 window.switchAdminTab = (tab) => {
@@ -1615,18 +1660,21 @@ window.switchAdminTab = (tab) => {
     const isSlider = tab === 'sliders';
     const isInsight = tab === 'insights';
     const isAnnounce = tab === 'announcements';
+    const isLeads = tab === 'leads';
 
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
     document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
-    document.getElementById('admin-insights-section').classList.toggle('hidden', !isAnnounce && !isInsight);
+    document.getElementById('admin-insights-section').classList.toggle('hidden', !isAnnounce && !isInsight && !isLeads);
     document.getElementById('admin-announcements-section').classList.toggle('hidden', !isAnnounce);
+    document.getElementById('admin-leads-section').classList.toggle('hidden', !isLeads);
 
     document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
     document.getElementById('admin-slider-list').classList.toggle('hidden', !isSlider);
     document.getElementById('admin-announcements-list').classList.toggle('hidden', !isAnnounce);
     document.getElementById('admin-insights-list').classList.toggle('hidden', !isInsight);
+    document.getElementById('admin-leads-list').classList.toggle('hidden', !isLeads);
 
     document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
 
@@ -1635,8 +1683,9 @@ window.switchAdminTab = (tab) => {
     document.getElementById('tab-s').className = isSlider ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
     document.getElementById('tab-a').className = isAnnounce ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
     document.getElementById('tab-i').className = isInsight ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
+    document.getElementById('tab-l').className = isLeads ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : "Popularity Insights")));
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : "Popularity Insights"))));
     renderAdminUI();
 };
 
@@ -2171,8 +2220,13 @@ function getOptimizedUrl(url, width) {
     return url.replace('/upload/', `/upload/${fullTransform}/`);
 }
 
+
 async function trackProductView(id) {
     if (!id || typeof id !== 'string') return;
+
+    // Ensure we have a user before writing to Firestore
+    await waitForAuth();
+
     try {
         const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
         const updateData = {
@@ -2182,6 +2236,7 @@ async function trackProductView(id) {
         // Check if visitor is from Google Ads
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
             updateData.adViews = increment(1);
+            console.log(`[Ad Tracking] Recording ad-driven view for: ${id}`);
         }
 
         await updateDoc(pRef, updateData);
@@ -2747,3 +2802,319 @@ window.addEventListener('scroll', () => {
         nav.classList.remove('nav-hidden');
     }, 1000);
 }, { passive: true });
+// --- LEAD POPUP CORE ---
+window.initPopup = () => {
+    console.log("[Popup] Initializing logic...");
+    // Check if user already submitted or dismissed
+    if (localStorage.getItem('popup_submitted')) {
+        console.log("[Popup] Blocked: Already submitted.");
+        return;
+    }
+    if (localStorage.getItem('popup_dismissed')) {
+        console.log("[Popup] Blocked: Already dismissed.");
+        return;
+    }
+
+    console.log("[Popup] Timer started: 20s delay...");
+    setTimeout(async () => {
+        window.forceShowPopup();
+    }, 20000); // 20 Seconds Delay
+};
+
+window.forceShowPopup = async () => {
+    console.log("[Popup] Triggering show...");
+    // Fetch current settings from Firestore
+    try {
+        const snap = await getDocs(popupSettingsCol);
+        if (!snap.empty) {
+            const settings = snap.docs[0].data();
+            DATA.popupSettings = settings;
+
+            // Update UI
+            const title = document.getElementById('popup-gift-title');
+            const msg = document.getElementById('popup-gift-msg');
+            const img = document.getElementById('popup-gift-img');
+            const sTitle = document.getElementById('success-title');
+            const sMsg = document.getElementById('success-msg');
+
+            if (title) title.innerText = settings.title || "Claim Your Free Gift";
+            if (msg) msg.innerText = settings.msg || "Limited Edition • Exclusive Offer";
+            if (img) img.src = (settings.img && settings.img !== 'img/') ? getOptimizedUrl(settings.img, 800) : "https://placehold.co/600x400?text=Gift";
+
+            // Success State Content
+            if (sTitle) sTitle.innerText = settings.successTitle || "Congratulations!";
+            if (sMsg) sMsg.innerText = settings.successMsg || "Your gift has been secured. We will contact you through WhatsApp shortly.";
+        }
+    } catch (e) {
+        console.error("[Popup] Settings fetch failed", e);
+    }
+
+    const overlay = document.getElementById('gift-popup-overlay');
+    if (overlay) {
+        console.log("[Popup] Showing overlay...");
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        // Initialize Intl-Tel-Input
+        const input = document.getElementById('lead-whatsapp');
+        const itild = window.intlTelInput;
+
+        if (input && itild) {
+            try {
+                console.log("[Popup] Initializing ITI...");
+                if (iti) iti.destroy(); // Avoid double init
+                iti = itild(input, {
+                    initialCountry: "ae",
+                    separateDialCode: true,
+                    autoPlaceholder: "off",
+                    useFullscreenPopup: true, // BETTER FOR MOBILE: Avoids keyboard interference
+                    dropdownContainer: document.body, // FIX: Appends to body to avoid popup clipping/layering bugs
+                    utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/utils.js",
+                });
+
+                // Aesthetic: Add a small delay and focus name if visible, but avoid forcing keyboard
+                // on the phone input immediately
+            } catch (err) {
+                console.error("[Popup] ITI Init Error:", err);
+            }
+        } else {
+            console.warn("[Popup] ITI skip: input or itild missing", { input: !!input, itild: !!itild });
+        }
+    } else {
+        console.error("[Popup] Error: gift-popup-overlay element not found!");
+    }
+};
+
+window.closeGiftPopup = () => {
+    const overlay = document.getElementById('gift-popup-overlay');
+    if (overlay) {
+        overlay.classList.remove('open');
+        document.body.style.overflow = 'auto';
+        localStorage.setItem('popup_dismissed', 'true');
+    }
+};
+
+window.submitLead = async (e) => {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('lead-submit-btn');
+    const name = document.getElementById('lead-name').value;
+    const whatsapp = document.getElementById('lead-whatsapp').value;
+    const age = document.getElementById('lead-age').value;
+
+    console.log("Submitting to:", leadsCol.path);
+
+    if (!name || !whatsapp || !age) return showToast("Please fill all fields");
+
+    // Validate phone number - fallback to basic length check if library is unsure
+    const isValid = iti ? (iti.isValidNumber() || whatsapp.trim().length > 7) : whatsapp.trim().length > 7;
+    if (!isValid) {
+        console.warn("[Popup] Phone validation failed:", { whatsapp, itiValid: iti?.isValidNumber() });
+        return showToast("Please enter a valid WhatsApp number");
+    }
+
+    // Capture number - fallback to raw value if getNumber fails
+    let fullNumber = iti ? iti.getNumber() : whatsapp;
+    console.log("[Popup] initial getNumber:", fullNumber);
+
+    // Force country code inclusion
+    if (iti) {
+        const countryData = iti.getSelectedCountryData();
+        const dialCode = countryData.dialCode;
+        console.log("[Popup] Selected Dial Code:", dialCode);
+
+        // Remove non-digits and leading zeros from the local part
+        const cleanLocal = whatsapp.replace(/\D/g, '').replace(/^0+/, '');
+
+        // If the number doesn't look like it has the dial code, construct it manually
+        if (!fullNumber || !fullNumber.startsWith('+') || !fullNumber.includes(dialCode)) {
+            console.log("[Popup] Constructing manual international number");
+            fullNumber = `+${dialCode}${cleanLocal}`;
+        }
+    }
+
+    if (!fullNumber || fullNumber === "") {
+        fullNumber = whatsapp.trim();
+    }
+
+    console.log("[Popup] FINAL Captured number:", fullNumber);
+
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+
+    try {
+        const leadData = {
+            name: name,
+            whatsapp: fullNumber,
+            age: parseInt(age) || 0,
+            status: 'new',
+            createdAt: new Date().toISOString()
+        };
+
+        await addDoc(leadsCol, leadData);
+
+        // TRANSITION TO SUCCESS STATE
+        const form = document.getElementById('lead-form');
+        const imgBox = document.querySelector('.popup-image-box');
+        const successState = document.getElementById('lead-success-state');
+        const mainTitle = document.getElementById('popup-gift-title');
+        const mainMsg = document.getElementById('popup-gift-msg');
+
+        if (form) form.classList.add('hidden');
+        if (imgBox) imgBox.classList.add('hidden');
+        if (mainTitle) mainTitle.classList.add('hidden');
+        if (mainMsg) mainMsg.classList.add('hidden');
+
+        if (successState) {
+            successState.classList.remove('hidden');
+        }
+
+        showToast("Success! Lead captured.");
+        localStorage.setItem('popup_submitted', 'true');
+
+        // Allow user to read the success message before auto-closing (if they don't click Continue)
+        setTimeout(() => {
+            // Only auto-close if the popup is still open
+            if (document.getElementById('gift-popup-overlay')?.classList.contains('open')) {
+                window.closeGiftPopup();
+            }
+        }, 8000); // 8 seconds to read the message
+    } catch (err) {
+        console.error("Lead Submission Error:", err);
+        showToast("Submission Error: " + (err.message || "Please check connection"));
+        btn.innerText = "Try Again";
+        btn.disabled = false;
+    }
+};
+
+// --- ADMIN LEAD MANAGEMENT ---
+window.savePopupSettings = async () => {
+    const title = document.getElementById('popup-title').value;
+    const msg = document.getElementById('popup-msg').value;
+    const img = document.getElementById('popup-img').value;
+    const successTitle = document.getElementById('popup-success-title').value;
+    const successMsg = document.getElementById('popup-success-msg').value;
+    const btn = document.getElementById('popup-save-btn');
+
+    if (!title) return showToast("Title is required");
+
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    try {
+        const snap = await getDocs(popupSettingsCol);
+        const data = { title, msg, img, successTitle, successMsg };
+        if (snap.empty) {
+            await addDoc(popupSettingsCol, data);
+        } else {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'popupSettings', snap.docs[0].id), data);
+        }
+        showToast("Popup Settings Updated");
+        DATA.popupSettings = data;
+
+        // Update Admin UI fields just in case
+        document.getElementById('popup-success-title').value = successTitle;
+        document.getElementById('popup-success-msg').value = successMsg;
+    } catch (err) {
+        console.error(err);
+        showToast("Save Error");
+    } finally {
+        btn.innerText = "Update Popup";
+        btn.disabled = false;
+    }
+};
+
+window.renderAdminLeads = async () => {
+    const container = document.getElementById('admin-leads-list');
+    if (!container) return;
+
+    container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-300 animate-pulse"><i class="fa-solid fa-cloud-arrow-down text-3xl mb-4"></i><p class="text-[10px] font-bold uppercase tracking-widest">Fetching live leads...</p></div>';
+
+    try {
+        console.log("[Admin] Fetching leads from:", leadsCol.path);
+        const snap = await getDocs(leadsCol);
+        DATA.leads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        DATA.leads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        console.log(`[Admin] Successfully fetched ${DATA.leads.length} leads.`);
+
+        if (DATA.leads.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-40 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-100">
+                    <i class="fa-solid fa-users-slash text-gray-200 text-3xl mb-6"></i>
+                    <h3 class="text-gray-900 font-bold text-[12px] uppercase tracking-widest mb-2">No Leads Collected</h3>
+                    <p class="text-gray-400 text-[10px] max-w-xs mx-auto">New gift claim entries will appear here automatically as customers fill out the popup.</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = DATA.leads.map(lead => {
+            const dateObj = new Date(lead.createdAt);
+            const displayDate = isNaN(dateObj) ? 'Recently' : dateObj.toLocaleString('en-AE', {
+                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true
+            });
+
+            const leadWhatsApp = lead.whatsapp || 'No Number';
+
+            return `
+            <div class="lead-row fade-in">
+                <div class="lead-info">
+                    <h4>${lead.name || 'Anonymous User'}</h4>
+                    <p class="flex items-center gap-2">
+                        <span class="text-black font-bold">${leadWhatsApp}</span>
+                        <span class="w-1 h-1 bg-gray-200 rounded-full"></span>
+                        <span>${lead.age || 0} Years</span>
+                    </p>
+                    <span class="lead-date">${displayDate}</span>
+                </div>
+                <div class="flex gap-2">
+                    <a href="https://wa.me/${lead.whatsapp.replace(/\D/g, '')}" target="_blank" 
+                       class="w-12 h-12 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm">
+                        <i class="fa-brands fa-whatsapp text-lg"></i>
+                    </a>
+                    <button onclick="deleteLead('${lead.id}')" 
+                            class="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        }).join('');
+    } catch (err) {
+        console.error("[Admin] Lead Load Error:", err);
+        container.innerHTML = `
+            <div class="p-10 text-center bg-red-50 rounded-[2rem] border border-red-100">
+                <i class="fa-solid fa-triangle-exclamation text-red-400 text-2xl mb-4"></i>
+                <p class="text-red-500 font-bold text-[11px] uppercase tracking-widest">Connection Error</p>
+                <p class="text-red-300 text-[9px] mt-2">Could not sync with leads collection. Please check your internet or Firebase permissions.</p>
+                <button onclick="renderAdminLeads()" class="mt-4 px-6 py-2 bg-red-500 text-white rounded-full text-[9px] font-bold uppercase tracking-widest">Retry Sync</button>
+            </div>`;
+    }
+};
+
+window.deleteLead = async (id) => {
+    if (!confirm("Delete this lead?")) return;
+    try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leads', id));
+        showToast("Lead Deleted");
+        renderAdminLeads();
+    } catch (err) { showToast("Delete Error"); }
+};
+
+window.exportLeadsExcel = () => {
+    if (DATA.leads.length === 0) return showToast("No leads to export");
+
+    let csv = "Name,WhatsApp,Age,Created At\n";
+    DATA.leads.forEach(l => {
+        csv += `"${l.name}","${l.whatsapp}",${l.age},"${l.createdAt}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+initPopup();

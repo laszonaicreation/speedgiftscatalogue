@@ -31,6 +31,17 @@ service cloud.firestore {
     match /artifacts/speed-catalogue/users/{userId}/data/wishlist {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
+
+    // 4. Popup Settings: Public Read/Write for Testing
+    match /artifacts/{anyAppId}/public/data/popupSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // 5. Leads: Public Read/Write for Testing
+    match /artifacts/{anyAppId}/public/data/leads/{leadId} {
+      allow read, write: if true;
+    }
     
     // 4. Default deny for all other paths
     match /{document=**} {

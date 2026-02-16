@@ -43,6 +43,115 @@
     </script>
 
     <link rel="stylesheet" href="style.css">
+    <!-- Intl-Tel-Input CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/intlTelInput.min.js"></script>
+    <style>
+        .iti {
+            width: 100%;
+            display: block;
+        }
+
+        .iti--separate-dial-code .iti__selected-dial-code {
+            font-size: 11px;
+            font-weight: 700;
+            color: #000;
+            margin-left: 8px;
+        }
+
+        .iti__country-list {
+            border-radius: 1.5rem !important;
+            border: none !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1) !important;
+            padding: 10px !important;
+            z-index: 6000 !important;
+            background: #fff !important;
+        }
+
+        .iti__country {
+            border-radius: 0.75rem;
+            padding: 10px !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .iti__country.iti__highlight {
+            background-color: #f3f4f6 !important;
+            color: #000 !important;
+        }
+
+        .iti__flag-container {
+            padding: 2px !important;
+        }
+
+        /* Ensure dropdown is above the popup modal */
+
+        #gift-popup-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #gift-popup-overlay.open #gift-popup {
+            transform: scale(1) translateY(0);
+        }
+
+        .floating-label {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-group:focus-within .floating-label,
+        .neat-input:not(:placeholder-shown)~.floating-label,
+        .input-group:has(input:not(:placeholder-shown)) .floating-label {
+            top: 10px;
+            font-size: 8px;
+            color: #000;
+        }
+
+        .input-group.iti-group .floating-label {
+            left: 90px;
+            /* Shift for flag */
+        }
+
+        .input-group input {
+            padding-top: 1.5rem !important;
+            padding-bottom: 0.75rem !important;
+        }
+
+        .popup-image-box img {
+            transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        #gift-popup:hover .popup-image-box img {
+            transform: scale(1.08);
+        }
+
+        @media (max-width: 640px) {
+            #gift-popup {
+                max-width: 92% !important;
+                border-radius: 2rem !important;
+            }
+
+            .popup-image-box {
+                height: 140px !important;
+            }
+
+            #gift-popup .content-padding {
+                padding: 1.5rem !important;
+            }
+        }
+    </style>
 </head>
 
 <body class="selection:bg-black selection:text-white">
@@ -288,6 +397,8 @@
                     class="flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Sliders</button>
                 <button onclick="switchAdminTab('announcements')" id="tab-a"
                     class="flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Notices</button>
+                <button onclick="switchAdminTab('leads')" id="tab-l"
+                    class="flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Leads & Popup</button>
                 <button onclick="switchAdminTab('insights')" id="tab-i"
                     class="flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Insights</button>
             </div>
@@ -542,6 +653,46 @@
                         </div>
                     </div>
 
+                    <!-- Leads & Popup Section -->
+                    <div id="admin-leads-section" class="hidden fade-in">
+                        <div class="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 space-y-6 shadow-sm">
+                            <h3 class="text-[11px] font-black uppercase tracking-widest">Popup Settings</h3>
+                            <div class="space-y-4">
+                                <input type="text" id="popup-title" class="admin-input"
+                                    placeholder="Popup Title (e.g. Free Gift!)">
+                                <textarea id="popup-msg" class="admin-input h-20 py-3 resize-none"
+                                    placeholder="Popup Main Message"></textarea>
+
+                                <div class="pt-4 border-t border-gray-100/50">
+                                    <h4 class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">
+                                        Success State (Post-Submit)</h4>
+                                    <input type="text" id="popup-success-title" class="admin-input mb-4"
+                                        placeholder="Success Title (e.g. Congratulations!)">
+                                    <textarea id="popup-success-msg" class="admin-input h-20 py-3 resize-none"
+                                        placeholder="Success Description"></textarea>
+                                </div>
+
+                                <div class="flex gap-2 items-center p-1 rounded-xl">
+                                    <input type="text" id="popup-img" class="admin-input flex-1" value="img/"
+                                        placeholder="Product Image URL">
+                                    <button onclick="cloudinaryUpload('popup-img')"
+                                        class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
+                                </div>
+                                <button onclick="savePopupSettings()" id="popup-save-btn"
+                                    class="w-full bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl">Update
+                                    Popup</button>
+                            </div>
+
+                            <div class="pt-8 border-t border-gray-100">
+                                <h3 class="text-[11px] font-black uppercase tracking-widest mb-4">Lead Management</h3>
+                                <button onclick="exportLeadsExcel()"
+                                    class="w-full bg-blue-500 text-white py-4 rounded-xl font-bold text-[9px] uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2 mb-4">
+                                    <i class="fa-solid fa-file-excel"></i> Export All Leads (CSV)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- MIGRATION & CLOUD TOOLS -->
                     <div class="mt-10 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 space-y-4">
                         <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">Migration &
@@ -586,14 +737,14 @@
                     <div id="admin-slider-list" class="hidden space-y-4 fade-in pb-20"></div>
                     <div id="admin-announcements-list" class="hidden"></div>
                     <div id="admin-insights-list" class="hidden space-y-4 fade-in"></div>
+                    <div id="admin-leads-list" class="hidden space-y-4 fade-in"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Firebase SDKs & Logic (Inline for local compatibility) -->
-    <!-- External Application Logic -->
-    <script type="module" src="app.js"></script>
+    <!-- Firebase SDKs & Logic -->
 
     <!-- Instant Bypass & Security Warning -->
     <script>
@@ -684,6 +835,83 @@
             <!-- Categories injected here -->
         </div>
     </div>
+    <!-- LEAD GENERATION POPUP -->
+    <div id="gift-popup-overlay"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[5000] opacity-0 pointer-events-none transition-all duration-700 overflow-y-auto py-10 px-4 flex items-center justify-center">
+        <div id="gift-popup"
+            class="w-full max-w-[440px] popup-glass rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.15)] relative overflow-hidden">
+
+            <button onclick="closeGiftPopup()"
+                class="absolute top-8 right-8 w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-black hover:text-white transition-all z-20 group">
+                <i class="fa-solid fa-xmark text-[10px] transition-transform group-hover:rotate-90"></i>
+            </button>
+
+            <div class="popup-image-box">
+                <img id="popup-gift-img" src="https://placehold.co/600x400?text=Gift" class="w-full h-48 object-cover">
+            </div>
+
+            <div class="px-8 pb-10 pt-2 text-center">
+                <div class="mb-8">
+                    <h2 id="popup-gift-title" class="text-[28px] font-black text-black leading-[1.1] tracking-tight"
+                        style="font-family: 'Plus Jakarta Sans', sans-serif;">Claim Your Free Gift</h2>
+                    <p id="popup-gift-msg"
+                        class="text-[9px] text-gray-400 font-black uppercase tracking-[0.25em] mt-3 opacity-60">
+                        Limited Edition • Exclusive Offer</p>
+                </div>
+
+                <form id="lead-form" onsubmit="window.submitLead(event)" class="space-y-4 text-left">
+                    <div class="input-group relative">
+                        <input type="text" id="lead-name" required placeholder=" "
+                            class="neat-input w-full outline-none">
+                        <label class="floating-label">Full Name</label>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="input-group iti-group relative">
+                            <input type="tel" id="lead-whatsapp" required placeholder=" "
+                                class="neat-input w-full outline-none">
+                            <label class="floating-label">WhatsApp</label>
+                        </div>
+                        <div class="input-group relative">
+                            <input type="number" id="lead-age" required placeholder=" "
+                                class="neat-input w-full outline-none">
+                            <label class="floating-label">Age</label>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" id="lead-submit-btn"
+                            class="w-full bg-black text-white py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.15em] shadow-[0_20px_40px_rgba(0,0,0,0.15)] hover:scale-[1.02] active:scale-95 transition-all">
+                            Unlock My Gift
+                        </button>
+                    </div>
+
+                    <p class="text-[8px] text-center text-gray-400 font-bold uppercase tracking-widest mt-8 opacity-40">
+                        * Deliveries within UAE only
+                    </p>
+                </form>
+
+                <!-- SUCCESS STATE -->
+                <div id="lead-success-state" class="hidden flex flex-col items-center py-6 animate-fade-in">
+                    <div class="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-6">
+                        <i class="fa-solid fa-check text-green-500 text-3xl"></i>
+                    </div>
+                    <h2 id="success-title" class="text-[24px] font-black text-black leading-tight mb-3 px-4">
+                        Congratulations!</h2>
+                    <p id="success-msg"
+                        class="text-[11px] text-gray-500 font-bold leading-relaxed max-w-[280px] mx-auto">
+                        Your gift has been secured. We will contact you through WhatsApp shortly.
+                    </p>
+                    <button onclick="closeGiftPopup()"
+                        class="mt-10 px-10 py-4 bg-black text-white rounded-full font-black text-[9px] uppercase tracking-widest hover:scale-105 transition-all">
+                        Continue Browsing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Intl-Tel-Input JS -->
+    <script type="module" src="app.js"></script>
 </body>
 
 </html>
