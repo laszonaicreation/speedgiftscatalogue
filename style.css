@@ -1430,6 +1430,35 @@ img[src=""] {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
 }
 
+/* Mobile height reductions */
+@media (max-width: 768px) {
+    .popup-image-box {
+        margin: 1rem 1rem 0.6rem 1rem !important;
+        border-radius: 1.5rem !important;
+    }
+
+    #popup-gift-img {
+        height: 140px !important;
+        object-fit: cover !important;
+        object-position: center !important;
+    }
+
+    .neat-input {
+        padding: 0.9rem 1.25rem !important;
+        border-radius: 1.25rem !important;
+        font-size: 12px !important;
+    }
+
+    #gift-popup .px-5 {
+        padding-bottom: 1.5rem !important;
+    }
+
+    #gift-popup-overlay {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+}
+
 /* Tel Input Fixes for New Model */
 #gift-popup .iti {
     width: 100%;

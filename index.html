@@ -850,8 +850,8 @@
                 <img id="popup-gift-img" src="https://placehold.co/600x400?text=Gift" class="w-full h-48 object-cover">
             </div>
 
-            <div class="px-8 pb-10 pt-2 text-center">
-                <div class="mb-8">
+            <div class="px-5 md:px-8 pb-6 md:pb-10 pt-1 md:pt-2 text-center">
+                <div class="mb-5 md:mb-8">
                     <h2 id="popup-gift-title" class="text-[28px] font-black text-black leading-[1.1] tracking-tight"
                         style="font-family: 'Plus Jakarta Sans', sans-serif;">Claim Your Free Gift</h2>
                     <p id="popup-gift-msg"
@@ -859,14 +859,14 @@
                         Limited Edition • Exclusive Offer</p>
                 </div>
 
-                <form id="lead-form" onsubmit="window.submitLead(event)" class="space-y-4 text-left">
+                <form id="lead-form" onsubmit="window.submitLead(event)" class="space-y-3 md:space-y-4 text-left">
                     <div class="input-group relative">
                         <input type="text" id="lead-name" required placeholder=" "
                             class="neat-input w-full outline-none">
                         <label class="floating-label">Full Name</label>
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="space-y-3 md:space-y-4">
                         <div class="input-group iti-group relative">
                             <input type="tel" id="lead-whatsapp" required placeholder=" "
                                 class="neat-input w-full outline-none">
@@ -879,20 +879,21 @@
                         </div>
                     </div>
 
-                    <div class="pt-4">
+                    <div class="pt-2 md:pt-4">
                         <button type="submit" id="lead-submit-btn"
                             class="w-full bg-black text-white py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.15em] shadow-[0_20px_40px_rgba(0,0,0,0.15)] hover:scale-[1.02] active:scale-95 transition-all">
                             Unlock My Gift
                         </button>
                     </div>
 
-                    <p class="text-[8px] text-center text-gray-400 font-bold uppercase tracking-widest mt-8 opacity-40">
+                    <p
+                        class="text-[8px] text-center text-gray-400 font-bold uppercase tracking-widest mt-6 md:mt-8 opacity-40">
                         * Deliveries within UAE only
                     </p>
                 </form>
 
                 <!-- SUCCESS STATE -->
-                <div id="lead-success-state" class="hidden flex flex-col items-center py-6 animate-fade-in">
+                <div id="lead-success-state" class="hidden flex flex-col items-center py-4 md:py-6 animate-fade-in">
                     <div class="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-6">
                         <i class="fa-solid fa-check text-green-500 text-3xl"></i>
                     </div>
