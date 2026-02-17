@@ -328,7 +328,12 @@ async function refreshData(isNavigationOnly = false) {
         const isAdminOpen = !document.getElementById('admin-panel').classList.contains('hidden');
 
         // Sync state from URL
-        state.filter = catId || 'all';
+        let rawCatId = catId || 'all';
+        // Sanitization: Remove trailing slashes and handle malformed query markers (e.g. ?c=caricature?gclid=...)
+        if (rawCatId !== 'all') {
+            rawCatId = rawCatId.split('?')[0].split('&')[0].replace(/\/+$/, '').trim();
+        }
+        state.filter = rawCatId;
         state.search = query || '';
 
         // SMART CATEGORY MATCHING: If state.filter is not 'all', check if it's a Name instead of an ID
