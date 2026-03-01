@@ -23,7 +23,7 @@ const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders'
 const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'popupSettings');
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
-let DATA = { p: [], c: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, stats: { adVisits: 0 } };
+let DATA = { p: [], c: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
@@ -117,6 +117,8 @@ if (urlParams.has('gclid') ||
     utmMed === 'ppc' ||
     utmMed === 'google_ads') {
     sessionStorage.setItem('traffic_source', 'Google Ads');
+    // INSTANT HOP TRACKING: Record landing immediately
+    trackAdHop();
 } else if (urlParams.has('utm_source')) {
     sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
 }
@@ -135,6 +137,110 @@ async function waitForAuth() {
     });
 }
 
+// ADVANCED AD TRACKING: SESSION DURATION & ENGAGEMENT
+let sessionStartTime = Date.now();
+let lastEngagementTime = Date.now();
+let totalActiveSeconds = 0;
+
+// Track active time every 5 seconds if user is engaged
+setInterval(() => {
+    if (document.visibilityState === 'visible' && (Date.now() - lastEngagementTime < 60000)) {
+        totalActiveSeconds += 5;
+    }
+}, 5000);
+
+// Record engagement on interactions
+['mousedown', 'touchstart', 'scroll', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, () => { lastEngagementTime = Date.now(); }, { passive: true });
+});
+
+async function syncSessionDuration() {
+    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
+    if (totalActiveSeconds < 5) return;
+
+    await waitForAuth();
+    try {
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        await setDoc(statsRef, { totalSessionSeconds: increment(totalActiveSeconds) }, { merge: true });
+        console.log(`[Ad Tracking] Synced ${totalActiveSeconds}s session duration.`);
+        totalActiveSeconds = 0; // Reset after sync
+    } catch (e) {
+        console.error("[Ad Tracking] Session sync failed:", e);
+    }
+}
+
+// Sync on leave
+window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') syncSessionDuration();
+});
+window.addEventListener('beforeunload', syncSessionDuration);
+
+// IMPRESSION TRACKING
+const impressionCache = new Set();
+let impressionObserver = null;
+
+function initImpressionTracking() {
+    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
+
+    if (impressionObserver) impressionObserver.disconnect();
+
+    impressionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute('data-id');
+                if (id && !impressionCache.has(id)) {
+                    // Start timer for 1s visibility
+                    entry.target.impressionTimeout = setTimeout(() => {
+                        recordImpression(id);
+                        impressionCache.add(id);
+                    }, 800);
+                }
+            } else {
+                // Cancel timer if leaves before 1s
+                if (entry.target.impressionTimeout) {
+                    clearTimeout(entry.target.impressionTimeout);
+                    delete entry.target.impressionTimeout;
+                }
+            }
+        });
+    }, { threshold: 0.6 }); // 60% visibility
+
+    document.querySelectorAll('.product-card').forEach(card => impressionObserver.observe(card));
+}
+
+async function recordImpression(id) {
+    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
+
+    await waitForAuth();
+    try {
+        console.log(`[Ad Tracking] Recording impression for: ${id}`);
+        const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+
+        const batch = writeBatch(db);
+        batch.set(globalStatsRef, { adImpressions: increment(1) }, { merge: true });
+        batch.update(pRef, { adImpressions: increment(1) });
+        await batch.commit();
+    } catch (e) {
+        console.error("[Ad Tracking] Impression tracking error:", e);
+    }
+}
+
+async function trackAdHop() {
+    const sessionKey = 'ad_hop_tracked_v1';
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    // No waitForAuth here anymore - Firestore rules allow public write for this specific doc
+    try {
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        await setDoc(statsRef, { adHops: increment(1) }, { merge: true });
+        sessionStorage.setItem(sessionKey, 'true');
+        console.log("[Ad Tracking] INSTANT Hop recorded.");
+    } catch (e) {
+        console.error("[Ad Tracking] Hop recording failed:", e);
+    }
+}
+
 async function trackAdVisit() {
     const sessionKey = 'ad_visit_tracked_v3';
     if (sessionStorage.getItem(sessionKey)) return;
@@ -144,8 +250,6 @@ async function trackAdVisit() {
 
     try {
         console.log("[Ad Tracking] Attempting to record visit in products/_ad_stats_...");
-        // Path: artifacts/speed-catalogue/public/data/products/_ad_stats_
-        // Using 'products' collection because write permissions are confirmed there
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
         await setDoc(statsRef, { adVisits: increment(1) }, { merge: true });
         sessionStorage.setItem(sessionKey, 'true');
@@ -163,9 +267,12 @@ const startSync = async () => {
 onAuthStateChanged(auth, async (u) => {
     state.user = u;
     if (u) {
-        // Track Ad Visit once authenticated
+        // Track Ad Hop & Visit once authenticated
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
-            await trackAdVisit();
+            // Try hop tracking again as a fallback (it won't double count due to sessionStorage check)
+            trackAdHop();
+            // Start 5-second visit timer
+            setTimeout(() => trackAdVisit(), 5000);
         }
         await loadWishlist();
         // Since we refreshData at start, this might be redundant but keeps state synced for logged in users
@@ -313,7 +420,9 @@ async function refreshData(isNavigationOnly = false) {
 
             // Extract stats from products collection
             const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
-            DATA.stats = statsDoc || { adVisits: 0 };
+            const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 };
+            DATA.stats = statsDoc ? { ...defaultStats, ...statsDoc } : defaultStats;
+
             // Remove internal docs from the products list
             DATA.p = DATA.p.filter(p => p.id !== '_ad_stats_' && p.id !== '--global-stats--' && p.id !== '_announcements_');
 
@@ -344,6 +453,14 @@ async function refreshData(isNavigationOnly = false) {
                 const foundByName = DATA.c.find(c => c.name.toLowerCase() === state.filter.toLowerCase());
                 if (foundByName) {
                     state.filter = foundByName.id;
+                } else {
+                    // FALLBACK: If requested category is totally invalid, default to 'all'
+                    console.warn(`[Routing] Invalid category '${state.filter}' requested. Falling back to 'all'.`);
+                    state.filter = 'all';
+                    // Clean URL
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('c', 'all');
+                    window.history.replaceState({}, '', newUrl);
                 }
             }
         }
@@ -671,6 +788,7 @@ function renderHome() {
         }
 
         renderSlider();
+        initImpressionTracking();
 
         // 5. Update Search & Sort UI
         if (discSearch && discSearch !== document.activeElement) discSearch.value = state.search;
@@ -2263,13 +2381,19 @@ function getBadgeLabel(badge) {
 
 function renderInsights(container) {
     const topProducts = [...DATA.p]
-        .filter(p => (p.views || 0) > 0 || (p.adInquiries || 0) > 0)
+        .filter(p => (p.views || 0) > 0 || (p.adInquiries || 0) > 0 || (p.adViews || 0) > 0 || (p.adImpressions || 0) > 0)
         .sort((a, b) => {
-            const scoreA = (a.views || 0) + (a.adInquiries || 0) * 5;
-            const scoreB = (b.views || 0) + (b.adInquiries || 0) * 5;
+            const scoreA = (a.views || 0) + (a.adViews || 0) * 2 + (a.adInquiries || 0) * 5 + (a.adImpressions || 0) * 0.1;
+            const scoreB = (b.views || 0) + (b.adViews || 0) * 2 + (b.adInquiries || 0) * 5 + (b.adImpressions || 0) * 0.1;
             return scoreB - scoreA;
         })
         .slice(0, 30);
+
+    const avgSessionSecs = DATA.stats.adVisits ? Math.round((DATA.stats.totalSessionSeconds || 0) / DATA.stats.adVisits) : 0;
+    const formatDuration = (s) => {
+        if (s < 60) return s + 's';
+        return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+    };
 
     let html = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -2278,9 +2402,14 @@ function renderInsights(container) {
                     <h5 class="text-[10px] font-black uppercase tracking-widest text-blue-400">Total Catalog Usage</h5>
                     <div class="flex items-baseline gap-3">
                         <p class="text-[20px] font-black text-blue-900">${DATA.p.reduce((acc, p) => acc + (p.views || 0), 0)} Total Views</p>
-                        <button onclick="resetAllAnalytics()" class="text-[9px] font-black uppercase text-blue-300 hover:text-red-500 transition-all ml-2 underline underline-offset-4 decoration-blue-200 hover:decoration-red-200">
-                            Master Reset
-                        </button>
+                        <div class="flex gap-2">
+                             <button onclick="refreshData()" class="text-[9px] font-black uppercase text-blue-300 hover:text-blue-500 transition-all ml-2 underline underline-offset-4 decoration-blue-200">
+                                Refresh
+                            </button>
+                            <button onclick="resetAllAnalytics()" class="text-[9px] font-black uppercase text-blue-300 hover:text-red-500 transition-all underline underline-offset-4 decoration-blue-200">
+                                Reset
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <i class="fa-solid fa-chart-line text-blue-200 text-3xl"></i>
@@ -2295,9 +2424,25 @@ function renderInsights(container) {
                                 Reset
                             </button>
                         </div>
-                        <p class="text-[12px] font-black text-purple-600 flex items-center gap-2">
-                            <i class="fa-brands fa-whatsapp"></i> ${DATA.stats.adInquiries || 0} Leads (Inquiries)
-                        </p>
+                        <div class="flex items-center gap-2 mb-2">
+                             <span class="text-[9px] font-bold px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full uppercase tracking-tighter">
+                                Load Success: ${DATA.stats.adHops ? Math.round((DATA.stats.adVisits / DATA.stats.adHops) * 100) : 100}%
+                             </span>
+                             <span class="text-[9px] font-bold text-purple-300 uppercase tracking-tighter">
+                                ${Math.max(0, (DATA.stats.adHops || 0) - (DATA.stats.adVisits || 0))} Drop-offs
+                             </span>
+                        </div>
+                        <div class="flex flex-wrap gap-4 mt-2">
+                             <p class="text-[11px] font-black text-purple-600 flex items-center gap-2">
+                                <i class="fa-brands fa-whatsapp"></i> ${DATA.stats.adInquiries || 0} Leads
+                            </p>
+                            <p class="text-[11px] font-black text-purple-500 flex items-center gap-2">
+                                <i class="fa-solid fa-eye"></i> ${DATA.stats.adImpressions || 0} Visibility
+                            </p>
+                            <p class="text-[11px] font-black text-purple-400 flex items-center gap-2">
+                                <i class="fa-solid fa-clock"></i> ${formatDuration(avgSessionSecs)} Avg Dur
+                            </p>
+                        </div>
                     </div>
                 </div>
                 <i class="fa-brands fa-google text-purple-200 text-3xl"></i>
@@ -2317,18 +2462,22 @@ function renderInsights(container) {
                     <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
                     <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">${DATA.c.find(c => c.id === p.catId)?.name || 'Uncategorized'}</p>
                 </div>
-                <div class="flex items-center gap-4 px-4 border-l border-gray-50">
-                    <div class="text-right">
-                        <p class="text-[12px] font-black tracking-tighter text-black leading-none">${p.views || 0}</p>
-                        <p class="text-[6px] font-black uppercase text-gray-300 tracking-[0.1em] mt-1">Views</p>
+                <div class="flex items-center gap-3 px-4 border-l border-gray-50">
+                    <div class="text-right min-w-[35px]">
+                        <p class="text-[11px] font-black tracking-tighter text-black leading-none">${p.views || 0}</p>
+                        <p class="text-[5px] font-black uppercase text-gray-300 tracking-[0.1em] mt-1">Total</p>
                     </div>
-                    <div class="text-right pl-4 border-l border-gray-50">
-                        <p class="text-[12px] font-black tracking-tighter text-purple-600 leading-none">${p.adViews || 0}</p>
-                        <p class="text-[6px] font-black uppercase text-purple-300 tracking-[0.1em] mt-1">Ad Cnt</p>
+                    <div class="text-right pl-3 border-l border-gray-50 min-w-[35px]">
+                        <p class="text-[11px] font-black tracking-tighter text-purple-600 leading-none">${p.adImpressions || 0}</p>
+                        <p class="text-[5px] font-black uppercase text-purple-300 tracking-[0.1em] mt-1">Seen</p>
                     </div>
-                    <div class="text-right pl-4 border-l border-gray-50">
-                        <p class="text-[12px] font-black tracking-tighter text-green-600 leading-none">${p.adInquiries || 0}</p>
-                        <p class="text-[6px] font-black uppercase text-green-300 tracking-[0.1em] mt-1">Leads</p>
+                    <div class="text-right pl-3 border-l border-gray-50 min-w-[35px]">
+                        <p class="text-[11px] font-black tracking-tighter text-blue-600 leading-none">${p.adViews || 0}</p>
+                        <p class="text-[5px] font-black uppercase text-blue-300 tracking-[0.1em] mt-1">Clicks</p>
+                    </div>
+                    <div class="text-right pl-3 border-l border-gray-50 min-w-[35px]">
+                        <p class="text-[11px] font-black tracking-tighter text-green-600 leading-none">${p.adInquiries || 0}</p>
+                        <p class="text-[5px] font-black uppercase text-green-300 tracking-[0.1em] mt-1">Leads</p>
                     </div>
                 </div>
             </div>
@@ -2340,22 +2489,25 @@ function renderInsights(container) {
 }
 
 window.resetAdTraffic = async () => {
-    if (!confirm("Are you sure you want to reset all Ad Traffic and Inquiry data to zero?")) return;
+    if (!confirm("Are you sure you want to reset all Ad Traffic, Impressions, and Session data?")) return;
     try {
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-        await setDoc(statsRef, { adVisits: 0, adInquiries: 0 }, { merge: true });
+        await setDoc(statsRef, { adVisits: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, adHops: 0 }, { merge: true });
         DATA.stats.adVisits = 0;
         DATA.stats.adInquiries = 0;
+        DATA.stats.adImpressions = 0;
+        DATA.stats.totalSessionSeconds = 0;
+        DATA.stats.adHops = 0;
         renderAdminUI();
         showToast("Ad Data Reset Successfully");
     } catch (e) {
         console.error("Reset Error:", e);
-        showToast("Error resetting counter");
+        showToast("Error resetting data");
     }
 };
 
 window.resetAllAnalytics = async () => {
-    if (!confirm("CRITICAL: This will reset ALL VIEWS, AD TRAFFIC, and LEADS for ALL products to zero. This cannot be undone. Proceed?")) return;
+    if (!confirm("CRITICAL: This will reset ALL VIEWS, AD TRAFFIC, IMPRESSIONS, and LEADS. This cannot be undone. Proceed?")) return;
 
     const loader = document.getElementById('loader');
     if (loader) loader.style.display = 'flex';
@@ -2365,14 +2517,13 @@ window.resetAllAnalytics = async () => {
 
         // 1. Reset Global Ad Stats
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-        batch.set(statsRef, { adVisits: 0, adInquiries: 0 }, { merge: true });
+        batch.set(statsRef, { adVisits: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, adHops: 0 }, { merge: true });
 
-        // 2. Reset All Products (Views, AdViews, AdInquiries)
-        // Note: Firestore batch limit is 500. If more items exist, we do them in chunks.
+        // 2. Reset All Products (Views, AdViews, AdInquiries, AdImpressions)
         const products = DATA.p;
         products.forEach(p => {
             const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', p.id);
-            batch.update(pRef, { views: 0, adViews: 0, adInquiries: 0 });
+            batch.update(pRef, { views: 0, adViews: 0, adInquiries: 0, adImpressions: 0 });
         });
 
         await batch.commit();
@@ -2380,10 +2531,14 @@ window.resetAllAnalytics = async () => {
         // Update Local memory
         DATA.stats.adVisits = 0;
         DATA.stats.adInquiries = 0;
+        DATA.stats.adImpressions = 0;
+        DATA.stats.totalSessionSeconds = 0;
+        DATA.stats.adHops = 0;
         DATA.p.forEach(p => {
             p.views = 0;
             p.adViews = 0;
             p.adInquiries = 0;
+            p.adImpressions = 0;
         });
 
         renderAdminUI();
@@ -2810,6 +2965,12 @@ window.addEventListener('scroll', () => {
 // --- LEAD POPUP CORE ---
 window.initPopup = () => {
     console.log("[Popup] Initializing logic...");
+    // Check if user is from Google Ads
+    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') {
+        console.log("[Popup] Blocked: Non-ads visitor.");
+        return;
+    }
+
     // Check if user already submitted or dismissed
     if (localStorage.getItem('popup_submitted')) {
         console.log("[Popup] Blocked: Already submitted.");

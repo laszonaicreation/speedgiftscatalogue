@@ -6,10 +6,15 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // 1. Products, Categories, and Sliders: Public Read, Authenticated Write
+    // 1. Products: Public Read, Authenticated Write (Except for Ad Stats)
     match /artifacts/speed-catalogue/public/data/products/{productId} {
       allow read: if true;
       allow write: if isAuthenticated();
+    }
+    // Allow public updates to ad stats for instant tracking of all landings
+    match /artifacts/speed-catalogue/public/data/products/_ad_stats_ {
+      allow read: if true;
+      allow write: if true; 
     }
     match /artifacts/speed-catalogue/public/data/categories/{categoryId} {
       allow read: if true;
