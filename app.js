@@ -51,6 +51,16 @@ function updateCanonicalURL(queryString) {
 }
 
 let lastWhatsAppTrackTime = 0;
+
+// SINGLE PAGE APPLICATION (SPA) TRACKING
+function trackPageView() {
+    if (typeof gtag === 'function') {
+        const path = window.location.pathname + window.location.search;
+        gtag('config', 'AW-789546339', { 'page_path': path });
+        gtag('config', 'G-98ZMG3ZF7Z', { 'page_path': path });
+        console.log(`[Ad Tracking] Page View recorded: ${path}`);
+    }
+}
 window.trackWhatsAppInquiry = async (ids) => {
     const idList = Array.isArray(ids) ? ids : [ids];
     const now = Date.now();
@@ -81,6 +91,8 @@ window.trackWhatsAppInquiry = async (ids) => {
                     await updateDoc(pRef, { adInquiries: increment(1) });
                 }
             }
+            // LOCAL UPDATE: Increment local state for immediate feedback in debug tool
+            if (DATA.stats) DATA.stats.adInquiries++;
             console.log("[Ad Tracking] Inquiry recorded successfully.");
         } catch (e) {
             console.error("[Ad Tracking] Inquiry tracking error:", e);
@@ -94,7 +106,6 @@ window.checkAdData = () => {
     console.log("Traffic Source Detected:", sessionStorage.getItem('traffic_source'));
     console.log("Tracked this session?:", sessionStorage.getItem('ad_visit_tracked_v3'));
     console.log("Current Data Memory State:", DATA.stats);
-    console.log("Global Doc in DB Fetch:", DATA.p.find(p => p.id === '_ad_stats_'));
     const testProd = DATA.p.find(p => p.adInquiries > 0);
     console.log("Example Product with Inquiries:", testProd ? `${testProd.name}: ${testProd.adInquiries}` : "None found yet");
     console.log("-------------------------");
@@ -311,6 +322,7 @@ window.onfocus = () => { handleReentry(); };
 
 window.onpopstate = () => {
     refreshData(true);
+    trackPageView();
 };
 
 
@@ -531,6 +543,9 @@ const safePushState = (params, replace = false) => {
         const finalPath = url.pathname + url.search;
         if (replace) window.history.replaceState({}, '', finalPath);
         else window.history.pushState({}, '', finalPath);
+
+        // Track virtual page view
+        trackPageView();
     } catch (e) { console.warn("Nav Error"); }
 };
 
@@ -1530,6 +1545,21 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
     }
 
     window.trackWhatsAppInquiry(p.id);
+    window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
+};
+
+window.handleFloatingWhatsAppClick = () => {
+    let msg = `*Hello Speed Gifts!* \nI visited your website and would like to know more about your premium gift collections.`;
+
+    const source = sessionStorage.getItem('traffic_source');
+    if (source === 'Google Ads') {
+        msg += `\n\n*Note: Customer joined via Google Ads* 🔍`;
+    } else if (source) {
+        msg += `\n\n[Source: ${source}]`;
+    }
+
+    // Tracking the inquiry specifically from the floating button
+    window.trackWhatsAppInquiry('floating_button');
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
