@@ -948,13 +948,14 @@ img[src=""] {
 /* SIDEBAR STATE CLASSES */
 #favorites-sidebar.open,
 #categories-sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
+    translate: 0 !important;
 }
 
 #favorites-sidebar-overlay.open,
 #categories-sidebar-overlay.open {
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 .sidebar-cat-item {

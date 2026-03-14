@@ -813,7 +813,7 @@ function renderHome() {
                 <div class="product-card group fade-in ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
                     <div class="img-container mb-4 shadow-sm relative">
                         ${badgeHtml}
-                        <div class="wish-btn shadow-sm md:hidden" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
+                        <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
                         ${!state.selectionId ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
                         <img src="${getOptimizedUrl(displayP.img, 600)}" 
                              ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
@@ -826,7 +826,7 @@ function renderHome() {
                             <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${displayP.name}</h3>
                             <p class="price-tag mt-2 font-bold">${displayP.price} AED</p>
                         </div>
-                        <div class="wish-btn relative !top-0 !right-0 !left-auto hidden md:flex" onclick="toggleWishlist(event, '${p.id}')">
+                        <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="toggleWishlist(event, '${p.id}')">
                             <i class="fa-solid fa-heart"></i>
                         </div>
                     </div>
@@ -2330,49 +2330,8 @@ window.renderCategoriesSidebar = () => {
     }).join('');
 };
 
-window.openCategoriesSidebar = () => {
-    const sidebar = document.getElementById('categories-sidebar');
-    const overlay = document.getElementById('categories-sidebar-overlay');
-    if (sidebar && overlay) {
-        renderCategoriesSidebar();
-        sidebar.classList.add('open');
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
-};
+// End of sidebar functions (cleaned duplicates)
 
-window.closeCategoriesSidebar = () => {
-    const sidebar = document.getElementById('categories-sidebar');
-    const overlay = document.getElementById('categories-sidebar-overlay');
-    if (sidebar && overlay) {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('open');
-        document.body.style.overflow = 'auto';
-    }
-};
-
-window.renderCategoriesSidebar = () => {
-    const container = document.getElementById('sidebar-categories-list');
-    if (!container) return;
-
-    if (DATA.c.length === 0) {
-        container.innerHTML = `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
-        return;
-    }
-
-    container.innerHTML = DATA.c.map(c => {
-        const productCount = DATA.p.filter(p => p.catId === c.id).length;
-        return `
-            <div class="sidebar-cat-item group" onclick="window.closeCategoriesSidebar(); applyFilter('${c.id}')">
-                <div class="sidebar-cat-img-box">
-                    <img src="${getOptimizedUrl(c.img, 100)}" alt="${c.name}" onerror="this.src='https://placehold.co/100x100?text=Icon'">
-                </div>
-                <h4 class="sidebar-cat-name">${c.name}</h4>
-                <span class="sidebar-cat-count">${productCount}</span>
-            </div>
-        `;
-    }).join('');
-};
 
 window.renderFavoritesSidebar = () => {
     const container = document.getElementById('sidebar-items');
