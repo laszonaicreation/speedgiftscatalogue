@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -13,6 +13,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code == 'failed-precondition') {
+        console.warn('Multiple tabs open, persistence disabled in this tab.');
+    } else if (err.code == 'unimplemented') {
+        console.warn('Browser does not support persistence.');
+    }
+});
 const auth = getAuth(app);
 const appId = firebaseConfig.projectId;
 
@@ -24,7 +31,8 @@ const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'p
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
 let DATA = { p: [], c: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
-let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null };
+let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1 };
+const PAGE_SIZE = 16;
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
 
@@ -588,6 +596,7 @@ window.goBackToHome = (forceReset = false) => {
         state.filter = 'all';
         state.search = '';
         state.scrollPos = 0;
+        state.visibleChunks = 1; // Reset pagination
         safePushState({ s: null, p: null, c: null, q: null });
     } else {
         safePushState({ p: null });
@@ -605,6 +614,11 @@ window.toggleSelectAll = () => {
     const allVisibleSelected = visibleIds.every(id => state.selected.includes(id));
     if (allVisibleSelected) state.selected = state.selected.filter(id => !visibleIds.includes(id));
     else state.selected = Array.from(new Set([...state.selected, ...visibleIds]));
+    renderHome();
+};
+
+window.loadMoreProducts = () => {
+    state.visibleChunks++;
     renderHome();
 };
 
@@ -633,6 +647,31 @@ function renderHome() {
         const discSearch = appMain.querySelector('#customer-search');
         const clearBtn = appMain.querySelector('#clear-search-btn');
         const mobileSort = appMain.querySelector('#price-sort-mob');
+        const mSearch = document.getElementById('m-search'); // Mobile search input
+
+        // Desktop Search
+        if (discSearch) {
+            discSearch.addEventListener('input', (e) => {
+                state.search = e.target.value;
+                state.visibleChunks = 1; // Reset pagination
+                renderHome();
+            });
+        }
+
+        // Mobile Search (Wait for user to stop typing or press enter)
+        if (mSearch) {
+            let timeout = null;
+            mSearch.addEventListener('keyup', (e) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    if (state.search !== e.target.value) {
+                        state.search = e.target.value;
+                        state.visibleChunks = 1; // Reset pagination
+                        renderHome();
+                    }
+                }, 500);
+            });
+        }
 
         // 1. Handle selection/wishlist headers
         if (state.selectionId) {
@@ -760,7 +799,11 @@ function renderHome() {
         if (grid) {
             const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
 
-            grid.innerHTML = filtered.map((p, idx) => {
+            const limit = state.visibleChunks * PAGE_SIZE;
+            const visibleProducts = filtered.slice(0, limit);
+            const hasMore = filtered.length > limit;
+
+            let gridContent = visibleProducts.map((p, idx) => {
                 let displayP = { ...p };
                 let savedVar = null;
 
@@ -788,7 +831,10 @@ function renderHome() {
                         </div>
                     </div>
                 </div>`;
-            }).join('') || `
+            }).join('');
+
+            if (filtered.length === 0) {
+                gridContent = `
                 <div class="col-span-full text-center py-40 px-6">
                     <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <i class="fa-solid fa-box-open text-gray-200 text-xl"></i>
@@ -799,7 +845,30 @@ function renderHome() {
                         View All Collections
                     </button>
                 </div>
-            `;
+                `;
+            }
+
+            grid.innerHTML = gridContent;
+
+            // Load More Logic (Outside the grid so it stays centered at the bottom width-wise)
+            let loadMoreContainer = document.getElementById('load-more-container');
+            if (!loadMoreContainer) {
+                loadMoreContainer = document.createElement('div');
+                loadMoreContainer.id = 'load-more-container';
+                loadMoreContainer.className = 'w-full flex justify-center mt-12 mb-8';
+                grid.parentElement.appendChild(loadMoreContainer);
+            }
+            
+            if (hasMore) {
+                loadMoreContainer.innerHTML = `
+                    <button onclick="window.loadMoreProducts()" class="bg-white border-2 border-black text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group">
+                        Load More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i>
+                    </button>
+                `;
+                loadMoreContainer.style.display = 'flex';
+            } else {
+                loadMoreContainer.style.display = 'none';
+            }
         }
 
         renderSlider();
