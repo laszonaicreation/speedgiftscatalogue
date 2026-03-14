@@ -260,6 +260,11 @@ body {
     opacity: 1;
 }
 
+.img-container img.no-animation {
+    opacity: 1 !important;
+    transition: none !important;
+}
+
 
 /* Smoothing image entry */
 img {

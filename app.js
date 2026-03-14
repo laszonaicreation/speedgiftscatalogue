@@ -447,6 +447,9 @@ async function refreshData(isNavigationOnly = false) {
             DATA.p = DATA.p.filter(p => p.id !== '_ad_stats_' && p.id !== '--global-stats--' && p.id !== '_announcements_');
 
             renderAnnouncementBar();
+            // Aggressive Preloading for instant feel
+            window.preloadInitialBatch();
+            
             console.log("[Ad Tracking] UI Refreshed. Counter is now:", DATA.stats.adVisits);
         }
         const urlParams = new URLSearchParams(window.location.search);
@@ -810,7 +813,7 @@ function renderHome() {
                 const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
 
                 return `
-                <div class="product-card group fade-in ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" 
+                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" 
                      onmouseenter="window.preloadProductImage('${p.id}')"
                      onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
                     <div class="img-container mb-4 shadow-sm relative">
@@ -818,6 +821,7 @@ function renderHome() {
                         <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
                         ${!state.selectionId ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
                         <img src="${getOptimizedUrl(displayP.img, 600)}" 
+                             class="${idx < 4 ? 'no-animation' : ''}"
                              ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                              decoding="async"
                              onload="this.classList.add('loaded')"
@@ -946,11 +950,11 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
     });
 
     appMain.innerHTML = `
-<div class="max-w-5xl mx-auto py-8 md:py-16 fade-in px-4 pb-20 detail-view-container text-left">
+<div class="max-w-5xl mx-auto py-8 md:py-16 px-4 pb-20 detail-view-container text-left">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         <div>
             <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || p.img}')">
-                <img src="${getOptimizedUrl(allImages[0] || p.img, window.innerWidth < 768 ? 600 : 1200)}" id="main-detail-img" class="w-full h-full object-cover" fetchpriority="high" loading="eager">
+                <img src="${getOptimizedUrl(allImages[0] || p.img, window.innerWidth < 768 ? 600 : 1200)}" id="main-detail-img" class="w-full h-full object-cover no-animation" fetchpriority="high" loading="eager">
             </div>
             <div class="thumb-grid justify-center lg:justify-start mt-4" id="detail-thumb-grid">
                 ${allImages.map((img, i) => `
@@ -2386,14 +2390,35 @@ window.renderFavoritesSidebar = () => {
                                 `).join('');
 };
 
-window.preloadProductImage = (id) => {
+window.preloadProductImage = (id, priority = 'low') => {
     const p = DATA.p.find(x => x.id === id);
     if (!p || p._preloaded) return;
     const imgUrl = getOptimizedUrl(p.images?.[0] || p.img, window.innerWidth < 768 ? 600 : 1200);
     const img = new Image();
+    if (priority === 'high') img.fetchPriority = 'high';
     img.src = imgUrl;
     p._preloaded = true;
 };
+
+// Aggressively preload first 8 products for "instant" feel
+// Aggressively preload sliders and first 8 products for "instant" feel
+window.preloadInitialBatch = () => {
+    // 1. Preload Sliders (High Priority)
+    if (DATA.s && DATA.s.length) {
+        DATA.s.forEach(s => {
+            const isMobile = window.innerWidth < 768;
+            const imgUrl = getOptimizedUrl(isMobile ? s.mobileImg : s.img, isMobile ? 800 : 1920);
+            const img = new Image();
+            img.fetchPriority = 'high';
+            img.src = imgUrl;
+        });
+    }
+    // 2. Preload Product Detail Images (High Priority)
+    if (DATA.p && DATA.p.length) {
+        DATA.p.slice(0, 8).forEach(p => window.preloadProductImage(p.id, 'high'));
+    }
+};
+
 
 function getOptimizedUrl(url, width) {
     if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return url;
@@ -2672,7 +2697,9 @@ function renderSlider() {
         const displayImg = isMobile ? s.mobileImg : s.img;
         return `
             <div class="slider-slide" data-index="${i}">
-                <img src="${getOptimizedUrl(displayImg, isMobile ? 800 : 1920)}" alt="${s.title || ''}" onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" style="${s.link ? 'cursor:pointer' : ''}">
+                <img src="${getOptimizedUrl(displayImg, isMobile ? 800 : 1920)}" 
+                     class="${i === 0 ? 'no-animation' : ''}"
+                     alt="${s.title || ''}" onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" style="${s.link ? 'cursor:pointer' : ''}">
                 ${s.title ? `<div class="absolute bottom-12 left-8 md:left-12 text-white z-20">
                     <h2 class="text-2xl md:text-5xl font-black uppercase tracking-tighter">${s.title}</h2>
                 </div>` : ''}
