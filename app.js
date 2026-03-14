@@ -810,7 +810,9 @@ function renderHome() {
                 const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
 
                 return `
-                <div class="product-card group fade-in ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
+                <div class="product-card group fade-in ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" 
+                     onmouseenter="window.preloadProductImage('${p.id}')"
+                     onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
                     <div class="img-container mb-4 shadow-sm relative">
                         ${badgeHtml}
                         <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
@@ -948,7 +950,7 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         <div>
             <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || p.img}')">
-                <img src="${getOptimizedUrl(allImages[0] || p.img, 1200)}" id="main-detail-img" class="w-full h-full object-cover" fetchpriority="high" loading="eager">
+                <img src="${getOptimizedUrl(allImages[0] || p.img, window.innerWidth < 768 ? 600 : 1200)}" id="main-detail-img" class="w-full h-full object-cover" fetchpriority="high" loading="eager">
             </div>
             <div class="thumb-grid justify-center lg:justify-start mt-4" id="detail-thumb-grid">
                 ${allImages.map((img, i) => `
@@ -2382,6 +2384,15 @@ window.renderFavoritesSidebar = () => {
                                     </button>
                                 </div>
                                 `).join('');
+};
+
+window.preloadProductImage = (id) => {
+    const p = DATA.p.find(x => x.id === id);
+    if (!p || p._preloaded) return;
+    const imgUrl = getOptimizedUrl(p.images?.[0] || p.img, window.innerWidth < 768 ? 600 : 1200);
+    const img = new Image();
+    img.src = imgUrl;
+    p._preloaded = true;
 };
 
 function getOptimizedUrl(url, width) {
