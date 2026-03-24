@@ -28,9 +28,10 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
 const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'popupSettings');
+const landingSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'landingSettings');
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
-let DATA = { p: [], c: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
+let DATA = { p: [], c: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1 };
 const PAGE_SIZE = 16;
 let clicks = 0, lastClickTime = 0;
@@ -422,13 +423,14 @@ window.toggleWishlist = async (e, id) => {
 async function refreshData(isNavigationOnly = false) {
     try {
         if (!isNavigationOnly || DATA.p.length === 0) {
-            const [pSnap, cSnap, sSnap] = await Promise.all([
+            const [pSnap, cSnap, sSnap, popSnap] = await Promise.all([
                 getDocs(prodCol),
                 getDocs(catCol),
                 getDocs(sliderCol).catch(e => {
                     console.error("Slider fetch failed:", e);
                     return { docs: [] };
-                })
+                }),
+                getDocs(popupSettingsCol).catch(e => ({ empty: true }))
             ]);
             DATA.p = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -438,13 +440,26 @@ async function refreshData(isNavigationOnly = false) {
             const announceDoc = DATA.p.find(p => p.id === '_announcements_');
             DATA.announcements = announceDoc ? (announceDoc.messages || []) : [];
 
+            // Apply Popup Settings
+            if (!popSnap.empty && popSnap.docs) {
+                DATA.popupSettings = popSnap.docs[0].data();
+            }
+
+            // Apply Landing Settings (from products collection)
+            const landDoc = DATA.p.find(p => p.id === '_landing_settings_');
+            if (landDoc) {
+                DATA.landingSettings = { ...landDoc };
+            } else {
+                DATA.landingSettings = null;
+            }
+
             // Extract stats from products collection
             const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
             const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 };
             DATA.stats = statsDoc ? { ...defaultStats, ...statsDoc } : defaultStats;
 
             // Remove internal docs from the products list
-            DATA.p = DATA.p.filter(p => p.id !== '_ad_stats_' && p.id !== '--global-stats--' && p.id !== '_announcements_');
+            DATA.p = DATA.p.filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_'].includes(p.id));
 
             renderAnnouncementBar();
             // Aggressive Preloading for instant feel
@@ -1877,6 +1892,9 @@ window.showAdminPanel = () => {
             document.getElementById('popup-success-msg').value = DATA.popupSettings.successMsg || "";
     }
 
+    if (typeof populateLandingProductSelects === 'function') populateLandingProductSelects();
+    populateLandingSettingsUI();
+
     renderAdminUI();
 };
 window.hideAdminPanel = () => { document.getElementById('admin-panel').classList.add('hidden'); document.body.style.overflow = 'auto'; };
@@ -1889,13 +1907,33 @@ window.switchAdminTab = (tab) => {
     const isInsight = tab === 'insights';
     const isAnnounce = tab === 'announcements';
     const isLeads = tab === 'leads';
+    const isLanding = tab === 'landing';
 
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
+    document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
     document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
-    document.getElementById('admin-insights-section').classList.toggle('hidden', !isAnnounce && !isInsight && !isLeads);
+    document.getElementById('admin-landing-section').classList.toggle('hidden', !isLanding);
+    document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
     document.getElementById('admin-announcements-section').classList.toggle('hidden', !isAnnounce);
     document.getElementById('admin-leads-section').classList.toggle('hidden', !isLeads);
+
+    // Center Insights View Full Width
+    document.getElementById('admin-form-container').classList.toggle('hidden', isInsight);
+    const rightCol = document.getElementById('admin-right-column');
+    if (isInsight) {
+        rightCol.className = "transition-all duration-500";
+        rightCol.style.gridColumn = "1 / -1";
+        rightCol.style.maxWidth = "800px";
+        rightCol.style.margin = "0 auto";
+        rightCol.style.width = "100%";
+    } else {
+        rightCol.className = "lg:col-span-7 transition-all duration-500";
+        rightCol.style.gridColumn = "";
+        rightCol.style.maxWidth = "";
+        rightCol.style.margin = "";
+        rightCol.style.width = "";
+    }
 
     document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
@@ -1906,22 +1944,29 @@ window.switchAdminTab = (tab) => {
 
     document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
 
-    document.getElementById('tab-p').className = isProd ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
-    document.getElementById('tab-c').className = isCat ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
-    document.getElementById('tab-s').className = isSlider ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
-    document.getElementById('tab-a').className = isAnnounce ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
-    document.getElementById('tab-i').className = isInsight ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
-    document.getElementById('tab-l').className = isLeads ? "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase bg-white shadow-xl" : "flex-1 py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400";
+    const activeClass = "flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase transition-all bg-white shadow-xl";
+    const inactiveClass = "flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400 transition-all hover:bg-white/50";
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : "Popularity Insights"))));
+    document.getElementById('tab-p').className = isProd ? activeClass : inactiveClass;
+    document.getElementById('tab-c').className = isCat ? activeClass : inactiveClass;
+    document.getElementById('tab-s').className = isSlider ? activeClass : inactiveClass;
+    document.getElementById('tab-a').className = isAnnounce ? activeClass : inactiveClass;
+    document.getElementById('tab-i').className = isInsight ? activeClass : inactiveClass;
+    document.getElementById('tab-landing').className = isLanding ? activeClass : inactiveClass;
+    document.getElementById('tab-l').className = isLeads ? activeClass : inactiveClass;
+
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : "Popularity Insights")))));
     renderAdminUI();
 };
 
 /* CATEGORY PICKER LOGIC */
 
 function populateCatSelect() {
-    const select = document.getElementById('p-cat-id');
-    if (select) select.innerHTML = `<option value="">Select Category</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const selects = [document.getElementById('p-cat-id'), document.getElementById('landing-sec1-cat'), document.getElementById('landing-sec2-cat')];
+    const optionsHtml = `<option value="">Select Category</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    selects.forEach(select => {
+        if (select) select.innerHTML = optionsHtml;
+    });
 }
 
 function populateAdminCatFilter() {
@@ -2517,6 +2562,9 @@ function renderInsights(container) {
                             <button onclick="resetAdTraffic()" class="text-[9px] font-black uppercase text-purple-300 hover:text-red-500 transition-all ml-2 underline underline-offset-4 decoration-purple-200 hover:decoration-red-200">
                                 Reset
                             </button>
+                        </div>
+                        <div class="flex items-baseline gap-2 mb-2">
+                             <p class="text-[14px] font-black text-purple-800">${DATA.stats.landingAdVisits || 0} <span class="text-[10px] font-bold text-purple-500 uppercase tracking-widest">Landing Page</span></p>
                         </div>
                         <div class="flex items-center gap-2 mb-2">
                              <span class="text-[9px] font-bold px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full uppercase tracking-tighter">
@@ -3284,6 +3332,180 @@ window.savePopupSettings = async () => {
         btn.disabled = false;
     }
 };
+
+window.landingSec1Selected = [];
+window.landingSec2Selected = [];
+
+window.searchLandingProducts = (sec, query) => {
+    const dropdown = document.getElementById(`landing-${sec}-dropdown`);
+    if (!dropdown) return;
+    
+    const selectedList = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
+    let matches = DATA.p.filter(p => !p.id.startsWith('_') && !p.id.startsWith('-'));
+    
+    if (query && query.trim()) {
+        matches = matches.filter(p => p.name.toLowerCase().includes(query.trim().toLowerCase()));
+    }
+
+    // Build category tabs using actual catId → name from DATA.c
+    const catIds = [...new Set(matches.map(p => p.catId).filter(Boolean))];
+    const activeCat = dropdown.dataset.activeCat || 'all';
+
+    let filtered = matches;
+    if (activeCat !== 'all') {
+        filtered = matches.filter(p => p.catId === activeCat);
+    }
+
+    const tabBase = 'padding:3px 8px;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;border:1px solid #e5e7eb;transition:all .2s;';
+    const tabActive = tabBase + 'background:#000;color:#fff;border-color:#000;';
+    const tabInactive = tabBase + 'background:#fff;color:#6b7280;';
+
+    const catTabsHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-bottom:1px solid #f3f4f6;background:#f9fafb;position:sticky;top:0;z-index:10;">
+            <button onclick="landingSetCat('${sec}','all')" style="${activeCat==='all' ? tabActive : tabInactive}">All (${matches.length})</button>
+            ${catIds.map(cid => { const cat = DATA.c.find(c => c.id === cid); const label = cat ? cat.name : cid; return `<button onclick="landingSetCat('${sec}','${cid}')" style="${activeCat===cid ? tabActive : tabInactive}">${label}</button>`; }).join('')}
+        </div>`;
+
+    if (filtered.length === 0) {
+        dropdown.innerHTML = catTabsHTML + `<div style="padding:16px;text-align:center;font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-style:italic;">No products found</div>`;
+    } else {
+        const gridItems = filtered.map(p => {
+            const isSelected = selectedList.includes(p.id);
+            const wrapStyle = `position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:10px;cursor:pointer;transition:all .2s;border:2px solid ${isSelected ? '#000' : 'transparent'};background:${isSelected ? 'rgba(0,0,0,0.04)' : 'transparent'};`;
+            const checkmark = isSelected ? `<div style="position:absolute;top:3px;right:3px;width:14px;height:14px;background:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-check" style="color:#fff;font-size:7px;"></i></div>` : '';
+            const nameStyle = `font-size:8px;font-weight:700;text-transform:uppercase;text-align:center;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%;`;
+            return `
+            <div onclick="${isSelected ? `removeLandingProduct('${sec}','${p.id}')` : `addLandingProduct('${sec}','${p.id}')`}" style="${wrapStyle}">
+                ${checkmark}
+                <img src="${getOptimizedUrl(p.img, 80)}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+                <span style="${nameStyle}">${p.name}</span>
+            </div>`;
+        }).join('');
+        dropdown.innerHTML = catTabsHTML + `<div style="padding:8px;"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">${gridItems}</div></div>`;
+    }
+    dropdown.classList.remove('hidden');
+};
+
+window.landingSetCat = (sec, cat) => {
+    const dropdown = document.getElementById(`landing-${sec}-dropdown`);
+    if (dropdown) dropdown.dataset.activeCat = cat;
+    const query = document.getElementById(`landing-${sec}-search`)?.value || '';
+    window.searchLandingProducts(sec, query);
+};
+
+window.addLandingProduct = (sec, id) => {
+    const list = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
+    if (!list.includes(id)) list.push(id);
+    renderLandingPills(sec);
+    // refresh grid to show checkmark
+    const query = document.getElementById(`landing-${sec}-search`)?.value || '';
+    window.searchLandingProducts(sec, query);
+};
+
+window.removeLandingProduct = (sec, id) => {
+    if (sec === 'sec1') {
+        window.landingSec1Selected = window.landingSec1Selected.filter(x => x !== id);
+    } else {
+        window.landingSec2Selected = window.landingSec2Selected.filter(x => x !== id);
+    }
+    renderLandingPills(sec);
+    // refresh grid to remove checkmark
+    const query = document.getElementById(`landing-${sec}-search`)?.value || '';
+    window.searchLandingProducts(sec, query);
+};
+
+window.renderLandingPills = (sec) => {
+    const list = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
+    const container = document.getElementById(`landing-${sec}-pills`);
+    if (!container) return;
+    
+    if (list.length === 0) {
+        container.innerHTML = `<span class="text-[9px] text-gray-400 italic font-bold">No products selected...</span>`;
+        return;
+    }
+
+    container.innerHTML = list.map(id => {
+        const p = DATA.p.find(x => x.id === id);
+        if (!p) return '';
+        return `
+            <div class="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                <img src="${getOptimizedUrl(p.img, 50)}" class="w-4 h-4 rounded-full object-cover">
+                <span class="text-[9px] font-bold uppercase truncate max-w-[120px]">${p.name}</span>
+                <button type="button" onclick="removeLandingProduct('${sec}', '${id}')" class="text-gray-400 hover:text-red-500 ml-1">
+                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+};
+
+window.populateLandingProductSelects = () => {
+    // Legacy function, replaced by custom pill UI logic. Kept empty for compatibility with old calls.
+};
+
+window.populateLandingSettingsUI = () => {
+    if (DATA.landingSettings) {
+        if (document.getElementById('landing-announcement')) document.getElementById('landing-announcement').value = DATA.landingSettings.announcement || "";
+        if (document.getElementById('landing-hero-mob')) document.getElementById('landing-hero-mob').value = DATA.landingSettings.heroMob || "img/";
+        if (document.getElementById('landing-hero-desk')) document.getElementById('landing-hero-desk').value = DATA.landingSettings.heroDesk || "img/";
+        if (document.getElementById('landing-sec1-title')) document.getElementById('landing-sec1-title').value = DATA.landingSettings.sec1Title || "";
+        if (document.getElementById('landing-sec1-subtitle')) document.getElementById('landing-sec1-subtitle').value = DATA.landingSettings.sec1Subtitle || "";
+        
+        window.landingSec1Selected = DATA.landingSettings.sec1Products || [];
+        renderLandingPills('sec1');
+        
+        if (document.getElementById('landing-sec2-title')) document.getElementById('landing-sec2-title').value = DATA.landingSettings.sec2Title || "";
+        if (document.getElementById('landing-sec2-subtitle')) document.getElementById('landing-sec2-subtitle').value = DATA.landingSettings.sec2Subtitle || "";
+        
+        window.landingSec2Selected = DATA.landingSettings.sec2Products || [];
+        renderLandingPills('sec2');
+    }
+};
+
+window.saveLandingSettings = async () => {
+    const announcement = document.getElementById('landing-announcement').value;
+    const heroMob = document.getElementById('landing-hero-mob').value;
+    const heroDesk = document.getElementById('landing-hero-desk').value;
+    const sec1Title = document.getElementById('landing-sec1-title').value;
+    const sec1Subtitle = document.getElementById('landing-sec1-subtitle').value;
+    const sec1Products = window.landingSec1Selected || [];
+
+    const sec2Title = document.getElementById('landing-sec2-title').value;
+    const sec2Subtitle = document.getElementById('landing-sec2-subtitle').value;
+    const sec2Products = window.landingSec2Selected || [];
+
+    const btn = document.getElementById('landing-save-btn');
+
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    try {
+        const data = { announcement, heroMob, heroDesk, sec1Title, sec1Subtitle, sec1Products, sec2Title, sec2Subtitle, sec2Products };
+        
+        // Save using setDoc into the products collection to bypass potential new collection Firebase Rules
+        const landRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_landing_settings_');
+        await setDoc(landRef, data);
+        
+        showToast("Landing Page Settings Saved");
+        DATA.landingSettings = data;
+    } catch (err) {
+        console.error(err);
+        showToast("Save Error");
+    } finally {
+        btn.innerText = "Save Landing Page";
+        btn.disabled = false;
+    }
+};
+
+// Global mousedown to close dropdowns (mousedown fires before click, so dropdown items still register their click)
+document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('#landing-sec1-search') && !e.target.closest('#landing-sec1-dropdown')) {
+        document.getElementById('landing-sec1-dropdown')?.classList.add('hidden');
+    }
+    if (!e.target.closest('#landing-sec2-search') && !e.target.closest('#landing-sec2-dropdown')) {
+        document.getElementById('landing-sec2-dropdown')?.classList.add('hidden');
+    }
+});
 
 window.renderAdminLeads = async () => {
     const container = document.getElementById('admin-leads-list');
