@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, enableIndexedDbPersistence, query, where } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -36,6 +36,8 @@ let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], 
 const PAGE_SIZE = 16;
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
+
+const getTodayStr = () => new Date().toLocaleDateString('en-CA');
 
 // SEO HELPERS
 function updateMetaDescription(description) {
@@ -91,18 +93,19 @@ window.trackWhatsAppInquiry = async (ids) => {
     if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
         await waitForAuth();
         try {
-            const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-            await setDoc(globalStatsRef, { adInquiries: increment(1) }, { merge: true });
+            const today = getTodayStr();
+            const dailyStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+            await setDoc(dailyStatsRef, { adInquiries: increment(1) }, { merge: true });
 
             for (const id of idList) {
                 if (id !== 'bulk_inquiry') {
-                    const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-                    await updateDoc(pRef, { adInquiries: increment(1) });
+                    const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
+                    await setDoc(dailyProdRef, { adInquiries: increment(1), productId: id, date: today }, { merge: true });
                 }
             }
             // LOCAL UPDATE: Increment local state for immediate feedback in debug tool
             if (DATA.stats) DATA.stats.adInquiries++;
-            console.log("[Ad Tracking] Inquiry recorded successfully.");
+            console.log("[Ad Tracking] Daily Inquiry recorded successfully.");
         } catch (e) {
             console.error("[Ad Tracking] Inquiry tracking error:", e);
         }
@@ -141,6 +144,36 @@ if (urlParams.has('gclid') ||
     trackAdHop();
 } else if (urlParams.has('utm_source')) {
     sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+} else if (!sessionStorage.getItem('traffic_source')) {
+    sessionStorage.setItem('traffic_source', 'Normal');
+    trackNormalVisit();
+}
+
+// Global Image Error Tracking (Site Health)
+window.addEventListener('error', function(e) {
+    if (e.target.tagName === 'IMG') {
+        trackImageError(e.target.src);
+    }
+}, true);
+
+async function trackImageError(src) {
+    try {
+        const today = getTodayStr();
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+        await setDoc(statsRef, { imageLoadFail: increment(1) }, { merge: true });
+        console.warn("[Health Check] Image failed to load:", src);
+    } catch (e) {}
+}
+
+async function trackNormalVisit() {
+    const today = getTodayStr();
+    const sessionKey = `normal_visit_tracked_${today}`; // Daily tracking
+    if (sessionStorage.getItem(sessionKey)) return;
+    try {
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+        await setDoc(statsRef, { normalVisits: increment(1) }, { merge: true });
+        sessionStorage.setItem(sessionKey, 'true');
+    } catch (e) {}
 }
 
 // Helper: Ensure authentication is ready before tracking
@@ -200,82 +233,42 @@ const impressionCache = new Set();
 let impressionObserver = null;
 
 function initImpressionTracking() {
-    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
-
-    if (impressionObserver) impressionObserver.disconnect();
-
-    impressionObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const id = entry.target.getAttribute('data-id');
-                if (id && !impressionCache.has(id)) {
-                    // Start timer for 1s visibility
-                    entry.target.impressionTimeout = setTimeout(() => {
-                        recordImpression(id);
-                        impressionCache.add(id);
-                    }, 800);
-                }
-            } else {
-                // Cancel timer if leaves before 1s
-                if (entry.target.impressionTimeout) {
-                    clearTimeout(entry.target.impressionTimeout);
-                    delete entry.target.impressionTimeout;
-                }
-            }
-        });
-    }, { threshold: 0.6 }); // 60% visibility
-
-    document.querySelectorAll('.product-card').forEach(card => impressionObserver.observe(card));
+    // Disabled as per User request to only track manual detail page views.
 }
 
-async function recordImpression(id) {
-    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
+// recordImpression removed as per User request
 
-    await waitForAuth();
-    try {
-        console.log(`[Ad Tracking] Recording impression for: ${id}`);
-        const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-        const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-
-        const batch = writeBatch(db);
-        batch.set(globalStatsRef, { adImpressions: increment(1) }, { merge: true });
-        batch.update(pRef, { adImpressions: increment(1) });
-        await batch.commit();
-    } catch (e) {
-        console.error("[Ad Tracking] Impression tracking error:", e);
-    }
-}
 
 async function trackAdHop() {
-    const sessionKey = 'ad_hop_tracked_v1';
+    const today = getTodayStr();
+    const sessionKey = `ad_hop_tracked_${today}`;
     if (sessionStorage.getItem(sessionKey)) return;
 
-    // No waitForAuth here anymore - Firestore rules allow public write for this specific doc
     try {
-        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
         await setDoc(statsRef, { adHops: increment(1) }, { merge: true });
         sessionStorage.setItem(sessionKey, 'true');
-        console.log("[Ad Tracking] INSTANT Hop recorded.");
+        console.log("[Ad Tracking] Daily Hop recorded.");
     } catch (e) {
         console.error("[Ad Tracking] Hop recording failed:", e);
     }
 }
 
 async function trackAdVisit() {
-    const sessionKey = 'ad_visit_tracked_v3';
+    const today = getTodayStr();
+    const sessionKey = `ad_visit_tracked_${today}`;
     if (sessionStorage.getItem(sessionKey)) return;
 
     // Ensure auth is ready
     await waitForAuth();
 
     try {
-        console.log("[Ad Tracking] Attempting to record visit in products/_ad_stats_...");
-        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
         await setDoc(statsRef, { adVisits: increment(1) }, { merge: true });
         sessionStorage.setItem(sessionKey, 'true');
-        console.log("[Ad Tracking] SUCCESS: Visit recorded.");
+        console.log("[Ad Tracking] Daily Ad Visit recorded.");
     } catch (e) {
-        console.error("[Ad Tracking] PERMISSION DENIED: Still blocked by Firebase Rules.", e);
+        console.error("[Ad Tracking] Ad visit recording failed:", e);
     }
 }
 
@@ -524,7 +517,16 @@ async function refreshData(isNavigationOnly = false) {
 
         populateCatSelect();
         populateAdminCatFilter();
-        renderAdminUI();
+
+        // PERSISTENCE: Auto-open admin if in URL
+        const openAdmin = urlParams.get('admin') === 'true';
+        const activeTab = urlParams.get('atab');
+        if (openAdmin) {
+            if (activeTab) state.adminTab = activeTab;
+            window.showAdminPanel();
+        } else {
+            renderAdminUI();
+        }
 
 
         // Preload in background (non-blocking)
@@ -943,6 +945,7 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
 
     if (!skipTracking) {
         trackProductView(id);
+        trackProductClick(id); // Pillar 2: Journey tracking
     }
 
     if (!skipHistory) {
@@ -963,6 +966,23 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
     [p.img, p.img2, p.img3].forEach(img => {
         if (img && img !== 'img/' && !allImages.includes(img)) allImages.push(img);
     });
+
+async function trackProductClick(id) {
+    const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
+    const field = isAd ? 'adProductClicks' : 'normalProductClicks';
+    try {
+        const today = getTodayStr();
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+        await setDoc(statsRef, { [field]: increment(1) }, { merge: true });
+
+        // Also track per product click journey
+        if (id) {
+            const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
+            const prodField = isAd ? 'adClicks' : 'normalClicks'; // Renamed views to clicks internally for journey
+            await setDoc(dailyProdRef, { [prodField]: increment(1), productId: id, date: today }, { merge: true });
+        }
+    } catch (e) {}
+}
 
     appMain.innerHTML = `
 <div class="max-w-5xl mx-auto py-8 md:py-16 px-4 pb-20 detail-view-container text-left">
@@ -1755,7 +1775,7 @@ window.renderAdminUI = () => {
             const stockTag = p.inStock !== false ? '<span class="stock-badge in">In Stock</span>' : '<span class="stock-badge out">Out of Stock</span>';
             const pinIcon = p.isPinned ? '<div class="absolute top-3 left-3 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg z-20"><i class="fa-solid fa-thumbtack text-[10px]"></i></div>' : '';
             const badgeHtml = p.badge ? `<div class="absolute top-3 left-10 px-3 py-1 bg-black text-white text-[8px] font-black uppercase rounded-full shadow-lg z-10">${getBadgeLabel(p.badge)}</div>` : '';
-            const viewCount = p.views || 0;
+            const viewCount = (p.views || 0) + (p.adViews || 0);
 
             pHtml += `
                         <div class="admin-product-card group">
@@ -1876,8 +1896,18 @@ window.clearCustomerSearch = () => {
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
 window.showAdminPanel = () => {
+    if (window.innerWidth < 1024) {
+        alert("The Admin Panel is only accessible on Desktop devices. Please switch to a computer.");
+        return;
+    }
     document.getElementById('admin-panel').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // URL Persistence
+    const url = new URL(window.location);
+    url.searchParams.set('admin', 'true');
+    if (state.adminTab) url.searchParams.set('atab', state.adminTab);
+    window.history.replaceState({}, '', url);
 
     // Preset Popup Settings
     if (DATA.popupSettings) {
@@ -1897,10 +1927,26 @@ window.showAdminPanel = () => {
 
     renderAdminUI();
 };
-window.hideAdminPanel = () => { document.getElementById('admin-panel').classList.add('hidden'); document.body.style.overflow = 'auto'; };
+window.hideAdminPanel = () => { 
+    document.getElementById('admin-panel').classList.add('hidden'); 
+    document.body.style.overflow = 'auto'; 
+    
+    // URL Persistence: Clear admin params
+    const url = new URL(window.location);
+    url.searchParams.delete('admin');
+    url.searchParams.delete('atab');
+    window.history.replaceState({}, '', url);
+};
 
 window.switchAdminTab = (tab) => {
     state.adminTab = tab;
+    
+    // URL Persistence: Update active tab
+    const url = new URL(window.location);
+    if (document.getElementById('admin-panel').classList.contains('hidden') === false) {
+        url.searchParams.set('atab', tab);
+        window.history.replaceState({}, '', url);
+    }
     const isProd = tab === 'products';
     const isCat = tab === 'categories';
     const isSlider = tab === 'sliders';
@@ -1924,7 +1970,7 @@ window.switchAdminTab = (tab) => {
     if (isInsight) {
         rightCol.className = "transition-all duration-500";
         rightCol.style.gridColumn = "1 / -1";
-        rightCol.style.maxWidth = "800px";
+        rightCol.style.maxWidth = "1000px";
         rightCol.style.margin = "0 auto";
         rightCol.style.width = "100%";
     } else {
@@ -1955,7 +2001,7 @@ window.switchAdminTab = (tab) => {
     document.getElementById('tab-landing').className = isLanding ? activeClass : inactiveClass;
     document.getElementById('tab-l').className = isLeads ? activeClass : inactiveClass;
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : "Popularity Insights")))));
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : "")))));
     renderAdminUI();
 };
 
@@ -2490,18 +2536,19 @@ async function trackProductView(id) {
     await waitForAuth();
 
     try {
-        const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-        const updateData = {
-            views: increment(1)
-        };
+        const today = getTodayStr();
+        const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
+        const updateData = { productId: id, date: today };
 
         // Check if visitor is from Google Ads
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
             updateData.adViews = increment(1);
-            console.log(`[Ad Tracking] Recording ad-driven view for: ${id}`);
+            console.log(`[Ad Tracking] Recording daily ad-driven view for: ${id}`);
+        } else {
+            updateData.views = increment(1); // Normal views
         }
 
-        await updateDoc(pRef, updateData);
+        await setDoc(dailyProdRef, updateData, { merge: true });
     } catch (e) {
         console.error("View tracking error:", e);
     }
@@ -2518,128 +2565,250 @@ function getBadgeLabel(badge) {
     return labels[badge] || badge;
 }
 
-function renderInsights(container) {
-    const topProducts = [...DATA.p]
-        .filter(p => (p.views || 0) > 0 || (p.adInquiries || 0) > 0 || (p.adViews || 0) > 0 || (p.adImpressions || 0) > 0)
-        .sort((a, b) => {
-            const scoreA = (a.views || 0) + (a.adViews || 0) * 2 + (a.adInquiries || 0) * 5 + (a.adImpressions || 0) * 0.1;
-            const scoreB = (b.views || 0) + (b.adViews || 0) * 2 + (b.adInquiries || 0) * 5 + (b.adImpressions || 0) * 0.1;
-            return scoreB - scoreA;
-        })
-        .slice(0, 30);
-
-    const avgSessionSecs = DATA.stats.adVisits ? Math.round((DATA.stats.totalSessionSeconds || 0) / DATA.stats.adVisits) : 0;
-    const formatDuration = (s) => {
-        if (s < 60) return s + 's';
-        return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+function renderInsights(container, rangeData = null) {
+    // 1. Data Aggregation
+    const source = rangeData || {
+        stats: DATA.stats || {},
+        p: DATA.p || []
     };
 
+    const totalViews = source.p.reduce((acc, p) => acc + (p.views || 0) + (p.adViews || 0), 0);
+    const adVisits = source.stats.adVisits || 0;
+    const normalVisits = source.stats.normalVisits || 0;
+    const adProductClicks = source.stats.adProductClicks || 0;
+    const normalProductClicks = source.stats.normalProductClicks || 0;
+    const adInquiries = source.stats.adInquiries || 0;
+    const imageFail = source.stats.imageLoadFail || 0;
+
+    // 2. Calculations
+    const adJourneyPercent = adVisits ? Math.round((adProductClicks / adVisits) * 100) : 0;
+    const normalJourneyPercent = normalVisits ? Math.round((normalProductClicks / normalVisits) * 100) : 0;
+    const leadRate = adVisits ? ((adInquiries / adVisits) * 100).toFixed(1) : 0;
+    const healthRate = totalViews ? Math.max(0, Math.min(100, 100 - (imageFail / totalViews * 100))).toFixed(1) : 100;
+
+    const topProducts = [...source.p]
+        .filter(p => (p.views || 0) > 0 || (p.adInquiries || 0) > 0 || (p.adViews || 0) > 0 || (p.adImpressions || 0) > 0)
+        .sort((a, b) => ((b.views || 0) + (b.adViews || 0)) - ((a.views || 0) + (a.adViews || 0)))
+        .slice(0, 50); // Show more in detailed view
+
+    // Default dates for pickers
+    const today = getTodayStr();
+    const defaultStart = rangeData?.startDate || today;
+    const defaultEnd = rangeData?.endDate || today;
+
     let html = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div class="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 flex items-center justify-between group">
-                <div>
-                    <h5 class="text-[10px] font-black uppercase tracking-widest text-blue-400">Total Catalog Usage</h5>
-                    <div class="flex items-baseline gap-3">
-                        <p class="text-[20px] font-black text-blue-900">${DATA.p.reduce((acc, p) => acc + (p.views || 0), 0)} Total Views</p>
-                        <div class="flex gap-2">
-                             <button onclick="refreshData()" class="text-[9px] font-black uppercase text-blue-300 hover:text-blue-500 transition-all ml-2 underline underline-offset-4 decoration-blue-200">
-                                Refresh
+        <div class="space-y-6 px-16">
+            <!-- Header with Compact Controls -->
+            <div class="flex justify-between items-center mb-10">
+                <h2 class="text-[16px] font-bold text-gray-800 tracking-tight">Insights Dashboard</h2>
+                
+                <div class="flex items-center gap-4">
+                    <!-- Symmetrical Simple Date Filter -->
+                    <div class="flex items-center gap-6 bg-white px-8 py-2 rounded-full border border-gray-100 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <input type="date" id="insights-start" value="${defaultStart}" class="bg-transparent border-none text-[11px] font-bold text-gray-700 focus:ring-0 p-0 w-32 text-center">
+                            <span class="text-gray-300 text-[10px] uppercase font-black">to</span>
+                            <input type="date" id="insights-end" value="${defaultEnd}" class="bg-transparent border-none text-[11px] font-bold text-gray-700 focus:ring-0 p-0 w-32 text-center">
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <button onclick="updateInsightsRange()" id="update-range-btn" class="px-5 py-2 bg-black text-white rounded-full text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
+                                Update
                             </button>
-                            <button onclick="resetAllAnalytics()" class="text-[9px] font-black uppercase text-blue-300 hover:text-red-500 transition-all underline underline-offset-4 decoration-blue-200">
-                                Reset
-                            </button>
+                            
+                            ${rangeData ? `
+                                <button title="Clear Filter" onclick="renderInsights(document.getElementById('admin-insights-section'))" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all">
+                                    <i class="fa-solid fa-xmark text-[11px]"></i>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
+
+                    <button onclick="resetInsightsData()" class="px-6 py-2 bg-red-50 text-red-600 rounded-full text-[10px] font-bold hover:bg-red-100 transition-all flex items-center gap-2 border border-red-100 uppercase tracking-widest">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        Reset
+                    </button>
                 </div>
-                <i class="fa-solid fa-chart-line text-blue-200 text-3xl"></i>
             </div>
-            <div class="bg-purple-50 p-6 rounded-[2rem] border border-purple-100 flex items-center justify-between group">
-                <div>
-                    <h5 class="text-[10px] font-black uppercase tracking-widest text-purple-400">Google Ads Performance</h5>
-                    <div class="space-y-1">
-                        <div class="flex items-baseline gap-3">
-                            <p class="text-[20px] font-black text-purple-900">${DATA.stats.adVisits || 0} Ad Visitors</p>
-                            <button onclick="resetAdTraffic()" class="text-[9px] font-black uppercase text-purple-300 hover:text-red-500 transition-all ml-2 underline underline-offset-4 decoration-purple-200 hover:decoration-red-200">
-                                Reset
-                            </button>
+
+            <!-- PILLARS 1, 2, 3 & 4: TRAFFIC, JOURNEY, LEADS & HEALTH -->
+            <div class="grid gap-4" style="grid-template-columns: repeat(4, 1fr);">
+                <!-- Website Visitor Card -->
+                <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                    <h5 class="text-[11px] font-semibold text-gray-400 mb-4">Website Visitor</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border-r border-gray-50 pr-4">
+                            <p class="text-[26px] font-semibold text-blue-600 leading-none">${adVisits}</p>
+                            <p class="text-[11px] font-medium text-blue-300 mt-1">AD Customer</p>
                         </div>
-                        <div class="flex items-baseline gap-2 mb-2">
-                             <p class="text-[14px] font-black text-purple-800">${DATA.stats.landingAdVisits || 0} <span class="text-[10px] font-bold text-purple-500 uppercase tracking-widest">Landing Page</span></p>
-                        </div>
-                        <div class="flex items-center gap-2 mb-2">
-                             <span class="text-[9px] font-bold px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full uppercase tracking-tighter">
-                                Load Success: ${DATA.stats.adHops ? Math.round((DATA.stats.adVisits / DATA.stats.adHops) * 100) : 100}%
-                             </span>
-                             <span class="text-[9px] font-bold text-purple-300 uppercase tracking-tighter">
-                                ${Math.max(0, (DATA.stats.adHops || 0) - (DATA.stats.adVisits || 0))} Drop-offs
-                             </span>
-                        </div>
-                        <div class="flex flex-wrap gap-4 mt-2">
-                             <p class="text-[11px] font-black text-purple-600 flex items-center gap-2">
-                                <i class="fa-brands fa-whatsapp"></i> ${DATA.stats.adInquiries || 0} Leads
-                            </p>
-                            <p class="text-[11px] font-black text-purple-500 flex items-center gap-2">
-                                <i class="fa-solid fa-eye"></i> ${DATA.stats.adImpressions || 0} Visibility
-                            </p>
-                            <p class="text-[11px] font-black text-purple-400 flex items-center gap-2">
-                                <i class="fa-solid fa-clock"></i> ${formatDuration(avgSessionSecs)} Avg Dur
-                            </p>
+                        <div class="pl-4">
+                            <p class="text-[26px] font-semibold text-green-600 leading-none">${normalVisits}</p>
+                            <p class="text-[11px] font-medium text-green-300 mt-1">OG Customer</p>
                         </div>
                     </div>
                 </div>
-                <i class="fa-brands fa-google text-purple-200 text-3xl"></i>
+
+                <!-- Product Detail Page Visitors Card -->
+                <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                    <h5 class="text-[11px] font-semibold text-gray-400 mb-4">Product Journey</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border-r border-gray-50 pr-4">
+                            <p class="text-[26px] font-semibold text-blue-600 leading-none">${adProductClicks}</p>
+                            <p class="text-[11px] font-medium text-blue-300 mt-1">AD Customer</p>
+                        </div>
+                        <div class="pl-4">
+                            <p class="text-[26px] font-semibold text-green-600 leading-none">${normalProductClicks}</p>
+                            <p class="text-[11px] font-medium text-green-300 mt-1">OG Customer</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leads Card -->
+                <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                    <h5 class="text-[11px] font-semibold text-gray-400 mb-4">Google AD Leads</h5>
+                    <p class="text-[26px] font-semibold text-blue-600 leading-none">${adInquiries}</p>
+                    <p class="text-[11px] font-medium text-blue-300 mt-1">Conversion: ${leadRate}%</p>
+                </div>
+
+                <!-- Website Health Card -->
+                <div class="bg-black p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
+                    <h5 class="text-[11px] font-semibold text-gray-400 mb-4">Website Health</h5>
+                    <p class="text-[26px] font-semibold text-green-400 leading-none">${healthRate}%</p>
+                    <p class="text-[11px] font-medium text-gray-500 mt-1">${healthRate > 95 ? 'Excellent' : 'Check Assets'} (${imageFail} Errors)</p>
+                </div>
+            </div>
+
+            <!-- Top Products Table -->
+            <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-50">
+                    <h5 class="text-[12px] font-semibold text-gray-400">Top Performing Items</h5>
+                </div>
+                <div class="divide-y divide-gray-50">
+                    ${topProducts.map((p, i) => `
+                        <div class="flex items-center gap-4 p-4 hover:bg-gray-50/50 transition-colors group">
+                            <div class="text-[11px] font-medium text-gray-300 w-4">${i+1}</div>
+                            <img src="${getOptimizedUrl(p.img, 100)}" class="w-10 h-10 rounded-xl object-cover shadow-sm">
+                            <div class="flex-1">
+                                <p class="text-[13px] font-medium text-gray-800 truncate">${p.name}</p>
+                                <p class="text-[10px] font-medium text-gray-400">${DATA.c.find(c => c.id === p.catId)?.name || 'General'}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[12px] font-semibold text-green-600">${p.views || 0}</p>
+                                <p class="text-[9px] font-medium text-green-400 leading-tight">Og clicks</p>
+                            </div>
+                            <!-- Ad Views (Clicks) column - Blue -->
+                            <div class="text-right pl-3 border-l border-gray-50 min-w-[35px]">
+                                <p class="text-[12px] font-semibold text-blue-600">${p.adViews || 0}</p>
+                                <p class="text-[9px] font-medium text-blue-300 leading-tight">Ad clicks</p>
+                            </div>
+                            <div class="text-right pl-3 border-l border-gray-50 min-w-[45px]">
+                                <p class="text-[12px] font-semibold text-blue-600">${p.adInquiries || 0}</p>
+                                <p class="text-[9px] font-medium text-blue-200 leading-tight">Ad leads</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
         </div>
     `;
 
-    if (topProducts.length === 0) {
-        html += `<div class="py-20 text-center"><p class="text-[11px] text-gray-300 font-bold uppercase tracking-widest italic">No product views recorded yet.</p></div>`;
-    } else {
-        html += `<div class="space-y-3">`;
-        html += topProducts.map((p, i) => `
-            <div class="flex items-center gap-5 p-4 bg-white rounded-[2rem] border border-gray-100 hover:border-black transition-all group">
-                <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center font-black text-[12px] text-gray-400 group-hover:bg-black group-hover:text-white transition-all shadow-inner">${i + 1}</div>
-                <img src="${getOptimizedUrl(p.img, 200)}" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
-                <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">${DATA.c.find(c => c.id === p.catId)?.name || 'Uncategorized'}</p>
-                </div>
-                <div class="flex items-center gap-3 px-4 border-l border-gray-50">
-                    <div class="text-right min-w-[35px]">
-                        <p class="text-[11px] font-black tracking-tighter text-black leading-none">${p.views || 0}</p>
-                        <p class="text-[5px] font-black uppercase text-gray-300 tracking-[0.1em] mt-1">Total</p>
-                    </div>
-                    <div class="text-right pl-3 border-l border-gray-50 min-w-[35px]">
-                        <p class="text-[11px] font-black tracking-tighter text-purple-600 leading-none">${p.adImpressions || 0}</p>
-                        <p class="text-[5px] font-black uppercase text-purple-300 tracking-[0.1em] mt-1">Seen</p>
-                    </div>
-                    <div class="text-right pl-3 border-l border-gray-50 min-w-[35px]">
-                        <p class="text-[11px] font-black tracking-tighter text-blue-600 leading-none">${p.adViews || 0}</p>
-                        <p class="text-[5px] font-black uppercase text-blue-300 tracking-[0.1em] mt-1">Clicks</p>
-                    </div>
-                    <div class="text-right pl-3 border-l border-gray-50 min-w-[35px]">
-                        <p class="text-[11px] font-black tracking-tighter text-green-600 leading-none">${p.adInquiries || 0}</p>
-                        <p class="text-[5px] font-black uppercase text-green-300 tracking-[0.1em] mt-1">Leads</p>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        html += `</div>`;
-    }
-
     container.innerHTML = html;
 }
+
+window.updateInsightsRange = async function() {
+    const start = document.getElementById('insights-start').value;
+    const end = document.getElementById('insights-end').value;
+    const btn = document.getElementById('update-range-btn');
+
+    if (!start || !end) return alert("Please select both dates.");
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Fetching...';
+
+    try {
+        // 1. Fetch Global Stats
+        const globalRef = collection(db, 'artifacts', appId, 'public', 'data', 'daily_stats');
+        const qGlobal = query(globalRef, where("__name__", ">=", start), where("__name__", "<=", end));
+        const globalSnap = await getDocs(qGlobal);
+        
+        const aggregatedStats = {
+            adVisits: 0, normalVisits: 0, adProductClicks: 0, 
+            normalProductClicks: 0, adInquiries: 0, imageLoadFail: 0
+        };
+
+        globalSnap.forEach(doc => {
+            const d = doc.data();
+            aggregatedStats.adVisits += (d.adVisits || 0);
+            aggregatedStats.normalVisits += (d.normalVisits || 0);
+            aggregatedStats.adProductClicks += (d.adProductClicks || 0);
+            aggregatedStats.normalProductClicks += (d.normalProductClicks || 0);
+            aggregatedStats.adInquiries += (d.adInquiries || 0);
+            aggregatedStats.imageLoadFail += (d.imageLoadFail || 0);
+        });
+
+        // 2. Fetch Product Stats
+        const prodRef = collection(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats');
+        const qProd = query(prodRef, where("date", ">=", start), where("date", "<=", end));
+        const prodSnap = await getDocs(qProd);
+
+        const prodMap = {}; // productId -> combined stats
+        prodSnap.forEach(doc => {
+            const d = doc.data();
+            const pid = d.productId;
+            if (!pid) return;
+            if (!prodMap[pid]) {
+                const original = DATA.p.find(p => p.id === pid) || { name: 'Unknown', img: '', catId: '' };
+                prodMap[pid] = { ...original, views: 0, adViews: 0, adInquiries: 0 };
+            }
+            prodMap[pid].views += (d.views || 0);
+            prodMap[pid].adViews += (d.adViews || 0);
+            prodMap[pid].adInquiries += (d.adInquiries || 0);
+        });
+
+        const rangeData = {
+            stats: aggregatedStats,
+            p: Object.values(prodMap),
+            startDate: start,
+            endDate: end
+        };
+
+        renderInsights(document.getElementById('admin-insights-section'), rangeData);
+    } catch (e) {
+        console.error("Range update error:", e);
+        alert("Failed to fetch range data.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Update View';
+    }
+}
+
+
+
 
 window.resetAdTraffic = async () => {
     if (!confirm("Are you sure you want to reset all Ad Traffic, Impressions, and Session data?")) return;
     try {
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-        await setDoc(statsRef, { adVisits: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, adHops: 0 }, { merge: true });
+        await setDoc(statsRef, { 
+            adVisits: 0, 
+            adInquiries: 0, 
+            adImpressions: 0, 
+            totalSessionSeconds: 0, 
+            adHops: 0,
+            normalVisits: 0,
+            adProductClicks: 0,
+            normalProductClicks: 0,
+            imageLoadFail: 0
+        }, { merge: true });
         DATA.stats.adVisits = 0;
         DATA.stats.adInquiries = 0;
         DATA.stats.adImpressions = 0;
         DATA.stats.totalSessionSeconds = 0;
         DATA.stats.adHops = 0;
+        DATA.stats.normalVisits = 0;
+        DATA.stats.adProductClicks = 0;
+        DATA.stats.normalProductClicks = 0;
+        DATA.stats.imageLoadFail = 0;
         renderAdminUI();
         showToast("Ad Data Reset Successfully");
     } catch (e) {
@@ -3599,6 +3768,50 @@ window.exportLeadsExcel = () => {
     a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+};
+
+window.resetInsightsData = async () => {
+    if (!confirm("Are you sure you want to reset all Insights data? This will clear all visit counts, product views, and leads forever.")) return;
+    
+    if (typeof showToast === 'function') showToast("Resetting insights...", "info");
+    try {
+        const batch = writeBatch(db);
+        
+        // Reset Global Stats
+        const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        batch.set(globalStatsRef, {
+            adVisits: 0,
+            normalVisits: 0,
+            adProductClicks: 0,
+            normalProductClicks: 0,
+            adInquiries: 0,
+            imageLoadFail: 0,
+            totalSessionSeconds: 0
+        }, { merge: true });
+
+        // Reset All Product Stats
+        DATA.p.forEach(p => {
+            const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', p.id);
+            batch.update(pRef, {
+                views: 0,
+                adViews: 0,
+                adInquiries: 0,
+                adImpressions: 0
+            });
+        });
+
+        await batch.commit();
+        if (typeof showToast === 'function') showToast("Insights reset successfully!", "success");
+        
+        // Local Sync & Refresh
+        await refreshData();
+        const iList = document.getElementById('admin-insights-list');
+        if (iList) renderInsights(iList);
+
+    } catch (e) {
+        console.error("Reset failed:", e);
+        if (typeof showToast === 'function') showToast("Reset failed. Check console.", "error");
+    }
 };
 
 initPopup();

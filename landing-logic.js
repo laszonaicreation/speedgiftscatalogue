@@ -4,6 +4,8 @@ let landingSettings = null;
 let products = [];
 let categories = [];
 
+const getTodayStr = () => new Date().toLocaleDateString('en-CA');
+
 const PAGE_SIZE = 8; // Number of items per section
 
 // Helper for optimized Cloudinary URLs
@@ -30,14 +32,15 @@ function formatPrice(price) {
 }
 
 async function trackLandingAdVisit() {
-    const sessionKey = 'landing_ad_visit_tracked_v1';
+    const today = getTodayStr();
+    const sessionKey = `landing_ad_visit_tracked_${today}`;
     if (sessionStorage.getItem(sessionKey)) return;
 
     try {
-        const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'products', '_ad_stats_');
+        const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
         await window.setDoc(statsRef, { landingAdVisits: window.increment(1) }, { merge: true });
         sessionStorage.setItem(sessionKey, 'true');
-        console.log("[Landing Ad Tracking] SUCCESS: Landing visit recorded.");
+        console.log("[Landing Ad Tracking] Daily Visit recorded.");
     } catch (e) {
         console.error("[Landing Ad Tracking] Failed to record visit:", e);
     }
@@ -58,10 +61,40 @@ if (urlParams.has('gclid') ||
     utmMed === 'cpc' ||
     utmMed === 'ppc' ||
     utmMed === 'google_ads') {
-    sessionStorage.setItem('landing_traffic_source', 'Google Ads');
+    sessionStorage.setItem('traffic_source', 'Google Ads');
     trackLandingAdVisit();
 } else if (urlParams.has('utm_source')) {
-    sessionStorage.setItem('landing_traffic_source', urlParams.get('utm_source'));
+    sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+} else if (!sessionStorage.getItem('traffic_source')) {
+    sessionStorage.setItem('traffic_source', 'Normal');
+    trackNormalVisit();
+}
+
+// Global Image Error Tracking (Site Health)
+window.addEventListener('error', function(e) {
+    if (e.target.tagName === 'IMG') {
+        trackImageError(e.target.src);
+    }
+}, true);
+
+async function trackImageError(src) {
+    try {
+        const today = getTodayStr();
+        const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
+        await window.setDoc(statsRef, { imageLoadFail: window.increment(1) }, { merge: true });
+        console.warn("[Health Check] Image failed to load on Landing Page:", src);
+    } catch (e) {}
+}
+
+async function trackNormalVisit() {
+    const today = getTodayStr();
+    const sessionKey = `normal_visit_tracked_${today}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    try {
+        const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
+        await window.setDoc(statsRef, { normalVisits: window.increment(1) }, { merge: true });
+        sessionStorage.setItem(sessionKey, 'true');
+    } catch (e) {}
 }
 
 window.trackLandingWhatsAppClick = async function(buttonId) {
@@ -75,13 +108,14 @@ window.trackLandingWhatsAppClick = async function(buttonId) {
     }
 
     // 2. Record as internal Lead in Admin Panel insights if visitor came from Ads
-    if (sessionStorage.getItem('landing_traffic_source') === 'Google Ads') {
+    if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
         try {
-            const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'products', '_ad_stats_');
+            const today = getTodayStr();
+            const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
             await window.setDoc(statsRef, { adInquiries: window.increment(1) }, { merge: true });
-            console.log("[Landing Ad Tracking] SUCCESS: WhatsApp lead recorded in Insights.");
+            console.log("[Landing Ad Tracking] Daily lead recorded.");
         } catch (e) {
-            console.error("[Landing Ad Tracking] Failed to record WhatsApp lead in Insights:", e);
+            console.error("[Landing Ad Tracking] Failed to record WhatsApp lead:", e);
         }
     }
 };
