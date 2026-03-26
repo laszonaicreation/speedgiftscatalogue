@@ -191,8 +191,8 @@
 
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-50">
-        <div class="max-w-7xl mx-auto px-5 h-16 md:h-20 flex items-center justify-between">
-            <div class="w-1/4 flex items-center gap-2">
+        <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between" style="padding-left: clamp(20px, 5vw, 96px); padding-right: clamp(20px, 5vw, 96px);">
+            <div class="w-1/4 md:w-auto flex items-center gap-2">
                 <button id="admin-entry-btn"
                     class="hidden bg-black text-white px-4 py-2 rounded-full text-[8px] font-bold tracking-widest uppercase"
                     onclick="showAdminPanel()">
@@ -203,21 +203,39 @@
                     onclick="window.hideDashboardButton()">
                     <i class="fa-solid fa-xmark text-[10px]"></i>
                 </button>
-            </div>
-            <div class="flex-1 text-center flex justify-center items-center">
-                <h1 class="brand-logo cursor-pointer select-none" id="main-logo"
+                <h1 class="brand-logo cursor-pointer select-none hidden md:block" id="desk-logo"
                     onclick="handleLogoClick()">
-                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-7 md:h-9 w-auto inline-block">
+                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-8 md:h-10 ml-2 w-auto inline-block">
                 </h1>
             </div>
-            <div class="w-1/4 flex justify-end items-center">
-                <!-- WISHLIST NAV BUTTON -->
+            <div class="flex-1 md:hidden text-center flex justify-center items-center">
+                <h1 class="brand-logo cursor-pointer select-none" id="mob-logo"
+                    onclick="handleLogoClick()">
+                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-7 w-auto inline-block">
+                </h1>
+            </div>
+            <div class="w-1/4 md:flex-1 flex justify-end items-center gap-4 md:gap-6">
+                <!-- DESKTOP SEARCH BAR -->
+                <div class="hidden md:block" style="position:relative; width:100%; max-width:360px;">
+                    <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#aaa; font-size:13px; pointer-events:none;"></i>
+                    <input type="text" id="desk-search"
+                        oninput="window.applyCustomerSearch(this.value)"
+                        onfocus="window.showSearchSuggestions(true); this.style.background='#fff'; this.style.boxShadow='0 2px 12px rgba(0,0,0,0.08)'; this.style.borderColor='#e5e7eb';"
+                        onblur="window.showSearchSuggestions(false); this.style.background='#f3f4f6'; this.style.boxShadow='none'; this.style.borderColor='transparent';"
+                        placeholder="Search products..."
+                        autocomplete="off"
+                        style="width:100%; background:#f3f4f6; border:1.5px solid transparent; border-radius:999px; padding:10px 36px 10px 38px; font-size:12px; font-weight:500; color:#111; outline:none; transition:all 0.2s ease; font-family:inherit;">
+                    <button id="desk-clear-btn" onclick="window.clearCustomerSearch()"
+                        style="display:none; position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%; background:#e5e7eb; border:none; cursor:pointer; align-items:center; justify-content:center; font-size:9px; color:#666;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- WISHLIST NAV BUTTON - Icon only on desktop -->
                 <button onclick="window.handleFavoritesClick()"
-                    class="relative flex items-center gap-2 text-gray-400 hover:text-red-500 transition-all group">
-                    <span
-                        class="hidden md:block text-[9px] font-black tracking-widest uppercase group-hover:text-red-500 transition-all">Favorites</span>
+                    class="relative flex items-center text-gray-400 hover:text-red-500 transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-red-50">
                     <div class="relative">
-                        <i class="fa-solid fa-heart text-xl"></i>
+                        <i class="fa-solid fa-heart text-[18px]"></i>
                         <span id="nav-wishlist-count"
                             class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[7px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white hidden">0</span>
                     </div>
@@ -227,12 +245,12 @@
     </nav>
 
 
-    <main id="app" class="max-w-7xl mx-auto px-5 pt-4 pb-48 min-h-screen">
+    <main id="app" class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0 pt-8 pb-48 min-h-screen">
         <!-- Unified App Container -->
         <!-- Static Skeleton UI for SEO & Ads bots -->
         <div class="animate-pulse space-y-8 mt-8">
             <div class="h-10 bg-gray-100 rounded-xl w-48"></div>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-5 gap-y-12 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-6">
                 <!-- Skeleton Item 1 -->
                 <div class="space-y-4">
                     <div class="aspect-[4/5] bg-gray-100 rounded-2xl w-full"></div>
@@ -268,7 +286,8 @@
 
     <!-- Templates -->
     <div id="home-view-template" class="hidden">
-        <div id="customer-search-container" class="mb-6 md:mb-10 fade-in relative">
+        <!-- HIDE Search Bar on desktop since it is now in the Nav -->
+        <div id="customer-search-container" class="md:hidden mb-6 fade-in relative">
             <div class="max-w-2xl mx-auto z-[60]">
                 <!-- Search Input with its own relative wrapper to keep the icon fixed -->
                 <div class="relative group">
@@ -373,7 +392,8 @@
             </div>
         </div>
 
-        <div id="product-grid" class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-20"></div>
+        <!-- PRODUCT GRID -->
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4"></div>
     </div>
 
     <div id="selection-bar">
@@ -838,22 +858,79 @@
 
     <!-- Custom Responsive Styles for Footer -->
     <style>
+        /* Mobile-only: tight card gaps */
+        @media (max-width: 767px) {
+            #product-grid {
+                column-gap: 12px !important;
+                row-gap: 24px !important;
+            }
+            #app {
+                width: 100% !important;
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+            }
+        }
+
+        /* Square product card images - all screen sizes */
+        .product-card .img-container {
+            aspect-ratio: 1 / 1 !important;
+            overflow: hidden !important;
+            border-radius: 12px !important;
+            background: #f9f9f9;
+        }
+        .product-card .img-container img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+
         @media (min-width: 640px) {
             .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (min-width: 768px) {
             .md\:text-center { text-align: center; }
+            .md\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
         }
         @media (min-width: 1024px) {
+            .lg\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
             .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
             .lg\:col-span-2 { grid-column: span 2 / span 2; }
             .lg\:gap-8 { gap: 2rem; }
             .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+
+            /* Force 80% side margins on desktop - override any Tailwind caching */
+            #app {
+                width: 80% !important;
+                max-width: 1440px !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            footer > div {
+                width: 80% !important;
+                max-width: 1440px !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            /* 5 columns on screens 1024-1280px */
+            #product-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+                row-gap: 48px !important;
+                column-gap: 24px !important;
+            }
+        }
+        @media (min-width: 1280px) {
+            .xl\:grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+
+            /* 6 columns on large screens */
+            #product-grid {
+                grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+            }
         }
     </style>
     <!-- Footer -->
     <footer class="bg-black text-white border-t border-gray-900" style="margin-top: 6rem; padding-top: 6rem; padding-bottom: 3rem;">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+        <div class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16" style="margin-bottom: 4rem; gap: 2.5rem;">
                 
                 <!-- Brand Info -->

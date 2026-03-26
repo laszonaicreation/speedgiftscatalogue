@@ -953,6 +953,15 @@ function renderHome() {
             if (state.search) clearBtn.classList.remove('hidden');
             else clearBtn.classList.add('hidden');
         }
+        
+        const deskSearch = document.getElementById('desk-search');
+        if (deskSearch && deskSearch !== document.activeElement) deskSearch.value = state.search;
+        const deskClearBtn = document.getElementById('desk-clear-btn');
+        if (deskClearBtn) {
+            if (state.search) deskClearBtn.classList.remove('hidden');
+            else deskClearBtn.classList.add('hidden');
+        }
+        
         if (mobileSort) mobileSort.value = state.sort;
 
         updateSelectionBar();
@@ -1924,12 +1933,19 @@ window.applyCustomerSearch = (val) => {
         if (val) clearBtn.classList.remove('hidden');
         else clearBtn.classList.add('hidden');
     }
+    const deskClearBtn = document.getElementById('desk-clear-btn');
+    if (deskClearBtn) {
+        if (val) deskClearBtn.classList.remove('hidden');
+        else deskClearBtn.classList.add('hidden');
+    }
 };
 window.clearCustomerSearch = () => {
     state.search = '';
-    renderHome();
     const input = document.getElementById('customer-search');
-    if (input) input.focus();
+    const deskInput = document.getElementById('desk-search');
+    if (input) input.value = '';
+    if (deskInput) deskInput.value = '';
+    renderHome();
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
 window.showAdminPanel = () => {
