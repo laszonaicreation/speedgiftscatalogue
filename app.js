@@ -678,6 +678,7 @@ window.toggleSelectAll = () => {
 };
 
 window.loadMoreProducts = () => {
+    state.isLoadMore = true;
     state.visibleChunks++;
     renderHome();
 };
@@ -910,9 +911,18 @@ function renderHome() {
                 </div>
                 `;
             }
-
+            // Prevent scroll jumping by locking the current height
+            const currentHeight = grid.offsetHeight;
+            if (currentHeight > 0) {
+                grid.style.minHeight = `${currentHeight}px`;
+            }
+            
             grid.innerHTML = gridContent;
 
+            // Release height lock after images/DOM have stabilized
+            setTimeout(() => {
+                grid.style.minHeight = '';
+            }, 800);
             // Load More Logic (Outside the grid so it stays centered at the bottom width-wise)
             let loadMoreContainer = document.getElementById('load-more-container');
             if (!loadMoreContainer) {
@@ -955,8 +965,12 @@ function renderHome() {
             document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
         }
 
-        if (!state.selectionId && !state.search) window.scrollTo({ top: state.scrollPos });
-        else if (!state.search) window.scrollTo({ top: 0 });
+        if (state.isLoadMore) {
+            state.isLoadMore = false;
+        } else {
+            if (!state.selectionId && !state.search) window.scrollTo({ top: state.scrollPos });
+            else if (!state.search) window.scrollTo({ top: 0 });
+        }
     } catch (e) {
         console.error("Render Error:", e);
         showToast("UI Display Error");
