@@ -875,8 +875,10 @@
         .product-card .img-container {
             aspect-ratio: 1 / 1 !important;
             overflow: hidden !important;
-            border-radius: 12px !important;
+            border-radius: 16px !important;
             background: #f9f9f9;
+            box-shadow: none !important;
+            border: none !important;
         }
         .product-card .img-container img {
             width: 100% !important;
@@ -922,9 +924,9 @@
         @media (min-width: 1280px) {
             .xl\:grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
 
-            /* 6 columns on large screens */
+            /* Cap at 5 columns on large screens - consistent with user request */
             #product-grid {
-                grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
             }
         }
     </style>
