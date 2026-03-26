@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, enableIndexedDbPersistence, query, where } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, enableIndexedDbPersistence, query, where, documentId } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -37,7 +37,14 @@ const PAGE_SIZE = 16;
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
 
-const getTodayStr = () => new Date().toLocaleDateString('en-CA');
+// Format Date to YYYY-MM-DD (Robust)
+const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 // SEO HELPERS
 function updateMetaDescription(description) {
@@ -123,30 +130,32 @@ window.checkAdData = () => {
     console.log("-------------------------");
 };
 
-// REFERRAL DETECTION
-const urlParams = new URLSearchParams(window.location.search);
-// Detect Google Ads traffic from various parameters (gclid, gbraid, wbraid, utm_source, utm_medium)
-const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
-const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
+async function initTrafficTracking() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
+    const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
 
-if (urlParams.has('gclid') ||
-    urlParams.has('gbraid') ||
-    urlParams.has('wbraid') ||
-    urlParams.has('gad_source') ||
-    utmSrc === 'google' ||
-    utmSrc === 'google_ads' ||
-    utmSrc === 'googleads' ||
-    utmMed === 'cpc' ||
-    utmMed === 'ppc' ||
-    utmMed === 'google_ads') {
-    sessionStorage.setItem('traffic_source', 'Google Ads');
-    // INSTANT HOP TRACKING: Record landing immediately
-    trackAdHop();
-} else if (urlParams.has('utm_source')) {
-    sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
-} else if (!sessionStorage.getItem('traffic_source')) {
-    sessionStorage.setItem('traffic_source', 'Normal');
-    trackNormalVisit();
+    console.log("[Traffic] Detecting source...");
+
+    if (urlParams.has('gclid') || 
+        urlParams.has('gbraid') || 
+        urlParams.has('wbraid') || 
+        urlParams.has('gad_source') ||
+        utmSrc === 'google' || 
+        utmSrc === 'google_ads' || 
+        utmSrc === 'googleads' ||
+        utmMed === 'cpc' || 
+        utmMed === 'ppc' || 
+        utmMed === 'google_ads') {
+        sessionStorage.setItem('traffic_source', 'Google Ads');
+        console.log("[Traffic] Google Ads source verified.");
+    } else if (urlParams.has('utm_source')) {
+        sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+        console.log(`[Traffic] UTM Source identified: ${urlParams.get('utm_source')}`);
+    } else if (!sessionStorage.getItem('traffic_source')) {
+        sessionStorage.setItem('traffic_source', 'Normal');
+        console.log("[Traffic] Normal traffic source set.");
+    }
 }
 
 // Global Image Error Tracking (Site Health)
@@ -169,11 +178,17 @@ async function trackNormalVisit() {
     const today = getTodayStr();
     const sessionKey = `normal_visit_tracked_${today}`; // Daily tracking
     if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
+
+    await waitForAuth();
     try {
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+        console.log(`[Traffic] Recording normal visit to: daily_stats/${today}`);
         await setDoc(statsRef, { normalVisits: increment(1) }, { merge: true });
-        sessionStorage.setItem(sessionKey, 'true');
-    } catch (e) {}
+        console.log("[Traffic] Normal visit recorded.");
+    } catch (e) {
+        console.error("[Traffic] Normal visit tracking failed:", e);
+    }
 }
 
 // Helper: Ensure authentication is ready before tracking
@@ -243,14 +258,16 @@ async function trackAdHop() {
     const today = getTodayStr();
     const sessionKey = `ad_hop_tracked_${today}`;
     if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true'); // Immediate set to prevent race
 
+    await waitForAuth();
     try {
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+        console.log(`[Ad Tracking] Recording hop to: daily_stats/${today}`);
         await setDoc(statsRef, { adHops: increment(1) }, { merge: true });
-        sessionStorage.setItem(sessionKey, 'true');
         console.log("[Ad Tracking] Daily Hop recorded.");
     } catch (e) {
-        console.error("[Ad Tracking] Hop recording failed:", e);
+        console.error("[Ad Tracking] Hop tracking error:", e);
     }
 }
 
@@ -258,14 +275,12 @@ async function trackAdVisit() {
     const today = getTodayStr();
     const sessionKey = `ad_visit_tracked_${today}`;
     if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
 
-    // Ensure auth is ready
     await waitForAuth();
-
     try {
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
         await setDoc(statsRef, { adVisits: increment(1) }, { merge: true });
-        sessionStorage.setItem(sessionKey, 'true');
         console.log("[Ad Tracking] Daily Ad Visit recorded.");
     } catch (e) {
         console.error("[Ad Tracking] Ad visit recording failed:", e);
@@ -280,16 +295,23 @@ const startSync = async () => {
 onAuthStateChanged(auth, async (u) => {
     state.user = u;
     if (u) {
-        // Track Ad Hop & Visit once authenticated
-        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
-            // Try hop tracking again as a fallback (it won't double count due to sessionStorage check)
-            trackAdHop();
-            // Start 5-second visit timer
-            setTimeout(() => trackAdVisit(), 5000);
-        }
-        await loadWishlist();
-        // Since we refreshData at start, this might be redundant but keeps state synced for logged in users
+        console.log("[Auth] Session active. Starting tracking sequence...");
+        
+        // 1. Detect Traffic Source first (guarantees sessionStorage is ready)
+        await initTrafficTracking();
+
+        // 2. Initial Data Sync for Dashboard
         await refreshData();
+        
+        // 3. Track Initial Visit metrics based on detected source
+        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+            trackAdHop();
+            setTimeout(() => trackAdVisit(), 5000);
+        } else {
+            trackNormalVisit();
+        }
+
+        await loadWishlist();
     }
 });
 
@@ -297,7 +319,7 @@ const handleReentry = () => {
     if (DATA.p.length > 0) {
         const urlParams = new URLSearchParams(window.location.search);
         const pId = urlParams.get('p');
-        if (pId) viewDetail(pId, true, null, true); // skipTracking = true for re-entry
+        if (pId) viewDetail(pId, true, null, false); // Enable tracking for initial entry
         else {
             renderHome();
             updateMetaDescription("Discover premium gifts and personalized items at Speed Gifts. From engraved wood to custom cushions, find the perfect gift for every occasion.");
@@ -416,14 +438,18 @@ window.toggleWishlist = async (e, id) => {
 async function refreshData(isNavigationOnly = false) {
     try {
         if (!isNavigationOnly || DATA.p.length === 0) {
-            const [pSnap, cSnap, sSnap, popSnap] = await Promise.all([
+            const today = getTodayStr();
+            const todayRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+
+            const [pSnap, cSnap, sSnap, popSnap, todaySnap] = await Promise.all([
                 getDocs(prodCol),
                 getDocs(catCol),
                 getDocs(sliderCol).catch(e => {
                     console.error("Slider fetch failed:", e);
                     return { docs: [] };
                 }),
-                getDocs(popupSettingsCol).catch(e => ({ empty: true }))
+                getDocs(popupSettingsCol).catch(e => ({ empty: true })),
+                getDoc(todayRef).catch(e => null)
             ]);
             DATA.p = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -446,10 +472,24 @@ async function refreshData(isNavigationOnly = false) {
                 DATA.landingSettings = null;
             }
 
-            // Extract stats from products collection
+            // Extract stats from legacy _ad_stats_ 
             const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
-            const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 };
+            const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
+            
+            // Initial legacy/all-time baseline
             DATA.stats = statsDoc ? { ...defaultStats, ...statsDoc } : defaultStats;
+
+            // Merge Today's active stats into memory baseline
+            if (todaySnap?.exists()) {
+                const td = todaySnap.data();
+                DATA.stats.adVisits += (td.adVisits || 0) + (td.landingAdVisits || 0);
+                DATA.stats.normalVisits += (td.normalVisits || 0);
+                DATA.stats.adProductClicks = (DATA.stats.adProductClicks || 0) + (td.adProductClicks || 0);
+                DATA.stats.normalProductClicks = (DATA.stats.normalProductClicks || 0) + (td.normalProductClicks || 0);
+                DATA.stats.adInquiries += (td.adInquiries || 0);
+                DATA.stats.imageLoadFail += (td.imageLoadFail || 0);
+                // Note: adHops and other fields can also be merged if present in daily_stats
+            }
 
             // Remove internal docs from the products list
             DATA.p = DATA.p.filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_'].includes(p.id));
@@ -943,10 +983,8 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
     if (!p) return;
     state.currentVar = preSelect; // Initialize with saved variation if any
 
-    if (!skipTracking) {
-        trackProductView(id);
-        trackProductClick(id); // Pillar 2: Journey tracking
-    }
+    // Product interaction tracking (Consolidated to fix triple-counting)
+    trackProductView(id);
 
     if (!skipHistory) {
         const isAlreadyInDetail = new URLSearchParams(window.location.search).has('p');
@@ -967,22 +1005,7 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
         if (img && img !== 'img/' && !allImages.includes(img)) allImages.push(img);
     });
 
-async function trackProductClick(id) {
-    const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
-    const field = isAd ? 'adProductClicks' : 'normalProductClicks';
-    try {
-        const today = getTodayStr();
-        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
-        await setDoc(statsRef, { [field]: increment(1) }, { merge: true });
 
-        // Also track per product click journey
-        if (id) {
-            const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
-            const prodField = isAd ? 'adClicks' : 'normalClicks'; // Renamed views to clicks internally for journey
-            await setDoc(dailyProdRef, { [prodField]: increment(1), productId: id, date: today }, { merge: true });
-        }
-    } catch (e) {}
-}
 
     appMain.innerHTML = `
 <div class="max-w-5xl mx-auto py-8 md:py-16 px-4 pb-20 detail-view-container text-left">
@@ -2531,26 +2554,36 @@ function getOptimizedUrl(url, width) {
 
 async function trackProductView(id) {
     if (!id || typeof id !== 'string') return;
+    const today = getTodayStr();
+    const sessionKey = `product_view_tracked_${today}_${id}`;
+    
+    // Strict Synchronous Guard to prevent double/triple counting
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
 
-    // Ensure we have a user before writing to Firestore
+    console.log(`[Traffic] Product interaction tracking triggered: ${id}. waiting for auth...`);
     await waitForAuth();
 
     try {
-        const today = getTodayStr();
+        const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
+        
+        // 1. Update Global Stats (Product Journey Pillar)
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+        const globalField = isAd ? 'adProductClicks' : 'normalProductClicks';
+        
+        // 2. Update Per-Product Stats (Top Items)
         const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
-        const updateData = { productId: id, date: today };
+        const prodField = isAd ? 'adViews' : 'views';
 
-        // Check if visitor is from Google Ads
-        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
-            updateData.adViews = increment(1);
-            console.log(`[Ad Tracking] Recording daily ad-driven view for: ${id}`);
-        } else {
-            updateData.views = increment(1); // Normal views
-        }
+        // Perform both updates (Batch would be cleaner but setDoc merge is fine here)
+        await Promise.all([
+            setDoc(statsRef, { [globalField]: increment(1) }, { merge: true }),
+            setDoc(dailyProdRef, { [prodField]: increment(1), productId: id, date: today }, { merge: true })
+        ]);
 
-        await setDoc(dailyProdRef, updateData, { merge: true });
+        console.log(`[Traffic] ${isAd ? 'AD' : 'Normal'} Product view recorded for: ${id}`);
     } catch (e) {
-        console.error("View tracking error:", e);
+        console.error("[Traffic] Consolidated tracking failed:", e);
     }
 }
 
@@ -2566,12 +2599,22 @@ function getBadgeLabel(badge) {
 }
 
 function renderInsights(container, rangeData = null) {
-    // 1. Data Aggregation
+    // 1. Auto-fetch Today's detailed stats in background if first open
+    if (!rangeData) {
+        const today = getTodayStr();
+        window.updateInsightsRange(today, today, true); 
+    }
+
+    // 2. Data Aggregation
     const source = rangeData || {
         stats: DATA.stats || {},
         p: DATA.p || []
     };
 
+    // Use current in-memory stats if no range is selected
+    const today = getTodayStr();
+    
+    // Calculate total views for health rate. If range, use range products. If all-time, use all products.
     const totalViews = source.p.reduce((acc, p) => acc + (p.views || 0) + (p.adViews || 0), 0);
     const adVisits = source.stats.adVisits || 0;
     const normalVisits = source.stats.normalVisits || 0;
@@ -2592,12 +2635,19 @@ function renderInsights(container, rangeData = null) {
         .slice(0, 50); // Show more in detailed view
 
     // Default dates for pickers
-    const today = getTodayStr();
     const defaultStart = rangeData?.startDate || today;
     const defaultEnd = rangeData?.endDate || today;
 
+    // Error Alert if any
+    const errorAlert = source.error ? `
+        <div class="bg-red-50 text-red-600 px-6 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest mb-6 flex items-center justify-center gap-2 border border-red-100 w-fit mx-auto animate-bounce">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            Live sync delayed. Refreshing...
+        </div>` : '';
+
     let html = `
         <div class="space-y-6 px-16">
+            ${errorAlert}
             <!-- Header with Compact Controls -->
             <div class="flex justify-between items-center mb-10">
                 <h2 class="text-[16px] font-bold text-gray-800 tracking-tight">Insights Dashboard</h2>
@@ -2617,7 +2667,7 @@ function renderInsights(container, rangeData = null) {
                             </button>
                             
                             ${rangeData ? `
-                                <button title="Clear Filter" onclick="renderInsights(document.getElementById('admin-insights-section'))" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all">
+                                <button title="Clear Filter" onclick="renderInsights(document.getElementById('admin-insights-list'))" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all">
                                     <i class="fa-solid fa-xmark text-[11px]"></i>
                                 </button>
                             ` : ''}
@@ -2715,36 +2765,54 @@ function renderInsights(container, rangeData = null) {
     container.innerHTML = html;
 }
 
-window.updateInsightsRange = async function() {
-    const start = document.getElementById('insights-start').value;
-    const end = document.getElementById('insights-end').value;
+window.updateInsightsRange = async function(passedStart = null, passedEnd = null, isSilent = false) {
+    if (typeof passedStart !== 'string') passedStart = null;
+    if (typeof passedEnd !== 'string') passedEnd = null;
+    const start = passedStart || document.getElementById('insights-start')?.value;
+    const end = passedEnd || document.getElementById('insights-end')?.value;
     const btn = document.getElementById('update-range-btn');
 
-    if (!start || !end) return alert("Please select both dates.");
+    if (!start || !end) {
+        if (!isSilent) alert("Please select both dates.");
+        return;
+    }
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Fetching...';
+    if (!isSilent && btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Fetching...';
+    }
 
     try {
+        console.log(`[Insights] Fetching range: ${start} to ${end}`);
         // 1. Fetch Global Stats
+        // Firebase documentId() inequality queries require full document paths.
+        // To avoid issues with existing data, we fetch all daily_stats (1 doc/day) and filter locally.
         const globalRef = collection(db, 'artifacts', appId, 'public', 'data', 'daily_stats');
-        const qGlobal = query(globalRef, where("__name__", ">=", start), where("__name__", "<=", end));
-        const globalSnap = await getDocs(qGlobal);
+        const globalSnap = await getDocs(globalRef);
         
         const aggregatedStats = {
             adVisits: 0, normalVisits: 0, adProductClicks: 0, 
-            normalProductClicks: 0, adInquiries: 0, imageLoadFail: 0
+            normalProductClicks: 0, adInquiries: 0, imageLoadFail: 0,
+            landingAdVisits: 0
         };
 
         globalSnap.forEach(doc => {
-            const d = doc.data();
-            aggregatedStats.adVisits += (d.adVisits || 0);
-            aggregatedStats.normalVisits += (d.normalVisits || 0);
-            aggregatedStats.adProductClicks += (d.adProductClicks || 0);
-            aggregatedStats.normalProductClicks += (d.normalProductClicks || 0);
-            aggregatedStats.adInquiries += (d.adInquiries || 0);
-            aggregatedStats.imageLoadFail += (d.imageLoadFail || 0);
+            const docId = doc.id;
+            // Filter by date range in memory
+            if (docId >= start && docId <= end) {
+                const d = doc.data();
+                aggregatedStats.adVisits += (d.adVisits || 0);
+                aggregatedStats.normalVisits += (d.normalVisits || 0);
+                aggregatedStats.landingAdVisits += (d.landingAdVisits || 0);
+                aggregatedStats.adProductClicks += (d.adProductClicks || 0);
+                aggregatedStats.normalProductClicks += (d.normalProductClicks || 0);
+                aggregatedStats.adInquiries += (d.adInquiries || 0);
+                aggregatedStats.imageLoadFail += (d.imageLoadFail || d.imageFail || 0);
+            }
         });
+
+        // Combine landing page hits into AD traffic for a unified view
+        aggregatedStats.adVisits = (aggregatedStats.adVisits || 0) + (aggregatedStats.landingAdVisits || 0);
 
         // 2. Fetch Product Stats
         const prodRef = collection(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats');
@@ -2772,13 +2840,30 @@ window.updateInsightsRange = async function() {
             endDate: end
         };
 
-        renderInsights(document.getElementById('admin-insights-section'), rangeData);
+        console.log("[Insights] Data aggregated, rendering...", rangeData.stats);
+        const container = document.getElementById('admin-insights-list');
+        if (container) renderInsights(container, rangeData);
+
     } catch (e) {
-        console.error("Range update error:", e);
-        alert("Failed to fetch range data.");
+        console.error("[Insights] Range update error:", e);
+        if (!isSilent) alert("Failed to fetch range data. Please try again.");
+        
+        // RECOVERY: Even if it fails, try to show the dashboard with whatever local data we have to clear the spinner.
+        const container = document.getElementById('admin-insights-list');
+        if (container && container.innerHTML.includes('animate-spin')) {
+             renderInsights(container, {
+                stats: { adVisits: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, adInquiries: 0, imageLoadFail: 0 },
+                p: [],
+                startDate: start,
+                endDate: end,
+                error: true
+             });
+        }
     } finally {
-        btn.disabled = false;
-        btn.innerText = 'Update View';
+        if (!isSilent && btn) {
+            btn.disabled = false;
+            btn.innerText = 'Update View';
+        }
     }
 }
 
@@ -3774,44 +3859,72 @@ window.resetInsightsData = async () => {
     if (!confirm("Are you sure you want to reset all Insights data? This will clear all visit counts, product views, and leads forever.")) return;
     
     if (typeof showToast === 'function') showToast("Resetting insights...", "info");
+    const topBtn = document.getElementById('update-range-btn');
+    if (topBtn) { topBtn.disabled = true; topBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Resetting...'; }
     try {
-        const batch = writeBatch(db);
-        
-        // Reset Global Stats
+        const batch1 = writeBatch(db);
         const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-        batch.set(globalStatsRef, {
-            adVisits: 0,
-            normalVisits: 0,
-            adProductClicks: 0,
-            normalProductClicks: 0,
-            adInquiries: 0,
-            imageLoadFail: 0,
-            totalSessionSeconds: 0
+        batch1.set(globalStatsRef, {
+            adVisits: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0,
+            adInquiries: 0, imageLoadFail: 0, totalSessionSeconds: 0
         }, { merge: true });
+        await batch1.commit();
 
-        // Reset All Product Stats
-        DATA.p.forEach(p => {
+        let batch = writeBatch(db);
+        let batchCount = 0;
+        
+        const commitBatch = async () => {
+            if (batchCount > 0) {
+                await batch.commit();
+                batch = writeBatch(db);
+                batchCount = 0;
+            }
+        };
+
+        // Fetch and Delete ALL daily_stats
+        const dsRef = collection(db, 'artifacts', appId, 'public', 'data', 'daily_stats');
+        const dsSnap = await getDocs(dsRef);
+        for (const docSnap of dsSnap.docs) {
+            batch.delete(docSnap.ref);
+            batchCount++;
+            if (batchCount === 400) await commitBatch();
+        }
+
+        // Fetch and Delete ALL daily_product_stats
+        const dpsRef = collection(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats');
+        const dpsSnap = await getDocs(dpsRef);
+        for (const docSnap of dpsSnap.docs) {
+            batch.delete(docSnap.ref);
+            batchCount++;
+            if (batchCount === 400) await commitBatch();
+        }
+
+        // Reset All-Time Per-Product Stats
+        const products = DATA.p || [];
+        for (const p of products) {
             const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', p.id);
-            batch.update(pRef, {
-                views: 0,
-                adViews: 0,
-                adInquiries: 0,
-                adImpressions: 0
-            });
-        });
+            batch.set(pRef, { views: 0, adViews: 0, adInquiries: 0, adImpressions: 0 }, { merge: true });
+            batchCount++;
+            if (batchCount === 400) await commitBatch();
+        }
+        
+        await commitBatch();
 
-        await batch.commit();
         if (typeof showToast === 'function') showToast("Insights reset successfully!", "success");
         
         // Local Sync & Refresh
         await refreshData();
+        // Recover Insights
         const iList = document.getElementById('admin-insights-list');
         if (iList) renderInsights(iList);
 
     } catch (e) {
-        console.error("Reset failed:", e);
-        if (typeof showToast === 'function') showToast("Reset failed. Check console.", "error");
+        console.error("Reset Error Details:", e.code, e.message);
+        if (typeof showToast === 'function') showToast(`Reset failed: ${e.code || 'See console'}`, "error");
+    } finally {
+        if (topBtn) { topBtn.disabled = false; topBtn.innerText = 'Update View'; }
     }
 };
 
 initPopup();
+startSync();

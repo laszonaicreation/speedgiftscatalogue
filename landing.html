@@ -46,17 +46,18 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Main Style CSS -->
-    <link rel="stylesheet" href="style.min.css?v=1.2">
+    <link rel="stylesheet" href="/style.min.css?v=1.2">
     <!-- Responsive Helpers (Mirrored from Main Site) -->
     <style>
         @media (max-width: 767px) { .hidden-mobile { display: none !important; } }
     </style>
-    <link rel="stylesheet" href="landing.css?v=1.4">
+    <link rel="stylesheet" href="/landing.css?v=1.4">
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy, getDoc, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -65,9 +66,11 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         const appId = firebaseConfig.projectId;
 
         window.db = db;
+        window.auth = auth;
         window.appId = appId;
         window.collection = collection;
         window.getDocs = getDocs;
@@ -77,6 +80,11 @@
         window.getDoc = getDoc;
         window.setDoc = setDoc;
         window.increment = increment;
+        window.signInAnonymously = signInAnonymously;
+        window.onAuthStateChanged = onAuthStateChanged;
+
+        // Start Auth immediately
+        signInAnonymously(auth).catch(console.error);
     </script>
 </head>
 
@@ -89,7 +97,7 @@
                 <div class="w-16"></div>
                 
                 <div class="flex-shrink-0 flex items-center justify-center flex-1">
-                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-7 sm:h-8 w-auto">
+                    <img src="/img/speed-logo.svg" alt="Speed Gifts" class="h-7 sm:h-8 w-auto">
                 </div>
                 
                 <div class="flex items-center gap-5 w-16 justify-end">
@@ -296,7 +304,7 @@ viewBox="0 0 2.72 2.72"
     </a>
 
     <!-- Application Script -->
-    <script src="landing-logic.js" type="module"></script>
+    <script src="/landing-logic.js" type="module"></script>
     <script> document.getElementById('year').innerText = new Date().getFullYear(); </script>
     <style>
         /* Robust Typography Isolation for Trust Badges */

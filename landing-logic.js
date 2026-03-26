@@ -4,7 +4,13 @@ let landingSettings = null;
 let products = [];
 let categories = [];
 
-const getTodayStr = () => new Date().toLocaleDateString('en-CA');
+const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 const PAGE_SIZE = 8; // Number of items per section
 
@@ -31,11 +37,27 @@ function formatPrice(price) {
     return `AED ${Number(price).toLocaleString()}`;
 }
 
+// Helper: Ensure authentication is ready before tracking
+async function waitForAuth() {
+    if (window.auth.currentUser) return window.auth.currentUser;
+    return new Promise(resolve => {
+        const unsubscribe = window.onAuthStateChanged(window.auth, (user) => {
+            if (user) {
+                unsubscribe();
+                resolve(user);
+            }
+        });
+        setTimeout(() => { unsubscribe(); resolve(null); }, 6000);
+    });
+}
+
 async function trackLandingAdVisit() {
     const today = getTodayStr();
     const sessionKey = `landing_ad_visit_tracked_${today}`;
     if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
 
+    await waitForAuth();
     try {
         const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
         await window.setDoc(statsRef, { landingAdVisits: window.increment(1) }, { merge: true });
@@ -46,28 +68,33 @@ async function trackLandingAdVisit() {
     }
 }
 
-// Detect Google Ads traffic from various parameters
-const urlParams = new URLSearchParams(window.location.search);
-const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
-const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
+async function initLandingTraffic() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
+    const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
 
-if (urlParams.has('gclid') ||
-    urlParams.has('gbraid') ||
-    urlParams.has('wbraid') ||
-    urlParams.has('gad_source') ||
-    utmSrc === 'google' ||
-    utmSrc === 'google_ads' ||
-    utmSrc === 'googleads' ||
-    utmMed === 'cpc' ||
-    utmMed === 'ppc' ||
-    utmMed === 'google_ads') {
-    sessionStorage.setItem('traffic_source', 'Google Ads');
-    trackLandingAdVisit();
-} else if (urlParams.has('utm_source')) {
-    sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
-} else if (!sessionStorage.getItem('traffic_source')) {
-    sessionStorage.setItem('traffic_source', 'Normal');
-    trackNormalVisit();
+    console.log("[Landing Traffic] Initializing tracking...");
+
+    if (urlParams.has('gclid') || 
+        urlParams.has('gbraid') || 
+        urlParams.has('wbraid') || 
+        urlParams.has('gad_source') ||
+        utmSrc === 'google' || 
+        utmSrc === 'google_ads' || 
+        utmSrc === 'googleads' ||
+        utmMed === 'cpc' || 
+        utmMed === 'ppc' || 
+        utmMed === 'google_ads') {
+        sessionStorage.setItem('traffic_source', 'Google Ads');
+        console.log("[Landing Traffic] Google Ads detected.");
+        trackLandingAdVisit();
+    } else if (urlParams.has('utm_source')) {
+        sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+    } else if (!sessionStorage.getItem('traffic_source')) {
+        sessionStorage.setItem('traffic_source', 'Normal');
+        console.log("[Landing Traffic] Normal visit detected.");
+        trackNormalVisit();
+    }
 }
 
 // Global Image Error Tracking (Site Health)
@@ -78,6 +105,7 @@ window.addEventListener('error', function(e) {
 }, true);
 
 async function trackImageError(src) {
+    await waitForAuth();
     try {
         const today = getTodayStr();
         const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
@@ -90,11 +118,17 @@ async function trackNormalVisit() {
     const today = getTodayStr();
     const sessionKey = `normal_visit_tracked_${today}`;
     if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
+
+    await waitForAuth();
     try {
         const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
         await window.setDoc(statsRef, { normalVisits: window.increment(1) }, { merge: true });
         sessionStorage.setItem(sessionKey, 'true');
-    } catch (e) {}
+        console.log("[Landing Traffic] Normal visit recorded.");
+    } catch (e) {
+        console.error("[Landing Traffic] Normal visit tracking failed:", e);
+    }
 }
 
 window.trackLandingWhatsAppClick = async function(buttonId) {
@@ -109,6 +143,7 @@ window.trackLandingWhatsAppClick = async function(buttonId) {
 
     // 2. Record as internal Lead in Admin Panel insights if visitor came from Ads
     if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+        await waitForAuth();
         try {
             const today = getTodayStr();
             const statsRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'daily_stats', today);
@@ -123,6 +158,8 @@ window.trackLandingWhatsAppClick = async function(buttonId) {
 async function initLandingPage() {
     try {
         console.log("Initializing Landing Page...");
+        // Ensure Traffic Tracking starts after auth context is available
+        initLandingTraffic();
         const db = window.db;
         const appId = window.appId;
         
