@@ -27,11 +27,12 @@ const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products')
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
+const megaCol = collection(db, 'artifacts', appId, 'public', 'data', 'mega_menus');
 const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'popupSettings');
 const landingSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'landingSettings');
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
-let DATA = { p: [], c: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
+let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1 };
 const PAGE_SIZE = 16;
 let clicks = 0, lastClickTime = 0;
@@ -435,15 +436,67 @@ window.toggleWishlist = async (e, id) => {
     } catch (err) { showToast("Sync Error"); }
 };
 
+window.renderDesktopMegaMenu = () => {
+    const container = document.getElementById('desk-mega-menu');
+    if (!container) return;
+    
+    const sorted = [...(DATA.m || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const wrapper = document.getElementById('desktop-mega-menu-wrapper');
+
+    if (sorted.length === 0) {
+        if (wrapper) wrapper.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    // Don't touch 'hidden' class - CSS handles mobile hiding via md:block
+    if (wrapper) wrapper.style.display = '';
+
+    let html = '';
+    sorted.forEach((m) => {
+        const mappedCats = (m.categoryIds || [])
+            .map(cId => DATA.c.find(c => c.id === cId))
+            .filter(Boolean);
+            
+        let dropdownHtml = '';
+        if (mappedCats.length > 0) {
+            const rows = mappedCats.map(c => `
+                <div class="mega-cat-card" onclick="window.applyFilter('${c.id}')">
+                    <div class="mega-cat-img-wrap">
+                        <img src="${getOptimizedUrl(c.img, 80)}" onerror="this.src='https://placehold.co/80x80?text=Icon'">
+                    </div>
+                    <span class="mega-cat-name">${c.name}</span>
+                    <i class="fa-solid fa-chevron-right mega-cat-arrow"></i>
+                </div>
+            `).join('');
+
+            dropdownHtml = `<div class="mega-dropdown-panel">${rows}</div>`;
+        }
+
+        html += `
+            <li class="mega-menu-li">
+                <a class="mega-menu-link">
+                    ${m.name}
+                    ${mappedCats.length > 0 ? '<i class="fa-solid fa-chevron-down mega-menu-arrow"></i>' : ''}
+                </a>
+                ${dropdownHtml}
+            </li>
+        `;
+    });
+
+    container.innerHTML = html;
+};
+
 async function refreshData(isNavigationOnly = false) {
     try {
         if (!isNavigationOnly || DATA.p.length === 0) {
             const today = getTodayStr();
             const todayRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
 
-            const [pSnap, cSnap, sSnap, popSnap, todaySnap] = await Promise.all([
+            const [pSnap, cSnap, mSnap, sSnap, popSnap, todaySnap] = await Promise.all([
                 getDocs(prodCol),
                 getDocs(catCol),
+                getDocs(megaCol).catch(e => ({ docs: [] })),
                 getDocs(sliderCol).catch(e => {
                     console.error("Slider fetch failed:", e);
                     return { docs: [] };
@@ -453,6 +506,7 @@ async function refreshData(isNavigationOnly = false) {
             ]);
             DATA.p = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            DATA.m = mSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.order || 0) - (b.order || 0));
             DATA.s = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
             // Fetch Announcements (from products collection with ID _announcements_)
@@ -495,6 +549,7 @@ async function refreshData(isNavigationOnly = false) {
             DATA.p = DATA.p.filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_'].includes(p.id));
 
             renderAnnouncementBar();
+            renderDesktopMegaMenu();
             // Aggressive Preloading for instant feel
             window.preloadInitialBatch();
             
@@ -683,6 +738,7 @@ window.loadMoreProducts = () => {
     renderHome();
 };
 
+
 function renderHome() {
     try {
         const appMain = document.getElementById('app');
@@ -696,6 +752,7 @@ function renderHome() {
         }
 
         // SELECT ALL ELEMENTS AFTER INJECTION
+        if (typeof window.renderDesktopMegaMenu === 'function') window.renderDesktopMegaMenu();
         const catRow = appMain.querySelector('#category-row');
         const grid = appMain.querySelector('#product-grid');
         const selectionHeader = appMain.querySelector('#selection-header');
@@ -801,7 +858,16 @@ function renderHome() {
         let filtered = [];
         const stockFilter = (items) => items.filter(p => p.inStock !== false);
         if (state.selectionId) filtered = DATA.p.filter(p => state.selected.includes(p.id));
-        else if (state.filter !== 'all') filtered = stockFilter(DATA.p.filter(p => p.catId === state.filter));
+        else if (state.filter !== 'all') {
+            const isMain = DATA.c.find(c => c.id === state.filter && !c.parentId);
+            let validIds = [state.filter];
+            if (isMain) {
+                // If main category, include all its sub-categories' products
+                const childIds = DATA.c.filter(c => c.parentId === state.filter).map(c => c.id);
+                validIds = validIds.concat(childIds);
+            }
+            filtered = stockFilter(DATA.p.filter(p => validIds.includes(p.catId)));
+        }
         else filtered = stockFilter(DATA.p);
 
         if (state.search) {
@@ -1349,6 +1415,55 @@ window.saveCategory = async () => {
 
 window.deleteProduct = async (id) => { if (!confirm("Are you sure?")) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id)); showToast("Deleted"); refreshData(); } catch (e) { showToast("Delete Error"); } };
 window.deleteCategory = async (id) => { if (!confirm("Delete Category?")) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast("Category Removed"); refreshData(); } catch (e) { showToast("Error"); } };
+
+window.saveMegaMenu = async () => {
+    const id = document.getElementById('edit-megamenu-id')?.value;
+    const btn = document.getElementById('m-save-btn');
+    
+    // Collect checked subcategories
+    const checkboxes = document.querySelectorAll('.mega-cat-checkbox:checked');
+    const categoryIds = Array.from(checkboxes).map(cb => cb.value);
+
+    const data = {
+        name: document.getElementById('m-name')?.value,
+        categoryIds: categoryIds,
+        order: id ? (DATA.m.find(m => m.id === id)?.order || 0) : Date.now() // simple ordering
+    };
+    if (!data.name) return showToast("Name required");
+    if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
+    try { 
+        if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mega_menus', id), data); 
+        else await addDoc(megaCol, data); 
+        showToast("Mega Menu Synced"); 
+        resetForm(); 
+        refreshData(); 
+    }
+    catch (e) { console.error("Mega Menu Error:", e); showToast("Mega Menu Error"); } 
+    finally { if (btn) { btn.disabled = false; btn.innerText = "Save Desktop Menu"; } }
+};
+
+window.deleteMegaMenu = async (id) => { if (!confirm("Delete Desktop Menu?")) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mega_menus', id)); showToast("Menu Removed"); refreshData(); } catch (e) { showToast("Error"); } };
+
+window.editMegaMenu = (id) => {
+    const item = DATA.m.find(x => x.id === id);
+    if (!item) return;
+    const editId = document.getElementById('edit-megamenu-id');
+    const mName = document.getElementById('m-name');
+    const mFormTitle = document.getElementById('m-form-title');
+
+    if (editId) editId.value = item.id;
+    if (mName) mName.value = item.name;
+    if (mFormTitle) mFormTitle.innerText = "Editing: " + item.name;
+
+    // Check the checkboxes that are in categoryIds
+    const checkboxes = document.querySelectorAll('.mega-cat-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = item.categoryIds && item.categoryIds.includes(cb.value);
+    });
+
+    switchAdminTab('megamenu');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 window.editProduct = (id) => {
     const item = DATA.p.find(x => x.id === id);
@@ -2002,6 +2117,7 @@ window.switchAdminTab = (tab) => {
     }
     const isProd = tab === 'products';
     const isCat = tab === 'categories';
+    const isMega = tab === 'megamenu';
     const isSlider = tab === 'sliders';
     const isInsight = tab === 'insights';
     const isAnnounce = tab === 'announcements';
@@ -2011,6 +2127,7 @@ window.switchAdminTab = (tab) => {
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
     document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
+    document.getElementById('admin-megamenu-section')?.classList.toggle('hidden', !isMega);
     document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
     document.getElementById('admin-landing-section').classList.toggle('hidden', !isLanding);
     document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
@@ -2036,6 +2153,7 @@ window.switchAdminTab = (tab) => {
 
     document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
+    document.getElementById('admin-megamenu-list')?.classList.toggle('hidden', !isMega);
     document.getElementById('admin-slider-list').classList.toggle('hidden', !isSlider);
     document.getElementById('admin-announcements-list').classList.toggle('hidden', !isAnnounce);
     document.getElementById('admin-insights-list').classList.toggle('hidden', !isInsight);
@@ -2048,13 +2166,15 @@ window.switchAdminTab = (tab) => {
 
     document.getElementById('tab-p').className = isProd ? activeClass : inactiveClass;
     document.getElementById('tab-c').className = isCat ? activeClass : inactiveClass;
+    const tabM = document.getElementById('tab-m');
+    if(tabM) tabM.className = isMega ? activeClass : inactiveClass;
     document.getElementById('tab-s').className = isSlider ? activeClass : inactiveClass;
     document.getElementById('tab-a').className = isAnnounce ? activeClass : inactiveClass;
     document.getElementById('tab-i').className = isInsight ? activeClass : inactiveClass;
     document.getElementById('tab-landing').className = isLanding ? activeClass : inactiveClass;
     document.getElementById('tab-l').className = isLeads ? activeClass : inactiveClass;
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : "")))));
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : ""))))));
     renderAdminUI();
 };
 
@@ -2062,7 +2182,9 @@ window.switchAdminTab = (tab) => {
 
 function populateCatSelect() {
     const selects = [document.getElementById('p-cat-id'), document.getElementById('landing-sec1-cat'), document.getElementById('landing-sec2-cat')];
+    
     const optionsHtml = `<option value="">Select Category</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    
     selects.forEach(select => {
         if (select) select.innerHTML = optionsHtml;
     });
@@ -2075,7 +2197,7 @@ function populateAdminCatFilter() {
 
 window.resetForm = () => {
     // Basic fields
-    const fields = ['edit-id', 'p-name', 'p-price', 'p-size', 'p-material', 'p-desc', 'p-keywords', 'c-name', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order']; // Added 'p-badge'
+    const fields = ['edit-id', 'p-name', 'p-price', 'p-size', 'p-material', 'p-desc', 'p-keywords', 'c-name', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Added 'p-badge' and 'm-name'
     fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) el.value = "";
@@ -3340,7 +3462,45 @@ function renderAdminAnnouncements() {
     }
 }
 
-// Update renderAdminUI to handle announcements
+function renderAdminMegaMenus() {
+    const list = document.getElementById('admin-megamenu-list');
+    const checklist = document.getElementById('m-categories-checkboxes');
+    if (!list || !checklist) return;
+
+    // 1. Render Checklist (all normal categories)
+    checklist.innerHTML = DATA.c.map(c => `
+        <label class="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer border border-gray-100 bg-white shadow-sm transition-all hover:border-black">
+            <input type="checkbox" value="${c.id}" class="mega-cat-checkbox w-4 h-4 text-black focus:ring-black border-gray-300 rounded cursor-pointer">
+            <img src="${getOptimizedUrl(c.img, 50)}" class="w-8 h-8 object-cover rounded bg-gray-100" onerror="this.src='https://placehold.co/50x50?text=Icon'">
+            <span class="text-[13px] font-bold text-gray-800 flex-1">${c.name}</span>
+        </label>
+    `).join('');
+
+    // 2. Render created Mega Menus
+    const sorted = [...(DATA.m || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+    list.innerHTML = sorted.map(m => `
+        <div class="admin-cat-card">
+            <div class="flex-1">
+                <p class="font-bold text-[13px]">${m.name}</p>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-black uppercase rounded-full tracking-widest flex items-center gap-1">
+                        <i class="fa-solid fa-layer-group"></i> ${m.categoryIds ? m.categoryIds.length : 0} Maps
+                    </span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="editMegaMenu('${m.id}')" class="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:text-black transition-all">
+                    <i class="fa-solid fa-pen text-[10px]"></i>
+                </button>
+                <button onclick="deleteMegaMenu('${m.id}')" class="w-8 h-8 flex items-center justify-center bg-red-50 rounded-full text-red-200 hover:text-red-500 transition-all">
+                    <i class="fa-solid fa-trash text-[10px]"></i>
+                </button>
+            </div>
+        </div>
+    `).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Desktop Menus created.</p>`;
+}
+
+// Update renderAdminUI to handle announcements and megamenus
 const originalRenderAdminUI = window.renderAdminUI;
 window.renderAdminUI = () => {
     originalRenderAdminUI();
@@ -3350,6 +3510,9 @@ window.renderAdminUI = () => {
     }
     if (state.adminTab === 'announcements') {
         renderAdminAnnouncements();
+    }
+    if (state.adminTab === 'megamenu') {
+        renderAdminMegaMenus();
     }
 };
 

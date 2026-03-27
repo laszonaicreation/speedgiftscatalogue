@@ -1599,3 +1599,115 @@ img[src=""] {
         display: none;
     }
 }
+
+/* =========================================
+   MEGA MENU DESKTOP STYLES
+   ========================================= */
+.mega-menu-item {
+    position: relative;
+    padding: 1rem 0;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #111;
+    transition: color 0.3s ease;
+}
+
+.mega-menu-item:hover {
+    color: #D4AF37;
+}
+
+.mega-menu-item::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    width: 0;
+    height: 3px;
+    background: #D4AF37;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.mega-menu-item:hover::after {
+    width: 100%;
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.mega-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(15px);
+    width: max-content;
+    min-width: 450px;
+    max-width: 90vw;
+    background: #fff;
+    border-radius: 1.5rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.03);
+    padding: 2rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    z-index: 100;
+    display: grid;
+    /* Grid columns dynamically set via inline styling or default to 3/4 */
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1.5rem;
+    pointer-events: none;
+}
+
+.mega-menu-item:hover .mega-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.mega-sub-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 1.2rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.mega-sub-item:hover {
+    background: #f9f9f9;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.03);
+}
+
+.mega-sub-img {
+    width: 65px;
+    height: 65px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 3px;
+    border: 1px solid #eee;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), border-color 0.3s ease;
+}
+
+.mega-sub-item:hover .mega-sub-img {
+    transform: scale(1.08);
+    border-color: #D4AF37;
+}
+
+.mega-sub-title {
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    max-width: 100%;
+}

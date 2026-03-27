@@ -24,6 +24,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAuthenticated();
     }
+    match /artifacts/{anyAppId}/public/data/mega_menus/{menuId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
 
     // 2. Shared Selections: Public Read, Authenticated Create
     match /artifacts/{anyAppId}/public/data/selections/{selectionId} {
