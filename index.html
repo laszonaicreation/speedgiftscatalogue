@@ -195,35 +195,42 @@
         }
         .mega-menu-li:hover .mega-menu-arrow { transform: rotate(180deg); opacity: 1; }
 
-        /* Compact dropdown panel */
+        /* Compact dropdown panel - 5-row vertical column flow */
         .mega-dropdown-panel {
-            display: none;
-            position: absolute;
-            top: calc(100% + 0px);
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 300;
-            background: #fff;
-            border: 1px solid #f0f0f0;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
-            padding: 10px;
-            min-width: 220px;
+            position: absolute !important;
+            top: 100% !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 300 !important;
+            background: #fff !important;
+            border: 1px solid #f0f0f0 !important;
+            border-radius: 20px !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12) !important;
+            padding: 12px !important;
+            display: none; /* Managed by JS: set to 'grid' on hover */
+            grid-auto-flow: column !important;
+            grid-template-rows: repeat(5, auto) !important;
+            grid-auto-columns: 170px !important;
+            gap: 4px 6px !important;
+            width: max-content !important;
             animation: dropdown-in 0.18s ease forwards;
         }
         @keyframes dropdown-in {
             from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
             to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        .mega-menu-li:hover .mega-dropdown-panel { display: block; }
 
         /* Cat rows inside dropdown */
         .mega-cat-card {
-            display: flex; align-items: center; gap: 12px;
-            padding: 9px 12px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px;
             border-radius: 12px;
             cursor: pointer;
             transition: background 0.15s;
+            box-sizing: border-box;
+            white-space: nowrap;
+            width: 160px; /* Fixed width for consistent grid cells */
+            overflow: hidden;
         }
         .mega-cat-card:hover { background: #f9fafb; }
 
@@ -523,7 +530,7 @@
                 <button onclick="switchAdminTab('categories')" id="tab-c"
                     class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Categories</button>
                 <button onclick="switchAdminTab('megamenu')" id="tab-m"
-                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400 border border-transparent">Desktop Menu</button>
+                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Desktop Menu</button>
                 <button onclick="switchAdminTab('sliders')" id="tab-s"
                     class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Sliders</button>
                 <button onclick="switchAdminTab('landing')" id="tab-landing"

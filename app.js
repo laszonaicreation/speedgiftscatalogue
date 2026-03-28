@@ -439,7 +439,7 @@ window.toggleWishlist = async (e, id) => {
 window.renderDesktopMegaMenu = () => {
     const container = document.getElementById('desk-mega-menu');
     if (!container) return;
-    
+
     const sorted = [...(DATA.m || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
     const wrapper = document.getElementById('desktop-mega-menu-wrapper');
 
@@ -448,43 +448,93 @@ window.renderDesktopMegaMenu = () => {
         container.innerHTML = '';
         return;
     }
-
-    // Don't touch 'hidden' class - CSS handles mobile hiding via md:block
     if (wrapper) wrapper.style.display = '';
+    container.innerHTML = '';
 
-    let html = '';
     sorted.forEach((m) => {
         const mappedCats = (m.categoryIds || [])
             .map(cId => DATA.c.find(c => c.id === cId))
             .filter(Boolean);
-            
-        let dropdownHtml = '';
-        if (mappedCats.length > 0) {
-            const rows = mappedCats.map(c => `
-                <div class="mega-cat-card" onclick="window.applyFilter('${c.id}')">
-                    <div class="mega-cat-img-wrap">
-                        <img src="${getOptimizedUrl(c.img, 80)}" onerror="this.src='https://placehold.co/80x80?text=Icon'">
-                    </div>
-                    <span class="mega-cat-name">${c.name}</span>
-                    <i class="fa-solid fa-chevron-right mega-cat-arrow"></i>
-                </div>
-            `).join('');
 
-            dropdownHtml = `<div class="mega-dropdown-panel">${rows}</div>`;
+        const li = document.createElement('li');
+        li.className = 'mega-menu-li';
+
+        const a = document.createElement('a');
+        a.className = 'mega-menu-link';
+        a.innerHTML = `${m.name}${mappedCats.length > 0 ? ' <i class="fa-solid fa-chevron-down mega-menu-arrow"></i>' : ''}`;
+        li.appendChild(a);
+
+        if (mappedCats.length > 0) {
+            const panel = document.createElement('div');
+
+            // 1. Panel Container Styles (Simplified, letting CSS handle the heavy lifting)
+            panel.className           = 'mega-dropdown-panel';
+            panel.style.display       = 'none'; // Overridden on hover
+            
+            // RIGID 5-COLUMN GRID (This is the fix)
+            // inline styles removed to let CSS govern the 5-column grid cleanly
+
+            mappedCats.forEach(c => {
+                const card = document.createElement('div');
+                card.className           = 'mega-cat-card';
+
+                const thumb = document.createElement('div');
+                thumb.style.width        = '34px';
+                thumb.style.height       = '34px';
+                thumb.style.flexShrink   = '0';
+                thumb.style.borderRadius = '9px';
+                thumb.style.overflow     = 'hidden';
+                thumb.style.background   = '#f9fafb';
+                thumb.style.border       = '1px solid #eee';
+                
+                const img = document.createElement('img');
+                img.src = getOptimizedUrl(c.img, 80);
+                img.style.width       = '100%';
+                img.style.height      = '100%';
+                img.style.objectFit   = 'cover';
+                img.onerror = () => { img.src = 'https://placehold.co/80x80?text=?'; };
+                thumb.appendChild(img);
+
+                const label = document.createElement('span');
+                label.className        = 'mega-cat-name';
+                label.textContent      = c.name;
+
+                card.appendChild(thumb);
+                card.appendChild(label);
+                card.addEventListener('click',     () => window.applyFilter(c.id));
+                panel.appendChild(card);
+            });
+
+            li.appendChild(panel);
+
+            let hideTimer;
+            const showPanel = () => {
+                clearTimeout(hideTimer);
+                // Explicitly set display: grid to force 5 columns
+                panel.style.display = 'grid';
+                const arrow = a.querySelector('.mega-menu-arrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+                a.style.color = '#000';
+                a.style.borderBottomColor = '#000';
+            };
+            const hidePanel = (delay = 80) => {
+                hideTimer = setTimeout(() => {
+                    panel.style.display = 'none';
+                    const arrow = a.querySelector('.mega-menu-arrow');
+                    if (arrow) arrow.style.transform = '';
+                    a.style.color = '';
+                    a.style.borderBottomColor = '';
+                }, delay);
+            };
+
+            li.addEventListener('mouseenter', showPanel);
+            li.addEventListener('mouseleave', () => hidePanel(100));
+            panel.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+            panel.addEventListener('mouseleave', () => hidePanel(100));
         }
 
-        html += `
-            <li class="mega-menu-li">
-                <a class="mega-menu-link">
-                    ${m.name}
-                    ${mappedCats.length > 0 ? '<i class="fa-solid fa-chevron-down mega-menu-arrow"></i>' : ''}
-                </a>
-                ${dropdownHtml}
-            </li>
-        `;
+        container.appendChild(li);
     });
-
-    container.innerHTML = html;
 };
 
 async function refreshData(isNavigationOnly = false) {
@@ -1447,22 +1497,28 @@ window.deleteMegaMenu = async (id) => { if (!confirm("Delete Desktop Menu?")) re
 window.editMegaMenu = (id) => {
     const item = DATA.m.find(x => x.id === id);
     if (!item) return;
+
+    // 1. Switch to megamenu tab FIRST so the DOM gets rendered
+    switchAdminTab('megamenu');
+
+    // 2. Now that DOM is ready, fill the form fields
     const editId = document.getElementById('edit-megamenu-id');
     const mName = document.getElementById('m-name');
     const mFormTitle = document.getElementById('m-form-title');
-
     if (editId) editId.value = item.id;
     if (mName) mName.value = item.name;
-    if (mFormTitle) mFormTitle.innerText = "Editing: " + item.name;
+    if (mFormTitle) mFormTitle.innerText = 'Editing: ' + item.name;
 
-    // Check the checkboxes that are in categoryIds
-    const checkboxes = document.querySelectorAll('.mega-cat-checkbox');
-    checkboxes.forEach(cb => {
-        cb.checked = item.categoryIds && item.categoryIds.includes(cb.value);
-    });
+    // 3. renderAdminMegaMenus rebuilds the checklist - call it to ensure boxes are fresh
+    renderAdminMegaMenus();
 
-    switchAdminTab('megamenu');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 4. NOW tick the correct boxes (checklist exists in DOM now)
+    setTimeout(() => {
+        document.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
+            cb.checked = Array.isArray(item.categoryIds) && item.categoryIds.includes(cb.value);
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
 };
 
 window.editProduct = (id) => {
@@ -3478,26 +3534,50 @@ function renderAdminMegaMenus() {
 
     // 2. Render created Mega Menus
     const sorted = [...(DATA.m || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
-    list.innerHTML = sorted.map(m => `
-        <div class="admin-cat-card">
-            <div class="flex-1">
-                <p class="font-bold text-[13px]">${m.name}</p>
-                <div class="flex items-center gap-2 mt-2">
-                    <span class="px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-black uppercase rounded-full tracking-widest flex items-center gap-1">
-                        <i class="fa-solid fa-layer-group"></i> ${m.categoryIds ? m.categoryIds.length : 0} Maps
-                    </span>
+    list.innerHTML = sorted.map(m => {
+        // Get mapped category objects
+        const mappedCats = (m.categoryIds || [])
+            .map(cId => DATA.c.find(c => c.id === cId))
+            .filter(Boolean);
+
+        const thumbs = mappedCats.slice(0, 5).map(c => `
+            <img src="${getOptimizedUrl(c.img, 60)}" title="${c.name}"
+                class="w-9 h-9 rounded-xl object-cover border-2 border-white shadow-sm -ml-2 first:ml-0 bg-gray-100"
+                onerror="this.src='https://placehold.co/60x60?text=?'">
+        `).join('');
+
+        const extra = mappedCats.length > 5 ? `<span class="w-9 h-9 rounded-xl bg-gray-100 border-2 border-white shadow-sm -ml-2 flex items-center justify-center text-[9px] font-black text-gray-500">+${mappedCats.length - 5}</span>` : '';
+
+        return `
+        <div style="background:#fff; border:1px solid #f0f0f0; border-radius:20px; padding:16px 20px; display:flex; align-items:center; gap:16px; box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <!-- Left: Title + Category Thumbs -->
+            <div style="flex:1; min-width:0;">
+                <p style="font-size:13px; font-weight:900; color:#111; margin:0 0 8px;">${m.name}</p>
+                <div style="display:flex; align-items:center; gap:0;">
+                    ${thumbs}${extra}
+                    ${mappedCats.length === 0 ? '<span style="font-size:10px;color:#9ca3af;font-style:italic;">No categories mapped</span>' : ''}
                 </div>
+                ${mappedCats.length > 0 ? `<p style="font-size:9px;color:#9ca3af;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:0.1em;">${mappedCats.length} categor${mappedCats.length === 1 ? 'y' : 'ies'} mapped</p>` : ''}
             </div>
-            <div class="flex flex-col gap-2">
-                <button onclick="editMegaMenu('${m.id}')" class="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:text-black transition-all">
-                    <i class="fa-solid fa-pen text-[10px]"></i>
+
+            <!-- Right: Edit + Delete Buttons -->
+            <div style="display:flex; gap:8px; flex-shrink:0;">
+                <button onclick="editMegaMenu('${m.id}')"
+                    style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#f3f4f6;border:none;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#374151;cursor:pointer;transition:all 0.2s;"
+                    onmouseover="this.style.background='#000';this.style.color='#fff'"
+                    onmouseout="this.style.background='#f3f4f6';this.style.color='#374151'">
+                    <i class="fa-solid fa-pen" style="font-size:9px;"></i> Edit
                 </button>
-                <button onclick="deleteMegaMenu('${m.id}')" class="w-8 h-8 flex items-center justify-center bg-red-50 rounded-full text-red-200 hover:text-red-500 transition-all">
-                    <i class="fa-solid fa-trash text-[10px]"></i>
+                <button onclick="deleteMegaMenu('${m.id}')"
+                    style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff0f0;border:none;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#ef4444;cursor:pointer;transition:all 0.2s;"
+                    onmouseover="this.style.background='#ef4444';this.style.color='#fff'"
+                    onmouseout="this.style.background='#fff0f0';this.style.color='#ef4444'">
+                    <i class="fa-solid fa-trash" style="font-size:9px;"></i> Delete
                 </button>
             </div>
         </div>
-    `).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Desktop Menus created.</p>`;
+        `;
+    }).join('') || `<div style="text-align:center;padding:60px 20px;color:#d1d5db;font-size:11px;font-style:italic;">No Desktop Menus created yet.</div>`;
 }
 
 // Update renderAdminUI to handle announcements and megamenus
