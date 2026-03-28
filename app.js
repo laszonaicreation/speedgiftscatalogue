@@ -800,6 +800,9 @@ window.loadMoreProducts = () => {
 
 function renderHome() {
     try {
+        const outerWrapper = document.getElementById('home-top-elements');
+        if (outerWrapper) outerWrapper.classList.remove('hidden');
+
         const appMain = document.getElementById('app');
         const template = document.getElementById('home-view-template');
         if (!appMain || !template) return;
@@ -821,10 +824,13 @@ function renderHome() {
         const activeCatTitle = appMain.querySelector('#active-category-title');
         const activeCatTitleMob = appMain.querySelector('#active-category-title-mob');
         const categorySelector = appMain.querySelector('#category-selector-container');
-        const discSearch = appMain.querySelector('#customer-search');
-        const clearBtn = appMain.querySelector('#clear-search-btn');
+        
+        // Search elements are now outside appMain in the top layout block
+        const discSearch = document.getElementById('customer-search');
+        const clearBtn = document.getElementById('clear-search-btn');
+        
         const mobileSort = appMain.querySelector('#price-sort-mob');
-        const mSearch = document.getElementById('m-search'); // Mobile search input
+        const mSearch = document.getElementById('m-search'); // Mobile sidebar search input
 
         // Desktop Search
         if (discSearch) {
@@ -1164,6 +1170,11 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
             updateCanonicalURL(`?p=${p.id}`);
         } catch (e) { console.error("SEO Update failed:", e); }
     }
+    
+    // Hide the top header blocks (Search & Slider) since they aren't in #app
+    const outerWrapper = document.getElementById('home-top-elements');
+    if (outerWrapper) outerWrapper.classList.add('hidden');
+
     const appMain = document.getElementById('app');
     if (!appMain) return;
     const allImages = [...(p.images || [])];
@@ -2095,12 +2106,13 @@ window.applyFilter = (id, e) => {
     renderHome();
 };
 window.showSearchSuggestions = (show) => {
-    const appMain = document.getElementById('app');
-    const tags = appMain ? appMain.querySelector('#search-tags') : null;
+    // Both desktop and mobile search tags are scoped by IDs globally now
+    // the desktop search tags might have a different ID, but mobile is 'search-tags'
+    const tags = document.getElementById('search-tags');
     if (tags) {
         if (show) tags.classList.remove('hidden');
         else setTimeout(() => {
-            const currentTags = document.getElementById('app')?.querySelector('#search-tags');
+            const currentTags = document.getElementById('search-tags');
             if (currentTags) currentTags.classList.add('hidden');
         }, 200);
     }
@@ -3202,16 +3214,19 @@ let sliderInterval;
 let currentSlide = 0;
 
 function renderSlider() {
-    const container = document.getElementById('app')?.querySelector('#home-slider-container');
-    const slider = document.getElementById('app')?.querySelector('#home-slider');
-    const dots = document.getElementById('app')?.querySelector('#slider-dots');
+    const wrapper = document.getElementById('home-top-elements');
+    const container = document.getElementById('home-slider-container');
+    const slider = document.getElementById('home-slider');
+    const dots = document.getElementById('slider-dots');
 
-    if (!slider || !DATA.s.length || state.filter !== 'all' || state.search || state.selectionId) {
-        if (container) container.classList.add('hidden');
+    // Safety: always hide slider when a product detail is open (?p= in URL)
+    const isProductDetail = new URLSearchParams(window.location.search).has('p');
+    if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all' || state.search || state.selectionId) {
+        if (wrapper) wrapper.classList.add('hidden');
         return;
     }
 
-    if (container) container.classList.remove('hidden');
+    if (wrapper) wrapper.classList.remove('hidden');
 
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const sortedSliders = [...DATA.s].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
@@ -3232,14 +3247,23 @@ function renderSlider() {
 
     slider.innerHTML = visibleSliders.map((s, i) => {
         const displayImg = isMobile ? s.mobileImg : s.img;
+        
+        // Exact original mobile overlay vs New premium desktop overlay
+        const overlayHTML = s.title ? (isMobile 
+            ? `<div class="absolute bottom-12 left-8 text-white z-20">
+                 <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
+               </div>`
+            : `<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end pb-14 pl-16 z-20 pointer-events-none">
+                 <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
+               </div>`
+        ) : '';
+
         return `
-            <div class="slider-slide" data-index="${i}">
+            <div class="slider-slide relative" data-index="${i}">
                 <img src="${getOptimizedUrl(displayImg, isMobile ? 800 : 1920)}" 
-                     class="${i === 0 ? 'no-animation' : ''}"
+                     class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                      alt="${s.title || ''}" onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" style="${s.link ? 'cursor:pointer' : ''}">
-                ${s.title ? `<div class="absolute bottom-12 left-8 md:left-12 text-white z-20">
-                    <h2 class="text-2xl md:text-5xl font-black uppercase tracking-tighter">${s.title}</h2>
-                </div>` : ''}
+                ${overlayHTML}
             </div>
         `;
     }).join('');
