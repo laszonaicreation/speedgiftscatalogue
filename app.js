@@ -782,6 +782,15 @@ window.toggleSelectAll = () => {
     renderHome();
 };
 
+// Detect how many columns the product grid currently shows
+function getColumnsCount() {
+    const w = window.innerWidth;
+    if (w >= 1024) return 5; // lg (max columns in CSS)
+    if (w >= 768)  return 4; // md
+    if (w >= 640)  return 3; // sm
+    return 2;                // mobile
+}
+
 window.loadMoreProducts = () => {
     state.isLoadMore = true;
     state.visibleChunks++;
@@ -976,7 +985,11 @@ function renderHome() {
         if (grid) {
             const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
 
-            const limit = state.visibleChunks * PAGE_SIZE;
+            // Always show complete rows — never leave an orphan product on the last row
+            const cols = getColumnsCount();
+            const rawLimit = state.visibleChunks * PAGE_SIZE;
+            // Round rawLimit to nearest multiple of cols (round down so we don't overshoot)
+            const limit = Math.max(cols, Math.floor(rawLimit / cols) * cols);
             const visibleProducts = filtered.slice(0, limit);
             const hasMore = filtered.length > limit;
 
@@ -1012,6 +1025,20 @@ function renderHome() {
                     </div>
                 </div>`;
             }).join('');
+
+            // Ghost cards: only add when ALL products are visible (no Load More button)
+            // When hasMore=true, the limit rounding already ensures only full rows show.
+            // When hasMore=false, pad the last row with sized ghost cards so it looks complete.
+            if (visibleProducts.length > 0 && !hasMore) {
+                const remainder = visibleProducts.length % cols;
+                if (remainder > 0) {
+                    const ghosts = cols - remainder;
+                    for (let g = 0; g < ghosts; g++) {
+                        // Use same aspect ratio as product image so ghost takes up proper height
+                        gridContent += `<div style="visibility:hidden;pointer-events:none;" aria-hidden="true"><div style="aspect-ratio:4/5;width:100%;"></div></div>`;
+                    }
+                }
+            }
 
             if (filtered.length === 0) {
                 gridContent = `

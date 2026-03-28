@@ -438,7 +438,7 @@ img[src=""] {
         font-size: 16px;
     }
 
-    .wish-active .product-card .wish-btn {
+    .product-card.wish-active .wish-btn {
         color: var(--wishlist-red) !important;
     }
 }
@@ -722,31 +722,14 @@ img[src=""] {
     color: white;
 }
 
-.badge-new {
-    background: #10b981;
-}
-
-/* Emerald */
-.badge-best {
-    background: #f59e0b;
-}
-
-/* Amber */
-.badge-limited {
-    background: #ef4444;
-}
-
-/* Red */
-.badge-sale {
-    background: #6366f1;
-}
-
-/* Indigo */
+.badge-new,
+.badge-best,
+.badge-limited,
+.badge-sale,
 .badge-trending {
-    background: #ec4899;
+    background: #FFBF00;
+    color: #fff;
 }
-
-/* Pink */
 
 .mb-0-imp {
     margin-bottom: 0 !important;

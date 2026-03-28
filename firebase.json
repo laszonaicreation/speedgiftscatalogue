@@ -8,7 +8,6 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "img/**",
       ".git/**",
       ".agent/**"
     ],
