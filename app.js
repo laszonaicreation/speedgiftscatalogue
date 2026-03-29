@@ -832,29 +832,8 @@ function renderHome() {
         const mobileSort = appMain.querySelector('#price-sort-mob');
         const mSearch = document.getElementById('m-search'); // Mobile sidebar search input
 
-        // Desktop Search
-        if (discSearch) {
-            discSearch.addEventListener('input', (e) => {
-                state.search = e.target.value;
-                state.visibleChunks = 1; // Reset pagination
-                renderHome();
-            });
-        }
-
-        // Mobile Search (Wait for user to stop typing or press enter)
-        if (mSearch) {
-            let timeout = null;
-            mSearch.addEventListener('keyup', (e) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    if (state.search !== e.target.value) {
-                        state.search = e.target.value;
-                        state.visibleChunks = 1; // Reset pagination
-                        renderHome();
-                    }
-                }, 500);
-            });
-        }
+        // NOTE: Event listeners are attached ONCE at init time (see initSearchListeners)
+        // Do NOT add listeners here — they would be duplicated on every renderHome() call.
 
         // 1. Handle selection/wishlist headers
         if (state.selectionId) {
@@ -2134,8 +2113,9 @@ window.applyCustomerSearch = (val) => {
             const isRefining = currentQ && val.startsWith(currentQ);
             safePushState({ q: val || null, c: 'all', p: null }, isRefining);
         }
-        renderHome();
-    }, 400); // Slightly longer for search history comfort
+        // Use lightweight search-only render (skips category row, mega menu, slider)
+        renderSearchResults();
+    }, 500); // 500ms debounce — good balance of speed vs. unnecessary renders
 
     // Update Clear Button UI immediately with safety
     const clearBtn = document.getElementById('clear-search-btn');
@@ -4272,5 +4252,172 @@ window.resetInsightsData = async () => {
     }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FAST-PATH: Search-only render (skips category row, mega menu, slider, SEO)
+// Called by applyCustomerSearch to avoid full renderHome on every keystroke.
+// ─────────────────────────────────────────────────────────────────────────────
+function renderSearchResults() {
+    try {
+        const appMain = document.getElementById('app');
+        if (!appMain) return;
+
+        const grid = appMain.querySelector('#product-grid');
+        if (!grid) {
+            // Grid not present yet — fall back to full render
+            renderHome();
+            return;
+        }
+
+        // Filter products by current search query
+        const q = (state.search || '').toLowerCase().trim();
+        const words = q.split(' ').filter(w => w.length > 0);
+        const stockFilter = (items) => items.filter(p => p.inStock !== false);
+        let filtered = stockFilter(DATA.p);
+
+        if (words.length > 0) {
+            filtered = filtered.filter(p => {
+                const name = (p.name || '').toLowerCase();
+                const keywords = (p.keywords || '').toLowerCase();
+                const catObj = DATA.c.find(c => c.id === p.catId);
+                const catName = catObj ? catObj.name.toLowerCase() : '';
+                return words.every(word => name.includes(word) || catName.includes(word) || keywords.includes(word));
+            });
+        }
+
+        // Sort: pinned first, then newest
+        filtered.sort((a, b) => {
+            const pinA = a.isPinned ? 1 : 0;
+            const pinB = b.isPinned ? 1 : 0;
+            if (pinA !== pinB) return pinB - pinA;
+            if (state.sort !== 'all') {
+                const priceA = parseFloat(a.price) || 0;
+                const priceB = parseFloat(b.price) || 0;
+                return state.sort === 'low' ? priceA - priceB : priceB - priceA;
+            }
+            return (b.updatedAt || 0) - (a.updatedAt || 0);
+        });
+
+        const cols = getColumnsCount();
+        const rawLimit = state.visibleChunks * PAGE_SIZE;
+        const limit = Math.max(cols, Math.floor(rawLimit / cols) * cols);
+        const visibleProducts = filtered.slice(0, limit);
+        const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
+
+        let gridContent = '';
+        if (filtered.length === 0) {
+            gridContent = `
+            <div class="col-span-full text-center py-40 px-6">
+                <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fa-solid fa-magnifying-glass text-gray-200 text-xl"></i>
+                </div>
+                <h3 class="text-gray-900 font-bold text-[14px] mb-2 uppercase tracking-widest">No Results Found</h3>
+                <p class="text-gray-400 text-[11px] mb-8 max-w-xs mx-auto">Try a different keyword or browse our categories.</p>
+                <button onclick="window.clearCustomerSearch()" class="bg-black text-white px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-105 active:scale-95 transition-all">
+                    Clear Search
+                </button>
+            </div>`;
+        } else {
+            gridContent = visibleProducts.map((p, idx) => {
+                const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
+                return `
+                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}"
+                     onmouseenter="window.preloadProductImage('${p.id}')"
+                     onclick="viewDetail('${p.id}', false, null)">
+                    <div class="img-container mb-4 shadow-sm relative">
+                        ${badgeHtml}
+                        <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
+                        <div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>
+                        <img src="${getOptimizedUrl(p.img, 600)}"
+                             class="${idx < 4 ? 'no-animation' : ''}"
+                             ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
+                             decoding="async"
+                             onload="this.classList.add('loaded')"
+                             alt="${p.name}">
+                    </div>
+                    <div class="px-1 text-left flex justify-between items-start mt-4">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
+                            <p class="price-tag mt-2 font-bold">${p.price} AED</p>
+                        </div>
+                        <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="toggleWishlist(event, '${p.id}')">
+                            <i class="fa-solid fa-heart"></i>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Ghost cards to fill last row
+            const remainder = visibleProducts.length % cols;
+            if (remainder > 0 && filtered.length <= limit) {
+                const ghosts = cols - remainder;
+                for (let g = 0; g < ghosts; g++) {
+                    gridContent += `<div style="visibility:hidden;pointer-events:none;" aria-hidden="true"><div style="aspect-ratio:4/5;width:100%;"></div></div>`;
+                }
+            }
+        }
+
+        // Prevent layout jump by locking current height
+        const currentHeight = grid.offsetHeight;
+        if (currentHeight > 0) grid.style.minHeight = `${currentHeight}px`;
+
+        // Use requestAnimationFrame to not block the keyboard
+        requestAnimationFrame(() => {
+            grid.innerHTML = gridContent;
+            setTimeout(() => { grid.style.minHeight = ''; }, 600);
+        });
+
+        // Update load-more button
+        const hasMore = filtered.length > limit;
+        const loadMoreContainer = document.getElementById('load-more-container');
+        if (loadMoreContainer) {
+            if (hasMore) {
+                loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-white border-2 border-black text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group">Load More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
+                loadMoreContainer.style.display = 'flex';
+            } else {
+                loadMoreContainer.style.display = 'none';
+            }
+        }
+
+        // Update slider visibility for search state
+        renderSlider();
+
+    } catch (e) {
+        console.error('[renderSearchResults] Error:', e);
+        // Safe fallback
+        renderHome();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT: Attach search input listeners exactly ONCE (not on every renderHome)
+// ─────────────────────────────────────────────────────────────────────────────
+let _searchListenersInit = false;
+function initSearchListeners() {
+    if (_searchListenersInit) return;
+    _searchListenersInit = true;
+
+    // Mobile main search
+    const mobileSearch = document.getElementById('customer-search');
+    if (mobileSearch) {
+        mobileSearch.addEventListener('input', (e) => {
+            window.applyCustomerSearch(e.target.value);
+        });
+    }
+
+    // Desktop nav search
+    const desktopSearch = document.getElementById('desk-search');
+    if (desktopSearch) {
+        desktopSearch.addEventListener('input', (e) => {
+            window.applyCustomerSearch(e.target.value);
+        });
+    }
+}
+
 initPopup();
 startSync();
+// Attach search listeners once the DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSearchListeners);
+} else {
+    initSearchListeners();
+}

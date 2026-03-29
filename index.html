@@ -411,7 +411,7 @@
                     style="position:relative; width:100%; max-width:360px; transition: max-width 0.3s ease;">
                     <i class="fa-solid fa-magnifying-glass"
                         style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#aaa; font-size:13px; pointer-events:none;"></i>
-                    <input type="text" id="desk-search" oninput="window.applyCustomerSearch(this.value)"
+                    <input type="text" id="desk-search"
                         onfocus="window.showSearchSuggestions(true); this.style.background='#fff'; this.style.boxShadow='0 2px 12px rgba(0,0,0,0.08)'; this.style.borderColor='#e5e7eb';"
                         onblur="window.showSearchSuggestions(false); this.style.background='#f3f4f6'; this.style.boxShadow='none'; this.style.borderColor='transparent';"
                         placeholder="Search products..." autocomplete="off"
@@ -455,7 +455,7 @@
                 <div class="relative group">
                     <i
                         class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-sm transition-colors group-focus-within:text-black"></i>
-                    <input type="text" id="customer-search" oninput="window.applyCustomerSearch(this.value)"
+                    <input type="text" id="customer-search"
                         onfocus="window.showSearchSuggestions(true)" onblur="window.showSearchSuggestions(false)"
                         class="w-full bg-white border border-gray-100 rounded-[2rem] py-5 pl-14 pr-14 text-[10px] md:text-[11px] font-bold uppercase tracking-widest outline-none focus:border-black transition-all shadow-[0_10px_30px_rgba(0,0,0,0.02)]"
                         placeholder="Search our collection..." autocomplete="off">
