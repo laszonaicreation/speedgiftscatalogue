@@ -3569,14 +3569,17 @@ let currentAnnouncement = 0;
 
 function renderAnnouncementBar() {
     const bar = document.getElementById('announcement-bar');
+    const nav = document.querySelector('nav');
     if (!bar) return;
 
     let msgs = DATA.announcements || [];
     if (msgs.length === 0 || (msgs.length === 1 && msgs[0].trim() === "")) {
         bar.style.display = 'none';
+        if (nav) nav.style.marginTop = '10px';
         return;
     }
     bar.style.display = 'flex';
+    if (nav) nav.style.marginTop = '0px';
 
     bar.innerHTML = msgs.map((msg, idx) => `
         <div class="announcement-item ${idx === 0 ? 'active' : ''}">
