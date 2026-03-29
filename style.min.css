@@ -1043,12 +1043,9 @@ img[src=""] {
 }
 
 .announcement-text {
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
     display: block;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font-weight: inherit;
+    text-shadow: none;
 }
 
 .sidebar-item-name {
@@ -1346,9 +1343,8 @@ img[src=""] {
 
 /* ANNOUNCEMENT BAR */
 #announcement-bar {
-    background: #C5A059;
-    /* Pastel Dark Gold */
-    color: white;
+    background: white;
+    color: #9C6521;
     padding: 10px 0;
     text-align: center;
     position: relative;
@@ -1358,14 +1354,15 @@ img[src=""] {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Inter', sans-serif;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    font-family: 'Poppins', sans-serif;
+    border-bottom: 1px solid #f3f4f6;
 }
 
 .announcement-item {
     display: none;
-    font-size: 10px;
-    font-weight: 800;
+    font-size: 11px;
+    font-weight: 400;
+    text-shadow: none !important;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     animation: fadeInSlideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
