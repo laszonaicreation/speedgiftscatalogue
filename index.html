@@ -26,7 +26,9 @@
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
 
     <link rel="stylesheet" href="tailwind-compiled.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Cloudinary Widget deferred to only load when Admin panel is called -->
     <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript" defer></script>
@@ -44,9 +46,17 @@
     <link rel="stylesheet" href="style.min.css">
     <!-- Responsive Helpers -->
     <style>
-        @media (max-width: 767px) { .hidden-mobile { display: none !important; } }
-        @media (min-width: 768px) { 
-            .hidden-desktop { display: none !important; } 
+        @media (max-width: 767px) {
+            .hidden-mobile {
+                display: none !important;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .hidden-desktop {
+                display: none !important;
+            }
+
             .wish-btn.desktop-wish-fix {
                 position: relative !important;
                 top: auto !important;
@@ -164,36 +174,65 @@
                 padding: 1.5rem !important;
             }
         }
+
         /* ============================================
            COMPACT MEGA MENU DROPDOWN
            ============================================ */
-        #desktop-mega-menu-wrapper { position: relative; }
-
-        #desk-mega-menu {
-            list-style: none; margin: 0; padding: 0;
-            display: flex; align-items: center; justify-content: center;
-            gap: 0; height: 48px;
+        #desktop-mega-menu-wrapper {
+            position: relative;
         }
 
-        .mega-menu-li { position: relative; display: flex; align-items: center; height: 100%; }
+        #desk-mega-menu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            height: 48px;
+        }
+
+        .mega-menu-li {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
 
         .mega-menu-link {
-            display: flex; align-items: center; gap: 5px;
-            height: 100%; padding: 0 18px;
-            font-size: 11px; font-weight: 900;
-            text-transform: uppercase; letter-spacing: 0.1em;
-            color: #6b7280; text-decoration: none;
-            white-space: nowrap; cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            height: 100%;
+            padding: 0 18px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #6b7280;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
             border-bottom: 2px solid transparent;
             transition: all 0.2s ease;
         }
-        .mega-menu-li:hover .mega-menu-link { color: #000; border-bottom-color: #000; }
+
+        .mega-menu-li:hover .mega-menu-link {
+            color: #000;
+            border-bottom-color: #000;
+        }
 
         .mega-menu-arrow {
-            font-size: 7px; opacity: 0.4;
+            font-size: 7px;
+            opacity: 0.4;
             transition: transform 0.25s ease, opacity 0.2s;
         }
-        .mega-menu-li:hover .mega-menu-arrow { transform: rotate(180deg); opacity: 1; }
+
+        .mega-menu-li:hover .mega-menu-arrow {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
 
         /* Compact dropdown panel - 5-row vertical column flow */
         .mega-dropdown-panel {
@@ -205,9 +244,10 @@
             background: #fff !important;
             border: 1px solid #f0f0f0 !important;
             border-radius: 20px !important;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.12) !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12) !important;
             padding: 12px !important;
-            display: none; /* Managed by JS: set to 'grid' on hover */
+            display: none;
+            /* Managed by JS: set to 'grid' on hover */
             grid-auto-flow: column !important;
             grid-template-rows: repeat(5, auto) !important;
             grid-auto-columns: 170px !important;
@@ -215,51 +255,84 @@
             width: max-content !important;
             animation: dropdown-in 0.18s ease forwards;
         }
+
         @keyframes dropdown-in {
-            from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
 
         /* Cat rows inside dropdown */
         .mega-cat-card {
-            display: flex; align-items: center; gap: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 8px 12px;
             border-radius: 12px;
             cursor: pointer;
             transition: background 0.15s;
             box-sizing: border-box;
             white-space: nowrap;
-            width: 160px; /* Fixed width for consistent grid cells */
+            width: 160px;
+            /* Fixed width for consistent grid cells */
             overflow: hidden;
         }
-        .mega-cat-card:hover { background: #f9fafb; }
+
+        .mega-cat-card:hover {
+            background: #f9fafb;
+        }
 
         .mega-cat-img-wrap {
-            width: 38px; height: 38px; flex-shrink: 0;
-            border-radius: 10px; overflow: hidden;
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            border-radius: 10px;
+            overflow: hidden;
             background: #f3f3f3;
             border: 1.5px solid #f0f0f0;
         }
+
         .mega-cat-img-wrap img {
-            width: 100%; height: 100%; object-fit: cover;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             transition: transform 0.4s ease;
         }
-        .mega-cat-card:hover .mega-cat-img-wrap img { transform: scale(1.08); }
+
+        .mega-cat-card:hover .mega-cat-img-wrap img {
+            transform: scale(1.08);
+        }
 
         .mega-cat-name {
-            font-size: 12px; font-weight: 700;
-            color: #374151; line-height: 1.2;
+            font-size: 12px;
+            font-weight: 700;
+            color: #374151;
+            line-height: 1.2;
             transition: color 0.15s;
         }
-        .mega-cat-card:hover .mega-cat-name { color: #000; }
+
+        .mega-cat-card:hover .mega-cat-name {
+            color: #000;
+        }
 
         /* Arrow icon inside card */
         .mega-cat-arrow {
-            margin-left: auto; font-size: 8px;
+            margin-left: auto;
+            font-size: 8px;
             color: #d1d5db;
             transition: color 0.15s, transform 0.15s;
         }
-        .mega-cat-card:hover .mega-cat-arrow { color: #000; transform: translateX(2px); }
+
+        .mega-cat-card:hover .mega-cat-arrow {
+            color: #000;
+            transform: translateX(2px);
+        }
     </style>
     <style>
         /* EXACT ALIGNMENT TO NAV ITEMS ON DESKTOP */
@@ -269,9 +342,9 @@
                 padding-right: clamp(20px, 5vw, 96px) !important;
             }
         }
-        
+
         /* Robust Typography Isolation for Trust Badges (Copied from landing) */
-        .my-super-unique-badge-style, 
+        .my-super-unique-badge-style,
         .my-super-unique-badge-style span {
             font-family: 'Montserrat', sans-serif !important;
             text-transform: none !important;
@@ -309,7 +382,8 @@
 
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-50">
-        <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between" style="padding-left: clamp(20px, 5vw, 96px); padding-right: clamp(20px, 5vw, 96px);">
+        <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between"
+            style="padding-left: clamp(20px, 5vw, 96px); padding-right: clamp(20px, 5vw, 96px);">
             <div class="w-1/4 md:w-auto flex items-center gap-2">
                 <button id="admin-entry-btn"
                     class="hidden bg-black text-white px-4 py-2 rounded-full text-[8px] font-bold tracking-widest uppercase"
@@ -327,21 +401,20 @@
                 </h1>
             </div>
             <div class="flex-1 md:hidden text-center flex justify-center items-center">
-                <h1 class="brand-logo cursor-pointer select-none" id="mob-logo"
-                    onclick="handleLogoClick()">
+                <h1 class="brand-logo cursor-pointer select-none" id="mob-logo" onclick="handleLogoClick()">
                     <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-7 w-auto inline-block">
                 </h1>
             </div>
             <div class="w-1/4 md:flex-1 flex justify-end items-center gap-4 md:gap-6">
                 <!-- DESKTOP SEARCH BAR -->
-                <div class="hidden md:block" style="position:relative; width:100%; max-width:360px; transition: max-width 0.3s ease;">
-                    <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#aaa; font-size:13px; pointer-events:none;"></i>
-                    <input type="text" id="desk-search"
-                        oninput="window.applyCustomerSearch(this.value)"
+                <div class="hidden md:block"
+                    style="position:relative; width:100%; max-width:360px; transition: max-width 0.3s ease;">
+                    <i class="fa-solid fa-magnifying-glass"
+                        style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#aaa; font-size:13px; pointer-events:none;"></i>
+                    <input type="text" id="desk-search" oninput="window.applyCustomerSearch(this.value)"
                         onfocus="window.showSearchSuggestions(true); this.style.background='#fff'; this.style.boxShadow='0 2px 12px rgba(0,0,0,0.08)'; this.style.borderColor='#e5e7eb';"
                         onblur="window.showSearchSuggestions(false); this.style.background='#f3f4f6'; this.style.boxShadow='none'; this.style.borderColor='transparent';"
-                        placeholder="Search products..."
-                        autocomplete="off"
+                        placeholder="Search products..." autocomplete="off"
                         style="width:100%; background:#f3f4f6; border:1.5px solid transparent; border-radius:999px; padding:10px 36px 10px 38px; font-size:12px; font-weight:500; color:#111; outline:none; transition:all 0.2s ease; font-family:inherit;">
                     <button id="desk-clear-btn" onclick="window.clearCustomerSearch()"
                         style="display:none; position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%; background:#e5e7eb; border:none; cursor:pointer; align-items:center; justify-content:center; font-size:9px; color:#666;">
@@ -360,10 +433,12 @@
                 </button>
             </div>
         </div>
-        
+
         <!-- MEGA MENU DESKTOP ROW -->
-        <div id="desktop-mega-menu-wrapper" class="hidden md:block w-full border-t border-gray-50 bg-white/95 backdrop-blur-xl transition-all duration-300">
-            <ul id="desk-mega-menu" class="max-w-[1536px] mx-auto flex items-center justify-center gap-8 xl:gap-12 h-12" style="padding-left: clamp(20px, 5vw, 96px); padding-right: clamp(20px, 5vw, 96px);">
+        <div id="desktop-mega-menu-wrapper"
+            class="hidden md:block w-full border-t border-gray-50 bg-white/95 backdrop-blur-xl transition-all duration-300">
+            <ul id="desk-mega-menu" class="max-w-[1536px] mx-auto flex items-center justify-center gap-8 xl:gap-12 h-12"
+                style="padding-left: clamp(20px, 5vw, 96px); padding-right: clamp(20px, 5vw, 96px);">
                 <!-- Main Categories injected here -->
             </ul>
     </nav>
@@ -372,13 +447,14 @@
 
     <!-- TOP HOME ELEMENTS (Search + Slider, outside the 80% grid for full-width) -->
     <div id="home-top-elements" class="hidden w-full max-w-[1536px] mx-auto pt-8 md:pt-10 mb-[-8px] md:mb-2">
-        
+
         <!-- HIDE Search Bar on desktop since it is now in the Nav -->
         <div id="customer-search-container" class="md:hidden mb-6 px-5 relative">
             <div class="max-w-2xl mx-auto z-[60]">
                 <!-- Search Input with its own relative wrapper to keep the icon fixed -->
                 <div class="relative group">
-                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-sm transition-colors group-focus-within:text-black"></i>
+                    <i
+                        class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-sm transition-colors group-focus-within:text-black"></i>
                     <input type="text" id="customer-search" oninput="window.applyCustomerSearch(this.value)"
                         onfocus="window.showSearchSuggestions(true)" onblur="window.showSearchSuggestions(false)"
                         class="w-full bg-white border border-gray-100 rounded-[2rem] py-5 pl-14 pr-14 text-[10px] md:text-[11px] font-bold uppercase tracking-widest outline-none focus:border-black transition-all shadow-[0_10px_30px_rgba(0,0,0,0.02)]"
@@ -393,12 +469,17 @@
                 <!-- TRENDING DROPDOWN -->
                 <div id="search-tags"
                     class="hidden w-full mt-4 p-4 bg-gray-50/50 rounded-3xl border border-gray-100 transition-all duration-500 overflow-hidden">
-                    <p class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 mb-3 px-1">Trending Searches</p>
+                    <p class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 mb-3 px-1">Trending
+                        Searches</p>
                     <div class="flex flex-wrap gap-2">
-                        <span onmousedown="window.applyCustomerSearch('Wood Engraving')" class="search-tag !bg-white">Wood Engraving</span>
-                        <span onmousedown="window.applyCustomerSearch('Rock Engraving')" class="search-tag !bg-white">Rock Engraving</span>
-                        <span onmousedown="window.applyCustomerSearch('Cushion')" class="search-tag !bg-white">Cushion Printing</span>
-                        <span onmousedown="window.applyCustomerSearch('Magic Mug')" class="search-tag !bg-white">Magic Mug</span>
+                        <span onmousedown="window.applyCustomerSearch('Wood Engraving')"
+                            class="search-tag !bg-white">Wood Engraving</span>
+                        <span onmousedown="window.applyCustomerSearch('Rock Engraving')"
+                            class="search-tag !bg-white">Rock Engraving</span>
+                        <span onmousedown="window.applyCustomerSearch('Cushion')" class="search-tag !bg-white">Cushion
+                            Printing</span>
+                        <span onmousedown="window.applyCustomerSearch('Magic Mug')" class="search-tag !bg-white">Magic
+                            Mug</span>
                     </div>
                 </div>
             </div>
@@ -409,7 +490,8 @@
             Desktop: style padding to match the Nav's exact alignment (logo to fav icon)
         -->
         <div id="home-slider-container" class="fade-in px-6" style="--desk-pad: clamp(20px, 5vw, 96px);">
-            <div class="slider-wrapper relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] md:bg-[#f9f9f9] md:border md:border-gray-100 shadow-sm md:shadow-[0_10px_40px_rgba(0,0,0,0.03)] group">
+            <div
+                class="slider-wrapper relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] md:bg-[#f9f9f9] md:border md:border-gray-100 shadow-sm md:shadow-[0_10px_40px_rgba(0,0,0,0.03)] group">
                 <div id="home-slider"
                     class="flex transition-transform duration-500 ease-out no-scrollbar overflow-x-auto snap-x snap-mandatory">
                     <!-- Slides injected here -->
@@ -431,91 +513,175 @@
 
         <!-- Trust Badges Section -->
         <style>
-            .text-\[\#9C6521\] { color: #9C6521 !important; }
-            .duration-500 { transition-duration: 500ms !important; }
-            .transition-transform { transition-property: transform !important; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important; }
-            .group:hover .group-hover\:-translate-y-1 { transform: translateY(-4px) !important; }
-            .custom-desktop-grid-spacing { max-width: 340px !important; margin: 0 auto; gap: 0.25rem !important; }
+            .text-\[\#9C6521\] {
+                color: #9C6521 !important;
+            }
+
+            .duration-500 {
+                transition-duration: 500ms !important;
+            }
+
+            .transition-transform {
+                transition-property: transform !important;
+                transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            .group:hover .group-hover\:-translate-y-1 {
+                transform: translateY(-4px) !important;
+            }
+
+            .custom-desktop-grid-spacing {
+                max-width: 340px !important;
+                margin: 0 auto;
+                gap: 0.25rem !important;
+            }
+
             @media (min-width: 768px) {
-                .custom-desktop-grid-spacing { max-width: 600px !important; gap: 1rem !important; margin: 0 auto; }
-                .desktop-badge-icon { width: 2.5rem !important; height: 2.5rem !important; margin-bottom: 0.25rem !important; }
-                .desktop-badge-text { font-size: 0.65rem !important; margin-top: 0.25rem !important; line-height: 1.2 !important; }
-                .trust-badges-section { margin-top: 2rem !important; margin-bottom: 2rem !important; padding-top: 0 !important; }
+                .custom-desktop-grid-spacing {
+                    max-width: 600px !important;
+                    gap: 1rem !important;
+                    margin: 0 auto;
+                }
+
+                .desktop-badge-icon {
+                    width: 2.5rem !important;
+                    height: 2.5rem !important;
+                    margin-bottom: 0.25rem !important;
+                }
+
+                .desktop-badge-text {
+                    font-size: 0.65rem !important;
+                    margin-top: 0.25rem !important;
+                    line-height: 1.2 !important;
+                }
+
+                .trust-badges-section {
+                    margin-top: 2rem !important;
+                    margin-bottom: 2rem !important;
+                    padding-top: 0 !important;
+                }
             }
+
             @media (min-width: 1024px) {
-                .custom-desktop-grid-spacing { max-width: 750px !important; gap: 2rem !important; margin: 0 auto; }
-                .desktop-badge-icon { width: 3rem !important; height: 3rem !important; }
-                .desktop-badge-text { font-size: 0.75rem !important; margin-top: 0.25rem !important; line-height: 1.3 !important; }
-                .trust-badges-section { margin-top: 3rem !important; margin-bottom: 3rem !important; padding-top: 0 !important; }
+                .custom-desktop-grid-spacing {
+                    max-width: 750px !important;
+                    gap: 2rem !important;
+                    margin: 0 auto;
+                }
+
+                .desktop-badge-icon {
+                    width: 3rem !important;
+                    height: 3rem !important;
+                }
+
+                .desktop-badge-text {
+                    font-size: 0.75rem !important;
+                    margin-top: 0.25rem !important;
+                    line-height: 1.3 !important;
+                }
+
+                .trust-badges-section {
+                    margin-top: 3rem !important;
+                    margin-bottom: 3rem !important;
+                    padding-top: 0 !important;
+                }
             }
-            .desktop-badge-icon-first > svg { transform: scale(1.6) !important; transform-origin: center !important; overflow: visible !important; }
+
+            .desktop-badge-icon-first>svg {
+                transform: scale(1.6) !important;
+                transform-origin: center !important;
+                overflow: visible !important;
+            }
         </style>
         <section class="trust-badges-section pt-6 pb-0 sm:pt-16 sm:pb-24 mt-4 sm:mt-6">
             <div class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-4 md:px-0">
-                <div class="grid grid-cols-4 gap-2 sm:gap-6 text-center custom-desktop-grid-spacing mx-auto items-start">
+                <div
+                    class="grid grid-cols-4 gap-2 sm:gap-6 text-center custom-desktop-grid-spacing mx-auto items-start">
                     <div class="flex flex-col items-center justify-start group">
-                        <div class="w-7 h-7 sm:w-10 sm:h-10 text-center mx-auto desktop-badge-icon desktop-badge-icon-first flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve"   version="1.0" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
-viewBox="0 0 6.84 3.17"
- xmlns:xlink="http://www.w3.org/1999/xlink"
- xmlns:xodm="http://www.corel.com/coreldraw/odm/2003" class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
- 
- <g id="Layer_x0020_1">
-  <metadata id="CorelCorpID_0Corel-Layer"/>
-  <path fill="currentColor" d="M5.06 0.32c-0.02,-0.16 -0.08,-0.27 -0.24,-0.3 -0.15,-0.03 -0.36,-0.01 -0.52,-0.01l-2.19 0c-0.31,0 -0.4,0.03 -0.45,0.34 -0.01,0.07 -0,0.2 -0.08,0.22 -0.05,0.01 -0.12,0.01 -0.17,0 -0.13,-0 -0.25,-0.01 -0.38,-0.01 -0.18,0 -0.37,0 -0.55,-0 -0.07,-0 -0.16,0 -0.15,0.09 0,0.09 0.1,0.08 0.16,0.08l1.64 0c0.06,0 0.19,0.02 0.24,-0.02 0.05,-0.04 0.04,-0.12 -0.02,-0.15 -0.05,-0.02 -0.45,-0.01 -0.53,-0.01l-0.01 0 -0 -0.01c-0.01,-0.08 0.04,-0.33 0.12,-0.36 0.06,-0.02 1.18,-0.01 1.31,-0.01 0.5,0 1,0 1.5,0 0.2,0 0.15,0.19 0.13,0.32 -0.09,0.54 -0.18,1.07 -0.27,1.61 -0.02,0.13 -0.04,0.27 -0.07,0.4 -0.04,0.17 -0.23,0.12 -0.37,0.12 -0.16,0 -0.33,0 -0.49,0 -0.12,0 -0.34,0.01 -0.44,-0.01l-0.01 -0 -0 -0.01c-0.1,-0.56 -0.76,-0.52 -0.89,0l-0 0.01 -0.01 0c-0.11,0 -0.75,0.02 -0.8,-0.02 -0.04,-0.03 -0.06,-0.08 -0.06,-0.12 -0,-0.08 0.03,-0.2 0.05,-0.28l0 -0.01 0.01 -0c0.08,-0 0.4,0.04 0.33,-0.12 -0.03,-0.06 -0.11,-0.05 -0.16,-0.05l-1.48 0c-0.06,0 -0.15,-0.01 -0.18,0.04 -0.03,0.05 0,0.12 0.06,0.13l1.25 0 -0 0.02c-0.02,0.12 -0.06,0.25 -0.03,0.37 0.02,0.1 0.1,0.19 0.19,0.22 0.12,0.04 0.67,0.01 0.83,0.01l0.01 0 0 0.01c0.1,0.42 0.59,0.48 0.8,0.14 0.03,-0.04 0.04,-0.1 0.07,-0.14l0 -0.01 1.95 -0 0 0.01c0.1,0.37 0.56,0.42 0.77,0.12 0.03,-0.04 0.04,-0.09 0.07,-0.12l0 -0.01 0.01 -0c0.16,-0.01 0.43,0.04 0.57,-0.06 0.15,-0.11 0.15,-0.28 0.17,-0.46 0.03,-0.19 0.05,-0.37 0.08,-0.56 0.04,-0.26 0.04,-0.27 -0.12,-0.48 -0.09,-0.12 -0.18,-0.24 -0.27,-0.37 -0.09,-0.12 -0.19,-0.25 -0.28,-0.37 -0.14,-0.19 -0.21,-0.18 -0.44,-0.18 -0.22,0 -0.43,0.01 -0.65,-0l-0.01 -0 -0 -0.01zm-2.32 2.13c0.31,-0.05 0.37,0.44 0.06,0.5 -0.15,0.03 -0.27,-0.08 -0.28,-0.22 -0.01,-0.13 0.08,-0.25 0.21,-0.28zm2.81 -0.04c0.31,-0.06 0.37,0.44 0.07,0.5 -0.31,0.06 -0.38,-0.44 -0.07,-0.5zm-0.5 -1.9c0.17,0 0.34,0 0.51,0 0.14,0 0.34,-0.05 0.44,0.09 0.07,0.1 0.14,0.19 0.22,0.29 0.07,0.1 0.14,0.19 0.21,0.29 0.29,0.38 0.26,0.28 0.19,0.74 -0.02,0.15 -0.04,0.3 -0.06,0.45 -0.01,0.08 -0.01,0.21 -0.09,0.25 -0.08,0.04 -0.34,0.03 -0.43,0.03l-0.01 -0 -0 -0.01c-0.02,-0.11 -0.05,-0.23 -0.13,-0.32 -0.12,-0.13 -0.34,-0.16 -0.5,-0.08 -0.16,0.08 -0.24,0.22 -0.27,0.4l-0 0.01 -0.45 0 0 -0.02c0.06,-0.35 0.12,-0.7 0.18,-1.05 0.06,-0.35 0.12,-0.7 0.17,-1.05l0 -0.01 0.01 0zm0.1 0.77l1.03 0c0.1,0 -0,-0.11 -0.03,-0.15l-0.24 -0.36c-0.04,-0.06 -0.19,-0.03 -0.25,-0.03l-0.45 -0c-0.05,0 -0.04,0.03 -0.05,0.08l-0.06 0.38c-0.01,0.05 -0.02,0.08 0.04,0.08zm-4.46 0.38c-0.06,0.02 -0.1,0.08 -0.05,0.14 0.04,0.04 0.16,0.03 0.21,0.03 0.28,0 0.56,0 0.84,0 0.1,0 0.63,0.01 0.7,-0.01 0.06,-0.02 0.08,-0.09 0.04,-0.14 -0.04,-0.05 -0.15,-0.03 -0.21,-0.03 -0.28,0 -0.55,-0 -0.83,-0 -0.1,-0 -0.63,-0.01 -0.69,0.01zm0.6 -0.73c-0.08,0.04 -0.08,0.17 0.09,0.17 0.22,-0 0.44,0 0.66,0 0.08,0 0.5,0.01 0.55,-0.01 0.08,-0.03 0.1,-0.17 -0.08,-0.17 -0.17,0 -1.14,-0.02 -1.21,0.01zm-0.34 0.37c-0.08,0.02 -0.09,0.12 -0.03,0.16 0.03,0.02 0.84,0.02 0.91,0.01 0.07,-0.02 0.09,-0.13 0.02,-0.16 -0.03,-0.01 -0.83,-0.02 -0.9,-0.01zm-0.85 -0.72c-0.1,0.05 -0.03,0.2 0.07,0.16 0.11,-0.04 0.04,-0.22 -0.07,-0.16zm0.33 1.08c-0.06,0.02 -0.08,0.05 -0.06,0.11 0.01,0.05 0.07,0.07 0.12,0.05 0.09,-0.03 0.05,-0.2 -0.05,-0.16zm2.35 -0.73c-0.1,0.06 -0.03,0.2 0.07,0.16 0.11,-0.04 0.04,-0.22 -0.07,-0.16z"/>
- </g>
-</svg>
+                        <div
+                            class="w-7 h-7 sm:w-10 sm:h-10 text-center mx-auto desktop-badge-icon desktop-badge-icon-first flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.0"
+                                style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+                                viewBox="0 0 6.84 3.17" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                xmlns:xodm="http://www.corel.com/coreldraw/odm/2003"
+                                class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
+
+                                <g id="Layer_x0020_1">
+                                    <metadata id="CorelCorpID_0Corel-Layer" />
+                                    <path fill="currentColor"
+                                        d="M5.06 0.32c-0.02,-0.16 -0.08,-0.27 -0.24,-0.3 -0.15,-0.03 -0.36,-0.01 -0.52,-0.01l-2.19 0c-0.31,0 -0.4,0.03 -0.45,0.34 -0.01,0.07 -0,0.2 -0.08,0.22 -0.05,0.01 -0.12,0.01 -0.17,0 -0.13,-0 -0.25,-0.01 -0.38,-0.01 -0.18,0 -0.37,0 -0.55,-0 -0.07,-0 -0.16,0 -0.15,0.09 0,0.09 0.1,0.08 0.16,0.08l1.64 0c0.06,0 0.19,0.02 0.24,-0.02 0.05,-0.04 0.04,-0.12 -0.02,-0.15 -0.05,-0.02 -0.45,-0.01 -0.53,-0.01l-0.01 0 -0 -0.01c-0.01,-0.08 0.04,-0.33 0.12,-0.36 0.06,-0.02 1.18,-0.01 1.31,-0.01 0.5,0 1,0 1.5,0 0.2,0 0.15,0.19 0.13,0.32 -0.09,0.54 -0.18,1.07 -0.27,1.61 -0.02,0.13 -0.04,0.27 -0.07,0.4 -0.04,0.17 -0.23,0.12 -0.37,0.12 -0.16,0 -0.33,0 -0.49,0 -0.12,0 -0.34,0.01 -0.44,-0.01l-0.01 -0 -0 -0.01c-0.1,-0.56 -0.76,-0.52 -0.89,0l-0 0.01 -0.01 0c-0.11,0 -0.75,0.02 -0.8,-0.02 -0.04,-0.03 -0.06,-0.08 -0.06,-0.12 -0,-0.08 0.03,-0.2 0.05,-0.28l0 -0.01 0.01 -0c0.08,-0 0.4,0.04 0.33,-0.12 -0.03,-0.06 -0.11,-0.05 -0.16,-0.05l-1.48 0c-0.06,0 -0.15,-0.01 -0.18,0.04 -0.03,0.05 0,0.12 0.06,0.13l1.25 0 -0 0.02c-0.02,0.12 -0.06,0.25 -0.03,0.37 0.02,0.1 0.1,0.19 0.19,0.22 0.12,0.04 0.67,0.01 0.83,0.01l0.01 0 0 0.01c0.1,0.42 0.59,0.48 0.8,0.14 0.03,-0.04 0.04,-0.1 0.07,-0.14l0 -0.01 1.95 -0 0 0.01c0.1,0.37 0.56,0.42 0.77,0.12 0.03,-0.04 0.04,-0.09 0.07,-0.12l0 -0.01 0.01 -0c0.16,-0.01 0.43,0.04 0.57,-0.06 0.15,-0.11 0.15,-0.28 0.17,-0.46 0.03,-0.19 0.05,-0.37 0.08,-0.56 0.04,-0.26 0.04,-0.27 -0.12,-0.48 -0.09,-0.12 -0.18,-0.24 -0.27,-0.37 -0.09,-0.12 -0.19,-0.25 -0.28,-0.37 -0.14,-0.19 -0.21,-0.18 -0.44,-0.18 -0.22,0 -0.43,0.01 -0.65,-0l-0.01 -0 -0 -0.01zm-2.32 2.13c0.31,-0.05 0.37,0.44 0.06,0.5 -0.15,0.03 -0.27,-0.08 -0.28,-0.22 -0.01,-0.13 0.08,-0.25 0.21,-0.28zm2.81 -0.04c0.31,-0.06 0.37,0.44 0.07,0.5 -0.31,0.06 -0.38,-0.44 -0.07,-0.5zm-0.5 -1.9c0.17,0 0.34,0 0.51,0 0.14,0 0.34,-0.05 0.44,0.09 0.07,0.1 0.14,0.19 0.22,0.29 0.07,0.1 0.14,0.19 0.21,0.29 0.29,0.38 0.26,0.28 0.19,0.74 -0.02,0.15 -0.04,0.3 -0.06,0.45 -0.01,0.08 -0.01,0.21 -0.09,0.25 -0.08,0.04 -0.34,0.03 -0.43,0.03l-0.01 -0 -0 -0.01c-0.02,-0.11 -0.05,-0.23 -0.13,-0.32 -0.12,-0.13 -0.34,-0.16 -0.5,-0.08 -0.16,0.08 -0.24,0.22 -0.27,0.4l-0 0.01 -0.45 0 0 -0.02c0.06,-0.35 0.12,-0.7 0.18,-1.05 0.06,-0.35 0.12,-0.7 0.17,-1.05l0 -0.01 0.01 0zm0.1 0.77l1.03 0c0.1,0 -0,-0.11 -0.03,-0.15l-0.24 -0.36c-0.04,-0.06 -0.19,-0.03 -0.25,-0.03l-0.45 -0c-0.05,0 -0.04,0.03 -0.05,0.08l-0.06 0.38c-0.01,0.05 -0.02,0.08 0.04,0.08zm-4.46 0.38c-0.06,0.02 -0.1,0.08 -0.05,0.14 0.04,0.04 0.16,0.03 0.21,0.03 0.28,0 0.56,0 0.84,0 0.1,0 0.63,0.01 0.7,-0.01 0.06,-0.02 0.08,-0.09 0.04,-0.14 -0.04,-0.05 -0.15,-0.03 -0.21,-0.03 -0.28,0 -0.55,-0 -0.83,-0 -0.1,-0 -0.63,-0.01 -0.69,0.01zm0.6 -0.73c-0.08,0.04 -0.08,0.17 0.09,0.17 0.22,-0 0.44,0 0.66,0 0.08,0 0.5,0.01 0.55,-0.01 0.08,-0.03 0.1,-0.17 -0.08,-0.17 -0.17,0 -1.14,-0.02 -1.21,0.01zm-0.34 0.37c-0.08,0.02 -0.09,0.12 -0.03,0.16 0.03,0.02 0.84,0.02 0.91,0.01 0.07,-0.02 0.09,-0.13 0.02,-0.16 -0.03,-0.01 -0.83,-0.02 -0.9,-0.01zm-0.85 -0.72c-0.1,0.05 -0.03,0.2 0.07,0.16 0.11,-0.04 0.04,-0.22 -0.07,-0.16zm0.33 1.08c-0.06,0.02 -0.08,0.05 -0.06,0.11 0.01,0.05 0.07,0.07 0.12,0.05 0.09,-0.03 0.05,-0.2 -0.05,-0.16zm2.35 -0.73c-0.1,0.06 -0.03,0.2 0.07,0.16 0.11,-0.04 0.04,-0.22 -0.07,-0.16z" />
+                                </g>
+                            </svg>
                         </div>
-                        <h4 class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">Fast<br><span class="font-semibold text-gray-500 tracking-widest">Delivery</span></h4>
+                        <h4
+                            class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">
+                            Fast<br><span class="font-semibold text-gray-500 tracking-widest">Delivery</span></h4>
                     </div>
                     <div class="flex flex-col items-center justify-start group">
-                        <div class="w-7 h-7 sm:w-10 sm:h-10 desktop-badge-icon flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve"   version="1.0" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
-viewBox="0 0 2.2 2.2"
- xmlns:xlink="http://www.w3.org/1999/xlink"
- xmlns:xodm="http://www.corel.com/coreldraw/odm/2003" class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
- 
- <g id="Layer_x0020_1">
-  <metadata id="CorelCorpID_0Corel-Layer"/>
-  <g id="_2696017980432">
-   <path fill="currentColor" d="M2.04 0.53c-0.02,0.01 -0.03,0.04 -0.06,0.06 0,0.04 0.01,0.02 0.01,0.11 -0.01,0.14 -0.02,0.16 0.07,0.28 0.03,0.04 0.08,0.1 0.05,0.17 -0.03,0.05 -0.07,0.09 -0.1,0.15 -0.03,0.07 -0.02,0.13 -0.02,0.21 0.01,0.1 -0.01,0.12 -0.08,0.16 -0.17,0.09 -0.16,0.06 -0.24,0.24 -0.03,0.07 -0.05,0.1 -0.15,0.09 -0.08,-0.01 -0.15,-0.02 -0.21,0.01 -0.06,0.03 -0.09,0.07 -0.14,0.09 -0.07,0.04 -0.12,-0 -0.17,-0.04 -0.04,-0.03 -0.09,-0.07 -0.16,-0.08 -0.07,-0.01 -0.18,0.02 -0.23,-0 -0.08,-0.04 -0.07,-0.2 -0.21,-0.27 -0.05,-0.03 -0.12,-0.05 -0.16,-0.08 -0.05,-0.04 -0.02,-0.14 -0.02,-0.21 0.01,-0.18 -0.16,-0.24 -0.13,-0.35 0.01,-0.05 0.07,-0.1 0.09,-0.15 0.1,-0.17 -0.05,-0.3 0.09,-0.38 0.13,-0.07 0.18,-0.05 0.25,-0.23 0.03,-0.06 0.05,-0.11 0.13,-0.12 0.08,-0 0.15,0.02 0.22,-0 0.05,-0.02 0.11,-0.06 0.15,-0.09 0.13,-0.09 0.18,0.07 0.32,0.1 0.08,0.02 0.15,-0.01 0.23,-0 0.07,0.01 0.08,0.07 0.11,0.13 0.01,-0.01 0.06,-0.06 0.06,-0.07 0,-0.02 -0.04,-0.07 -0.05,-0.08 -0.05,-0.06 -0.1,-0.07 -0.2,-0.06 -0.12,0.01 -0.13,0.02 -0.21,-0.04 -0.16,-0.11 -0.2,-0.12 -0.36,-0 -0.08,0.06 -0.1,0.05 -0.21,0.04 -0.23,-0.02 -0.22,0.11 -0.3,0.23 -0.06,0.11 -0.25,0.08 -0.28,0.25 -0.01,0.08 0.02,0.18 -0,0.25 -0.01,0.03 -0.03,0.06 -0.05,0.08 -0.12,0.15 -0.09,0.22 0.02,0.36 0.09,0.12 -0.01,0.21 0.05,0.34 0.02,0.06 0.08,0.09 0.15,0.12 0.08,0.04 0.1,0.04 0.14,0.12 0.03,0.07 0.05,0.13 0.1,0.17 0.06,0.05 0.14,0.04 0.22,0.03 0.1,-0.01 0.14,0.02 0.2,0.07 0.17,0.13 0.24,0.03 0.36,-0.04 0.13,-0.08 0.29,0.07 0.41,-0.11 0.03,-0.05 0.05,-0.13 0.09,-0.17 0.04,-0.04 0.12,-0.06 0.17,-0.09 0.18,-0.1 0.03,-0.28 0.11,-0.4 0.08,-0.12 0.17,-0.18 0.05,-0.36 -0.04,-0.06 -0.08,-0.09 -0.07,-0.2 0,-0.04 0.01,-0.08 0.01,-0.13 -0,-0.05 -0.02,-0.07 -0.03,-0.1z"/>
-   <path fill="currentColor" d="M1.11 1.2c-0.04,-0.02 -0.21,-0.24 -0.26,-0.26 -0.05,-0.02 -0.1,0.02 -0.11,0.06 -0.02,0.06 0.02,0.09 0.05,0.12 0.04,0.04 0.12,0.13 0.17,0.18 0.07,0.07 0.12,0.17 0.21,0.12 0.02,-0.01 0.07,-0.07 0.08,-0.09 0.1,-0.12 0.22,-0.27 0.32,-0.38 0.06,-0.06 0.11,-0.13 0.16,-0.19l0.32 -0.38c0.08,-0.09 -0.05,-0.2 -0.13,-0.13 -0.01,0.01 -0.03,0.03 -0.04,0.05l-0.12 0.15c-0.19,0.22 -0.37,0.45 -0.55,0.67 -0.01,0.02 -0.03,0.03 -0.04,0.05 -0.01,0.01 -0.03,0.04 -0.04,0.05z"/>
-   <path fill="currentColor" d="M1.76 0.86c-0.01,0.01 -0.06,0.07 -0.06,0.08 -0,0.02 0.06,0.17 -0.01,0.37 -0.16,0.45 -0.75,0.57 -1.07,0.19 -0.25,-0.3 -0.15,-0.77 0.19,-0.94 0.2,-0.1 0.42,-0.09 0.62,0.02 0.02,0.01 0.03,0.02 0.04,0.03 0.01,-0.01 0.02,-0.02 0.03,-0.03 0.01,-0.01 0.02,-0.02 0.03,-0.04 -0.06,-0.04 -0.12,-0.08 -0.21,-0.11 -0.09,-0.03 -0.18,-0.04 -0.29,-0.03 -0.19,0.02 -0.34,0.11 -0.43,0.2 -0.23,0.23 -0.29,0.62 -0.06,0.92 0.08,0.11 0.2,0.21 0.38,0.26 0.49,0.13 0.97,-0.28 0.88,-0.8 -0,-0.03 -0.02,-0.11 -0.04,-0.12z"/>
-  </g>
- </g>
-</svg>
+                        <div
+                            class="w-7 h-7 sm:w-10 sm:h-10 desktop-badge-icon flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.0"
+                                style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+                                viewBox="0 0 2.2 2.2" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                xmlns:xodm="http://www.corel.com/coreldraw/odm/2003"
+                                class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
+
+                                <g id="Layer_x0020_1">
+                                    <metadata id="CorelCorpID_0Corel-Layer" />
+                                    <g id="_2696017980432">
+                                        <path fill="currentColor"
+                                            d="M2.04 0.53c-0.02,0.01 -0.03,0.04 -0.06,0.06 0,0.04 0.01,0.02 0.01,0.11 -0.01,0.14 -0.02,0.16 0.07,0.28 0.03,0.04 0.08,0.1 0.05,0.17 -0.03,0.05 -0.07,0.09 -0.1,0.15 -0.03,0.07 -0.02,0.13 -0.02,0.21 0.01,0.1 -0.01,0.12 -0.08,0.16 -0.17,0.09 -0.16,0.06 -0.24,0.24 -0.03,0.07 -0.05,0.1 -0.15,0.09 -0.08,-0.01 -0.15,-0.02 -0.21,0.01 -0.06,0.03 -0.09,0.07 -0.14,0.09 -0.07,0.04 -0.12,-0 -0.17,-0.04 -0.04,-0.03 -0.09,-0.07 -0.16,-0.08 -0.07,-0.01 -0.18,0.02 -0.23,-0 -0.08,-0.04 -0.07,-0.2 -0.21,-0.27 -0.05,-0.03 -0.12,-0.05 -0.16,-0.08 -0.05,-0.04 -0.02,-0.14 -0.02,-0.21 0.01,-0.18 -0.16,-0.24 -0.13,-0.35 0.01,-0.05 0.07,-0.1 0.09,-0.15 0.1,-0.17 -0.05,-0.3 0.09,-0.38 0.13,-0.07 0.18,-0.05 0.25,-0.23 0.03,-0.06 0.05,-0.11 0.13,-0.12 0.08,-0 0.15,0.02 0.22,-0 0.05,-0.02 0.11,-0.06 0.15,-0.09 0.13,-0.09 0.18,0.07 0.32,0.1 0.08,0.02 0.15,-0.01 0.23,-0 0.07,0.01 0.08,0.07 0.11,0.13 0.01,-0.01 0.06,-0.06 0.06,-0.07 0,-0.02 -0.04,-0.07 -0.05,-0.08 -0.05,-0.06 -0.1,-0.07 -0.2,-0.06 -0.12,0.01 -0.13,0.02 -0.21,-0.04 -0.16,-0.11 -0.2,-0.12 -0.36,-0 -0.08,0.06 -0.1,0.05 -0.21,0.04 -0.23,-0.02 -0.22,0.11 -0.3,0.23 -0.06,0.11 -0.25,0.08 -0.28,0.25 -0.01,0.08 0.02,0.18 -0,0.25 -0.01,0.03 -0.03,0.06 -0.05,0.08 -0.12,0.15 -0.09,0.22 0.02,0.36 0.09,0.12 -0.01,0.21 0.05,0.34 0.02,0.06 0.08,0.09 0.15,0.12 0.08,0.04 0.1,0.04 0.14,0.12 0.03,0.07 0.05,0.13 0.1,0.17 0.06,0.05 0.14,0.04 0.22,0.03 0.1,-0.01 0.14,0.02 0.2,0.07 0.17,0.13 0.24,0.03 0.36,-0.04 0.13,-0.08 0.29,0.07 0.41,-0.11 0.03,-0.05 0.05,-0.13 0.09,-0.17 0.04,-0.04 0.12,-0.06 0.17,-0.09 0.18,-0.1 0.03,-0.28 0.11,-0.4 0.08,-0.12 0.17,-0.18 0.05,-0.36 -0.04,-0.06 -0.08,-0.09 -0.07,-0.2 0,-0.04 0.01,-0.08 0.01,-0.13 -0,-0.05 -0.02,-0.07 -0.03,-0.1z" />
+                                        <path fill="currentColor"
+                                            d="M1.11 1.2c-0.04,-0.02 -0.21,-0.24 -0.26,-0.26 -0.05,-0.02 -0.1,0.02 -0.11,0.06 -0.02,0.06 0.02,0.09 0.05,0.12 0.04,0.04 0.12,0.13 0.17,0.18 0.07,0.07 0.12,0.17 0.21,0.12 0.02,-0.01 0.07,-0.07 0.08,-0.09 0.1,-0.12 0.22,-0.27 0.32,-0.38 0.06,-0.06 0.11,-0.13 0.16,-0.19l0.32 -0.38c0.08,-0.09 -0.05,-0.2 -0.13,-0.13 -0.01,0.01 -0.03,0.03 -0.04,0.05l-0.12 0.15c-0.19,0.22 -0.37,0.45 -0.55,0.67 -0.01,0.02 -0.03,0.03 -0.04,0.05 -0.01,0.01 -0.03,0.04 -0.04,0.05z" />
+                                        <path fill="currentColor"
+                                            d="M1.76 0.86c-0.01,0.01 -0.06,0.07 -0.06,0.08 -0,0.02 0.06,0.17 -0.01,0.37 -0.16,0.45 -0.75,0.57 -1.07,0.19 -0.25,-0.3 -0.15,-0.77 0.19,-0.94 0.2,-0.1 0.42,-0.09 0.62,0.02 0.02,0.01 0.03,0.02 0.04,0.03 0.01,-0.01 0.02,-0.02 0.03,-0.03 0.01,-0.01 0.02,-0.02 0.03,-0.04 -0.06,-0.04 -0.12,-0.08 -0.21,-0.11 -0.09,-0.03 -0.18,-0.04 -0.29,-0.03 -0.19,0.02 -0.34,0.11 -0.43,0.2 -0.23,0.23 -0.29,0.62 -0.06,0.92 0.08,0.11 0.2,0.21 0.38,0.26 0.49,0.13 0.97,-0.28 0.88,-0.8 -0,-0.03 -0.02,-0.11 -0.04,-0.12z" />
+                                    </g>
+                                </g>
+                            </svg>
                         </div>
-                        <h4 class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">Premium<br><span class="font-semibold text-gray-500 tracking-widest">Quality</span></h4>
+                        <h4
+                            class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">
+                            Premium<br><span class="font-semibold text-gray-500 tracking-widest">Quality</span></h4>
                     </div>
                     <div class="flex flex-col items-center justify-start group">
-                        <div class="w-7 h-7 sm:w-10 sm:h-10 desktop-badge-icon flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve"   version="1.0" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
-viewBox="0 0 2.96 2.59"
- xmlns:xlink="http://www.w3.org/1999/xlink"
- xmlns:xodm="http://www.corel.com/coreldraw/odm/2003" class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
- 
- <g id="Layer_x0020_1">
-  <metadata id="CorelCorpID_0Corel-Layer"/>
-  <path fill="currentColor" d="M2.3 1.4c0.01,-0.03 0.04,-0.06 0.08,-0.05 0.03,0.01 0.06,0.04 0.05,0.08l-0.06 0.25c-0.02,0.08 -0.06,0.14 -0.12,0.19l-0 0 0 0c-0.06,0.05 -0.13,0.08 -0.21,0.09l-0 0 -1.04 0.1c-0.09,0.01 -0.18,-0.02 -0.25,-0.07l-0 -0c-0.07,-0.05 -0.12,-0.13 -0.14,-0.22l-0 -0 -0.23 -1.1c-0.01,-0.04 0.02,-0.07 0.05,-0.08 0,-0 0.01,-0 0.01,-0l0 -0 1.08 0c0.04,0 0.06,0.03 0.06,0.06 0,0.04 -0.03,0.06 -0.06,0.06l-1 0 0.22 1.02 0 0c0.01,0.06 0.05,0.11 0.09,0.14l0 0c0.05,0.03 0.1,0.05 0.17,0.05l1.04 -0.1 0 -0c0.05,-0.01 0.1,-0.03 0.14,-0.06l0 0c0.04,-0.03 0.06,-0.07 0.07,-0.12l0.06 -0.25zm-1.8 -0.76c0.01,0.03 -0.01,0.07 -0.05,0.08 -0.03,0.01 -0.07,-0.01 -0.08,-0.05l-0.09 -0.41 -0.21 0c-0.04,0 -0.06,-0.03 -0.06,-0.06 0,-0.04 0.03,-0.06 0.06,-0.06l0.26 0c0.03,0 0.06,0.02 0.06,0.05l0.1 0.46zm1.57 1.75c0.02,-0.02 0.05,-0.04 0.08,-0.04 0.03,0 0.06,0.01 0.08,0.03 0,0 0,0 0.01,0 0.02,0.02 0.04,0.05 0.04,0.08 0,0.03 -0.01,0.06 -0.04,0.08 -0.02,0.02 -0.05,0.04 -0.08,0.04 -0.03,0 -0.06,-0.01 -0.08,-0.04l0 -0 -0 -0c-0.02,-0.02 -0.04,-0.05 -0.04,-0.08 0,-0.03 0.01,-0.06 0.03,-0.08 0,-0 0,-0 0,-0.01zm-1.28 0c0.02,-0.02 0.05,-0.04 0.08,-0.04 0.03,0 0.06,0.01 0.08,0.04l-0 0c0.02,0.02 0.04,0.05 0.04,0.08 0,0.03 -0.01,0.06 -0.04,0.08 -0.02,0.02 -0.05,0.04 -0.08,0.04 -0.03,0 -0.06,-0.01 -0.08,-0.04 -0.02,-0.02 -0.04,-0.05 -0.04,-0.08 0,-0.03 0.01,-0.06 0.04,-0.08zm0.56 -1.32c0.02,-0.01 0.04,-0.01 0.05,0.01 0.01,0.02 0.01,0.04 -0.01,0.05l-0.2 0.15c-0.02,0.01 -0.04,0.01 -0.05,-0.01 -0.01,-0.02 -0.01,-0.04 0.01,-0.05l0.2 -0.15zm0.13 -0.08l-0 -0c-0.01,-0.01 -0.03,-0.02 -0.04,-0.02 -0.02,0 -0.03,0.01 -0.04,0.02 -0.01,0.01 -0.02,0.03 -0.02,0.04 0,0.02 0.01,0.03 0.02,0.04 0.01,0.01 0.03,0.02 0.04,0.02 0.02,0 0.03,-0.01 0.04,-0.02 0.01,-0.01 0.02,-0.03 0.02,-0.04 0,-0.02 -0.01,-0.03 -0.02,-0.04zm0.05 -0.06l0 0c0.03,0.03 0.04,0.06 0.04,0.1 0,0.03 -0.01,0.07 -0.04,0.1l-0 0c-0.03,0.03 -0.06,0.04 -0.1,0.04 -0.03,0 -0.07,-0.01 -0.1,-0.04l-0 -0c-0.03,-0.03 -0.04,-0.06 -0.04,-0.1 0,-0.03 0.01,-0.07 0.04,-0.1l0 -0c0.03,-0.03 0.06,-0.04 0.1,-0.04 0.04,0 0.07,0.01 0.1,0.04zm-0.14 0.57c0.02,0.01 0.02,0.04 0.01,0.05 -0.01,0.02 -0.04,0.02 -0.05,0.01l-0.2 -0.15c-0.02,-0.01 -0.02,-0.04 -0.01,-0.05 0.01,-0.02 0.04,-0.02 0.05,-0.01l0.2 0.15zm0.09 0.06l-0 -0 0 -0c-0.01,-0.01 -0.02,-0.02 -0.04,-0.02 -0.01,-0 -0.03,0.01 -0.04,0.02l-0 0c-0.01,0.01 -0.02,0.03 -0.02,0.04 0,0.02 0.01,0.03 0.02,0.04 0.01,0.01 0.03,0.02 0.04,0.02 0.02,0 0.03,-0.01 0.04,-0.02 0.01,-0.01 0.02,-0.03 0.02,-0.05 0,-0.02 -0.01,-0.03 -0.02,-0.04zm0.05 -0.06l0 0c0.03,0.03 0.04,0.06 0.04,0.1 0,0.03 -0.01,0.07 -0.04,0.1l-0 0c-0.03,0.03 -0.06,0.04 -0.09,0.04 -0.03,0 -0.07,-0.01 -0.1,-0.04l-0 -0c-0.03,-0.03 -0.04,-0.06 -0.04,-0.1 0,-0.03 0.01,-0.07 0.04,-0.1l0.01 -0.01c0.03,-0.02 0.06,-0.04 0.09,-0.04 0.03,0 0.07,0.01 0.09,0.04l0 -0 0 0zm-0.34 -0.29l0 0c0.03,0.03 0.04,0.06 0.04,0.1 0,0.03 -0.01,0.07 -0.04,0.1l-0 0c-0.03,0.03 -0.06,0.04 -0.1,0.04 -0.03,0 -0.07,-0.01 -0.1,-0.04l-0 0c-0.03,-0.03 -0.04,-0.06 -0.04,-0.1 0,-0.03 0.01,-0.07 0.04,-0.1 0.02,-0.03 0.06,-0.04 0.09,-0.04 0.03,0 0.07,0.01 0.1,0.04zm-0.04 0.1c0,-0.02 -0.01,-0.03 -0.02,-0.04 -0.01,-0.01 -0.03,-0.02 -0.04,-0.02 -0.01,0 -0.03,0.01 -0.04,0.01l-0 0c-0.01,0.01 -0.02,0.03 -0.02,0.04 0,0.02 0.01,0.03 0.02,0.04 0.01,0.01 0.03,0.02 0.04,0.02 0.02,0 0.03,-0.01 0.04,-0.02 0.01,-0.01 0.02,-0.03 0.02,-0.04zm1.64 -1.14c-0.11,-0.11 -0.26,-0.17 -0.41,-0.17 -0.32,0 -0.58,0.26 -0.58,0.58 0,0.1 0.03,0.2 0.08,0.29l-0.08 0.3 0.31 -0.08c0.09,0.04 0.18,0.07 0.28,0.07l0 0c0.32,0 0.58,-0.26 0.58,-0.58 0,-0.15 -0.06,-0.3 -0.17,-0.41zm-0.1 0.63c-0.01,0.04 -0.07,0.07 -0.11,0.07 -0.03,0 -0.06,0.01 -0.1,-0.01 -0.02,-0.01 -0.05,-0.02 -0.09,-0.03 -0.16,-0.07 -0.26,-0.23 -0.27,-0.24 -0.01,-0.01 -0.06,-0.09 -0.06,-0.16 0,-0.08 0.04,-0.12 0.06,-0.13 0.01,-0.01 0.03,-0.02 0.04,-0.02 0.01,0 0.02,0 0.03,0 0.01,0 0.02,-0 0.04,0.03 0.01,0.03 0.04,0.11 0.05,0.12 0,0.01 0.01,0.02 0,0.03 -0,0.01 -0.01,0.02 -0.01,0.03 -0.01,0.01 -0.01,0.02 -0.02,0.03 -0.01,0.01 -0.01,0.01 -0.01,0.03 0.01,0.01 0.04,0.07 0.09,0.11 0.06,0.05 0.11,0.07 0.13,0.08 0.01,0.01 0.03,0.01 0.03,-0 0.01,-0.01 0.04,-0.04 0.05,-0.06 0.01,-0.01 0.02,-0.01 0.04,-0.01 0.01,0 0.09,0.04 0.11,0.05l0 0c0.01,0.01 0.03,0.01 0.03,0.02 0,0.01 0,0.04 -0.01,0.08z"/>
- </g>
-</svg>
+                        <div
+                            class="w-7 h-7 sm:w-10 sm:h-10 desktop-badge-icon flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.0"
+                                style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+                                viewBox="0 0 2.96 2.59" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                xmlns:xodm="http://www.corel.com/coreldraw/odm/2003"
+                                class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
+
+                                <g id="Layer_x0020_1">
+                                    <metadata id="CorelCorpID_0Corel-Layer" />
+                                    <path fill="currentColor"
+                                        d="M2.3 1.4c0.01,-0.03 0.04,-0.06 0.08,-0.05 0.03,0.01 0.06,0.04 0.05,0.08l-0.06 0.25c-0.02,0.08 -0.06,0.14 -0.12,0.19l-0 0 0 0c-0.06,0.05 -0.13,0.08 -0.21,0.09l-0 0 -1.04 0.1c-0.09,0.01 -0.18,-0.02 -0.25,-0.07l-0 -0c-0.07,-0.05 -0.12,-0.13 -0.14,-0.22l-0 -0 -0.23 -1.1c-0.01,-0.04 0.02,-0.07 0.05,-0.08 0,-0 0.01,-0 0.01,-0l0 -0 1.08 0c0.04,0 0.06,0.03 0.06,0.06 0,0.04 -0.03,0.06 -0.06,0.06l-1 0 0.22 1.02 0 0c0.01,0.06 0.05,0.11 0.09,0.14l0 0c0.05,0.03 0.1,0.05 0.17,0.05l1.04 -0.1 0 -0c0.05,-0.01 0.1,-0.03 0.14,-0.06l0 0c0.04,-0.03 0.06,-0.07 0.07,-0.12l0.06 -0.25zm-1.8 -0.76c0.01,0.03 -0.01,0.07 -0.05,0.08 -0.03,0.01 -0.07,-0.01 -0.08,-0.05l-0.09 -0.41 -0.21 0c-0.04,0 -0.06,-0.03 -0.06,-0.06 0,-0.04 0.03,-0.06 0.06,-0.06l0.26 0c0.03,0 0.06,0.02 0.06,0.05l0.1 0.46zm1.57 1.75c0.02,-0.02 0.05,-0.04 0.08,-0.04 0.03,0 0.06,0.01 0.08,0.03 0,0 0,0 0.01,0 0.02,0.02 0.04,0.05 0.04,0.08 0,0.03 -0.01,0.06 -0.04,0.08 -0.02,0.02 -0.05,0.04 -0.08,0.04 -0.03,0 -0.06,-0.01 -0.08,-0.04l0 -0 -0 -0c-0.02,-0.02 -0.04,-0.05 -0.04,-0.08 0,-0.03 0.01,-0.06 0.03,-0.08 0,-0 0,-0 0,-0.01zm-1.28 0c0.02,-0.02 0.05,-0.04 0.08,-0.04 0.03,0 0.06,0.01 0.08,0.04l-0 0c0.02,0.02 0.04,0.05 0.04,0.08 0,0.03 -0.01,0.06 -0.04,0.08 -0.02,0.02 -0.05,0.04 -0.08,0.04 -0.03,0 -0.06,-0.01 -0.08,-0.04 -0.02,-0.02 -0.04,-0.05 -0.04,-0.08 0,-0.03 0.01,-0.06 0.04,-0.08zm0.56 -1.32c0.02,-0.01 0.04,-0.01 0.05,0.01 0.01,0.02 0.01,0.04 -0.01,0.05l-0.2 0.15c-0.02,0.01 -0.04,0.01 -0.05,-0.01 -0.01,-0.02 -0.01,-0.04 0.01,-0.05l0.2 -0.15zm0.13 -0.08l-0 -0c-0.01,-0.01 -0.03,-0.02 -0.04,-0.02 -0.02,0 -0.03,0.01 -0.04,0.02 -0.01,0.01 -0.02,0.03 -0.02,0.04 0,0.02 0.01,0.03 0.02,0.04 0.01,0.01 0.03,0.02 0.04,0.02 0.02,0 0.03,-0.01 0.04,-0.02 0.01,-0.01 0.02,-0.03 0.02,-0.04 0,-0.02 -0.01,-0.03 -0.02,-0.04zm0.05 -0.06l0 0c0.03,0.03 0.04,0.06 0.04,0.1 0,0.03 -0.01,0.07 -0.04,0.1l-0 0c-0.03,0.03 -0.06,0.04 -0.1,0.04 -0.03,0 -0.07,-0.01 -0.1,-0.04l-0 -0c-0.03,-0.03 -0.04,-0.06 -0.04,-0.1 0,-0.03 0.01,-0.07 0.04,-0.1l0 -0c0.03,-0.03 0.06,-0.04 0.1,-0.04 0.04,0 0.07,0.01 0.1,0.04zm-0.14 0.57c0.02,0.01 0.02,0.04 0.01,0.05 -0.01,0.02 -0.04,0.02 -0.05,0.01l-0.2 -0.15c-0.02,-0.01 -0.02,-0.04 -0.01,-0.05 0.01,-0.02 0.04,-0.02 0.05,-0.01l0.2 0.15zm0.09 0.06l-0 -0 0 -0c-0.01,-0.01 -0.02,-0.02 -0.04,-0.02 -0.01,-0 -0.03,0.01 -0.04,0.02l-0 0c-0.01,0.01 -0.02,0.03 -0.02,0.04 0,0.02 0.01,0.03 0.02,0.04 0.01,0.01 0.03,0.02 0.04,0.02 0.02,0 0.03,-0.01 0.04,-0.02 0.01,-0.01 0.02,-0.03 0.02,-0.05 0,-0.02 -0.01,-0.03 -0.02,-0.04zm0.05 -0.06l0 0c0.03,0.03 0.04,0.06 0.04,0.1 0,0.03 -0.01,0.07 -0.04,0.1l-0 0c-0.03,0.03 -0.06,0.04 -0.09,0.04 -0.03,0 -0.07,-0.01 -0.1,-0.04l-0 -0c-0.03,-0.03 -0.04,-0.06 -0.04,-0.1 0,-0.03 0.01,-0.07 0.04,-0.1l0.01 -0.01c0.03,-0.02 0.06,-0.04 0.09,-0.04 0.03,0 0.07,0.01 0.09,0.04l0 -0 0 0zm-0.34 -0.29l0 0c0.03,0.03 0.04,0.06 0.04,0.1 0,0.03 -0.01,0.07 -0.04,0.1l-0 0c-0.03,0.03 -0.06,0.04 -0.1,0.04 -0.03,0 -0.07,-0.01 -0.1,-0.04l-0 0c-0.03,-0.03 -0.04,-0.06 -0.04,-0.1 0,-0.03 0.01,-0.07 0.04,-0.1 0.02,-0.03 0.06,-0.04 0.09,-0.04 0.03,0 0.07,0.01 0.1,0.04zm-0.04 0.1c0,-0.02 -0.01,-0.03 -0.02,-0.04 -0.01,-0.01 -0.03,-0.02 -0.04,-0.02 -0.01,0 -0.03,0.01 -0.04,0.01l-0 0c-0.01,0.01 -0.02,0.03 -0.02,0.04 0,0.02 0.01,0.03 0.02,0.04 0.01,0.01 0.03,0.02 0.04,0.02 0.02,0 0.03,-0.01 0.04,-0.02 0.01,-0.01 0.02,-0.03 0.02,-0.04zm1.64 -1.14c-0.11,-0.11 -0.26,-0.17 -0.41,-0.17 -0.32,0 -0.58,0.26 -0.58,0.58 0,0.1 0.03,0.2 0.08,0.29l-0.08 0.3 0.31 -0.08c0.09,0.04 0.18,0.07 0.28,0.07l0 0c0.32,0 0.58,-0.26 0.58,-0.58 0,-0.15 -0.06,-0.3 -0.17,-0.41zm-0.1 0.63c-0.01,0.04 -0.07,0.07 -0.11,0.07 -0.03,0 -0.06,0.01 -0.1,-0.01 -0.02,-0.01 -0.05,-0.02 -0.09,-0.03 -0.16,-0.07 -0.26,-0.23 -0.27,-0.24 -0.01,-0.01 -0.06,-0.09 -0.06,-0.16 0,-0.08 0.04,-0.12 0.06,-0.13 0.01,-0.01 0.03,-0.02 0.04,-0.02 0.01,0 0.02,0 0.03,0 0.01,0 0.02,-0 0.04,0.03 0.01,0.03 0.04,0.11 0.05,0.12 0,0.01 0.01,0.02 0,0.03 -0,0.01 -0.01,0.02 -0.01,0.03 -0.01,0.01 -0.01,0.02 -0.02,0.03 -0.01,0.01 -0.01,0.01 -0.01,0.03 0.01,0.01 0.04,0.07 0.09,0.11 0.06,0.05 0.11,0.07 0.13,0.08 0.01,0.01 0.03,0.01 0.03,-0 0.01,-0.01 0.04,-0.04 0.05,-0.06 0.01,-0.01 0.02,-0.01 0.04,-0.01 0.01,0 0.09,0.04 0.11,0.05l0 0c0.01,0.01 0.03,0.01 0.03,0.02 0,0.01 0,0.04 -0.01,0.08z" />
+                                </g>
+                            </svg>
                         </div>
-                        <h4 class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">WhatsApp<br><span class="font-semibold text-gray-500 tracking-widest">Ordering</span></h4>
+                        <h4
+                            class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">
+                            WhatsApp<br><span class="font-semibold text-gray-500 tracking-widest">Ordering</span></h4>
                     </div>
                     <div class="flex flex-col items-center justify-start group">
-                        <div class="w-7 h-7 sm:w-10 sm:h-10 desktop-badge-icon flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve"   version="1.0" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
-viewBox="0 0 2.72 2.72"
- xmlns:xlink="http://www.w3.org/1999/xlink"
- xmlns:xodm="http://www.corel.com/coreldraw/odm/2003" class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
- 
- <g id="Layer_x0020_1">
-  <metadata id="CorelCorpID_0Corel-Layer"/>
-  <path fill="currentColor" d="M1.06 2.34c-0.28,-0.01 -0.56,-0 -0.83,-0 -0.08,0 -0.18,0.01 -0.21,-0.08 -0.02,-0.04 -0.01,-0.68 -0.01,-0.76 0,-0.3 0,-0.6 0,-0.9 0,-0.29 0.07,-0.24 0.34,-0.24l0.98 -0c0.04,0 0.1,-0.01 0.09,0.04 -0,0.04 -0.07,0.03 -0.08,0.03l-0.93 0.01c-0.05,0 -0.25,-0.01 -0.29,0.01 -0.04,0.02 -0.02,0.12 -0.02,0.15l0 1.52c0,0.09 -0.02,0.15 0.09,0.15l2.27 -0c0.03,0 0.17,0.01 0.19,-0.02 0.02,-0.03 0.01,-0.22 0.01,-0.26 0,-0.26 0,-0.52 0,-0.77 0,-0.16 0,-0.33 -0,-0.49 -0,-0.05 0,-0.19 -0,-0.24 -0.02,-0.07 -0.36,-0.01 -0.45,-0.04l-0.01 -0 -0 -0.01c-0.01,-0.06 0.01,-0.07 0.07,-0.07l0.34 0c0.18,0.01 0.14,0.22 0.14,0.34l0 1.35c0,0.08 0.02,0.24 -0.07,0.28 -0.09,0.04 -0.45,0.02 -0.55,0.02 -0.15,0 -0.29,-0.01 -0.44,0 -0,0.03 -0,0.06 -0,0.09 -0,0.02 -0.01,0.06 0.02,0.06 0.12,0.03 0.26,-0.03 0.4,0.03 0.05,0.02 0.11,0.07 0.1,0.13 -0.02,0.07 -0.12,0.05 -0.18,0.05l-1.29 0c-0.06,0 -0.16,0.02 -0.18,-0.05 -0.01,-0.04 0,-0.06 0.03,-0.09 0.07,-0.06 0.16,-0.08 0.25,-0.08 0.06,0 0.16,0.01 0.22,-0 0.04,-0.01 0.03,-0.12 0.02,-0.16zm0.18 -1.23c0.03,-0.08 0.08,-0.16 0.11,-0.24 0.05,-0.1 0.12,-0.28 0.19,-0.36l0.37 -0.45c0.09,-0.11 0.29,-0.05 0.24,0.12 -0.02,0.07 -0.14,0.28 -0.19,0.36 -0.07,0.13 -0.1,0.23 -0.21,0.33l-0.17 0.19c-0.01,0.02 -0.03,0.03 -0.05,0.05 -0.02,0.02 -0.03,0.03 -0.04,0.04 -0.02,0.03 -0.07,0.05 -0.07,0.09 -0,0.08 -0.06,0.19 -0.12,0.24 -0.25,0.21 -0.64,-0.14 -0.47,-0.19 0.07,-0.02 0.11,0.06 0.19,-0.05 0.07,-0.1 0.12,-0.11 0.23,-0.13zm-1.02 -0.53c-0.02,0.08 -0,0.22 -0,0.31 0,0.17 -0,0.34 -0,0.5 -0,0.1 -0,0.2 0,0.29 0,0.04 -0,0.1 0,0.15l2.29 -0 -0 -1.26 -0.34 -0 -0 -0c-0.05,-0.02 -0.03,-0.08 0.03,-0.08 0.08,-0 0.16,0 0.24,0 0.08,0 0.16,-0.02 0.16,0.09 0.01,0.38 -0,0.77 -0,1.16 0,0.07 0.02,0.17 -0.07,0.18l-1.84 0c-0.15,0 -0.31,0.01 -0.46,-0 -0.1,-0.01 -0.09,-0.1 -0.09,-0.17 0,-0.08 0,-0.15 0,-0.23 0,-0.16 -0,-0.32 -0,-0.48 -0,-0.14 -0.01,-0.3 0,-0.44 0.01,-0.09 0.07,-0.1 0.15,-0.1l0.92 0 0.15 0c0.03,0 0.04,0.03 0.03,0.06l-0 0.01 -0.01 0c-0.01,0 -0.02,0 -0.03,0.01 -0.07,0.01 -0.19,0.01 -0.25,0 -0.1,-0 -0.2,-0 -0.3,-0 -0.11,0 -0.47,-0.02 -0.56,0.01zm1.14 1.41c0.05,0 0.09,0.04 0.09,0.09 0,0.05 -0.04,0.09 -0.09,0.09 -0.05,0 -0.09,-0.04 -0.09,-0.09 0,-0.05 0.04,-0.09 0.09,-0.09zm-0.73 0.64l1.47 0c-0.02,-0.03 -0.09,-0.05 -0.12,-0.05 -0.11,-0.02 -0.32,0.03 -0.38,-0.05 -0.03,-0.05 -0.02,-0.13 -0.02,-0.19l-0.43 -0c-0,0.06 0.01,0.14 -0.02,0.19 -0.06,0.09 -0.27,0.04 -0.38,0.06 -0.03,0 -0.05,0.01 -0.08,0.02 -0.01,0.01 -0.03,0.02 -0.04,0.03zm0.26 -1.26c0.05,0.06 0.2,0.1 0.26,0.08 0.1,-0.02 0.15,-0.11 0.18,-0.21 -0.02,-0.02 -0.08,-0.06 -0.1,-0.06 -0.03,-0.01 -0.1,0.03 -0.12,0.05 -0.1,0.09 -0.07,0.14 -0.23,0.14zm0.43 -0.24c0.02,0.01 0.03,0.02 0.05,0.02 0.03,-0.04 0.05,-0.05 0.07,-0.08l0.08 -0.09c0.08,-0.1 0.21,-0.2 0.27,-0.31 0.08,-0.15 0.16,-0.3 0.24,-0.45 0.02,-0.03 0.07,-0.12 0.03,-0.15 -0.05,-0.03 -0.1,0.04 -0.12,0.07l-0.31 0.38c-0.07,0.09 -0.11,0.19 -0.16,0.29 -0.04,0.08 -0.12,0.22 -0.15,0.31z"/>
- </g>
-</svg>
+                        <div
+                            class="w-7 h-7 sm:w-10 sm:h-10 desktop-badge-icon flex items-center justify-center mb-2 transition-transform duration-500 group-hover:-translate-y-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.0"
+                                style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+                                viewBox="0 0 2.72 2.72" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                xmlns:xodm="http://www.corel.com/coreldraw/odm/2003"
+                                class="w-full h-full object-contain filter drop-shadow-sm text-[#9C6521] fill-current">
+
+                                <g id="Layer_x0020_1">
+                                    <metadata id="CorelCorpID_0Corel-Layer" />
+                                    <path fill="currentColor"
+                                        d="M1.06 2.34c-0.28,-0.01 -0.56,-0 -0.83,-0 -0.08,0 -0.18,0.01 -0.21,-0.08 -0.02,-0.04 -0.01,-0.68 -0.01,-0.76 0,-0.3 0,-0.6 0,-0.9 0,-0.29 0.07,-0.24 0.34,-0.24l0.98 -0c0.04,0 0.1,-0.01 0.09,0.04 -0,0.04 -0.07,0.03 -0.08,0.03l-0.93 0.01c-0.05,0 -0.25,-0.01 -0.29,0.01 -0.04,0.02 -0.02,0.12 -0.02,0.15l0 1.52c0,0.09 -0.02,0.15 0.09,0.15l2.27 -0c0.03,0 0.17,0.01 0.19,-0.02 0.02,-0.03 0.01,-0.22 0.01,-0.26 0,-0.26 0,-0.52 0,-0.77 0,-0.16 0,-0.33 -0,-0.49 -0,-0.05 0,-0.19 -0,-0.24 -0.02,-0.07 -0.36,-0.01 -0.45,-0.04l-0.01 -0 -0 -0.01c-0.01,-0.06 0.01,-0.07 0.07,-0.07l0.34 0c0.18,0.01 0.14,0.22 0.14,0.34l0 1.35c0,0.08 0.02,0.24 -0.07,0.28 -0.09,0.04 -0.45,0.02 -0.55,0.02 -0.15,0 -0.29,-0.01 -0.44,0 -0,0.03 -0,0.06 -0,0.09 -0,0.02 -0.01,0.06 0.02,0.06 0.12,0.03 0.26,-0.03 0.4,0.03 0.05,0.02 0.11,0.07 0.1,0.13 -0.02,0.07 -0.12,0.05 -0.18,0.05l-1.29 0c-0.06,0 -0.16,0.02 -0.18,-0.05 -0.01,-0.04 0,-0.06 0.03,-0.09 0.07,-0.06 0.16,-0.08 0.25,-0.08 0.06,0 0.16,0.01 0.22,-0 0.04,-0.01 0.03,-0.12 0.02,-0.16zm0.18 -1.23c0.03,-0.08 0.08,-0.16 0.11,-0.24 0.05,-0.1 0.12,-0.28 0.19,-0.36l0.37 -0.45c0.09,-0.11 0.29,-0.05 0.24,0.12 -0.02,0.07 -0.14,0.28 -0.19,0.36 -0.07,0.13 -0.1,0.23 -0.21,0.33l-0.17 0.19c-0.01,0.02 -0.03,0.03 -0.05,0.05 -0.02,0.02 -0.03,0.03 -0.04,0.04 -0.02,0.03 -0.07,0.05 -0.07,0.09 -0,0.08 -0.06,0.19 -0.12,0.24 -0.25,0.21 -0.64,-0.14 -0.47,-0.19 0.07,-0.02 0.11,0.06 0.19,-0.05 0.07,-0.1 0.12,-0.11 0.23,-0.13zm-1.02 -0.53c-0.02,0.08 -0,0.22 -0,0.31 0,0.17 -0,0.34 -0,0.5 -0,0.1 -0,0.2 0,0.29 0,0.04 -0,0.1 0,0.15l2.29 -0 -0 -1.26 -0.34 -0 -0 -0c-0.05,-0.02 -0.03,-0.08 0.03,-0.08 0.08,-0 0.16,0 0.24,0 0.08,0 0.16,-0.02 0.16,0.09 0.01,0.38 -0,0.77 -0,1.16 0,0.07 0.02,0.17 -0.07,0.18l-1.84 0c-0.15,0 -0.31,0.01 -0.46,-0 -0.1,-0.01 -0.09,-0.1 -0.09,-0.17 0,-0.08 0,-0.15 0,-0.23 0,-0.16 -0,-0.32 -0,-0.48 -0,-0.14 -0.01,-0.3 0,-0.44 0.01,-0.09 0.07,-0.1 0.15,-0.1l0.92 0 0.15 0c0.03,0 0.04,0.03 0.03,0.06l-0 0.01 -0.01 0c-0.01,0 -0.02,0 -0.03,0.01 -0.07,0.01 -0.19,0.01 -0.25,0 -0.1,-0 -0.2,-0 -0.3,-0 -0.11,0 -0.47,-0.02 -0.56,0.01zm1.14 1.41c0.05,0 0.09,0.04 0.09,0.09 0,0.05 -0.04,0.09 -0.09,0.09 -0.05,0 -0.09,-0.04 -0.09,-0.09 0,-0.05 0.04,-0.09 0.09,-0.09zm-0.73 0.64l1.47 0c-0.02,-0.03 -0.09,-0.05 -0.12,-0.05 -0.11,-0.02 -0.32,0.03 -0.38,-0.05 -0.03,-0.05 -0.02,-0.13 -0.02,-0.19l-0.43 -0c-0,0.06 0.01,0.14 -0.02,0.19 -0.06,0.09 -0.27,0.04 -0.38,0.06 -0.03,0 -0.05,0.01 -0.08,0.02 -0.01,0.01 -0.03,0.02 -0.04,0.03zm0.26 -1.26c0.05,0.06 0.2,0.1 0.26,0.08 0.1,-0.02 0.15,-0.11 0.18,-0.21 -0.02,-0.02 -0.08,-0.06 -0.1,-0.06 -0.03,-0.01 -0.1,0.03 -0.12,0.05 -0.1,0.09 -0.07,0.14 -0.23,0.14zm0.43 -0.24c0.02,0.01 0.03,0.02 0.05,0.02 0.03,-0.04 0.05,-0.05 0.07,-0.08l0.08 -0.09c0.08,-0.1 0.21,-0.2 0.27,-0.31 0.08,-0.15 0.16,-0.3 0.24,-0.45 0.02,-0.03 0.07,-0.12 0.03,-0.15 -0.05,-0.03 -0.1,0.04 -0.12,0.07l-0.31 0.38c-0.07,0.09 -0.11,0.19 -0.16,0.29 -0.04,0.08 -0.12,0.22 -0.15,0.31z" />
+                                </g>
+                            </svg>
                         </div>
-                        <h4 class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">Custom<br><span class="font-semibold text-gray-500 tracking-widest">Designs</span></h4>
+                        <h4
+                            class="my-super-unique-badge-style desktop-badge-text text-[8.5px] sm:text-[10px] text-gray-800 tracking-[0.15em] uppercase font-black leading-tight">
+                            Custom<br><span class="font-semibold text-gray-500 tracking-widest">Designs</span></h4>
                     </div>
                 </div>
             </div>
@@ -524,12 +690,14 @@ viewBox="0 0 2.72 2.72"
 
 
     <!-- MAIN APP CONTAINER -->
-    <main id="app" class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0 pt-8 pb-48 min-h-screen">
+    <main id="app"
+        class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0 pt-8 pb-48 min-h-screen">
         <!-- Unified App Container -->
         <!-- Static Skeleton UI for SEO & Ads bots -->
         <div class="animate-pulse space-y-8 mt-8">
             <div class="h-10 bg-gray-100 rounded-xl w-48"></div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-5 gap-y-12 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-6">
+            <div
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-5 gap-y-12 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-6">
                 <!-- Skeleton Item 1 -->
                 <div class="space-y-4">
                     <div class="aspect-[4/5] bg-gray-100 rounded-2xl w-full"></div>
@@ -618,7 +786,9 @@ viewBox="0 0 2.72 2.72"
         </div>
 
         <!-- PRODUCT GRID -->
-        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4"></div>
+        <div id="product-grid"
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4">
+        </div>
     </div>
 
     <div id="selection-bar">
@@ -646,21 +816,25 @@ viewBox="0 0 2.72 2.72"
                     class="w-12 h-12 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-black transition-all">✕</button>
             </div>
 
-            <div class="flex flex-wrap gap-2 md:gap-3 p-1.5 bg-gray-50 rounded-2xl mb-12 w-full border border-gray-100 shadow-inner">
+            <div
+                class="flex flex-wrap gap-2 md:gap-3 p-1.5 bg-gray-50 rounded-2xl mb-12 w-full border border-gray-100 shadow-inner">
                 <button onclick="switchAdminTab('products')" id="tab-p"
                     class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase transition-all bg-white shadow-xl">Products</button>
                 <button onclick="switchAdminTab('categories')" id="tab-c"
                     class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Categories</button>
                 <button onclick="switchAdminTab('megamenu')" id="tab-m"
-                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Desktop Menu</button>
+                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Desktop
+                    Menu</button>
                 <button onclick="switchAdminTab('sliders')" id="tab-s"
                     class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Sliders</button>
                 <button onclick="switchAdminTab('landing')" id="tab-landing"
-                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Landing Page</button>
+                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Landing
+                    Page</button>
                 <button onclick="switchAdminTab('announcements')" id="tab-a"
                     class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Notices</button>
                 <button onclick="switchAdminTab('leads')" id="tab-l"
-                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Leads & Popup</button>
+                    class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Leads &
+                    Popup</button>
                 <button onclick="switchAdminTab('insights')" id="tab-i"
                     class="flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400">Insights</button>
             </div>
@@ -799,18 +973,27 @@ viewBox="0 0 2.72 2.72"
                     <!-- Mega Menu Section -->
                     <div id="admin-megamenu-section" class="hidden fade-in">
                         <div class="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 space-y-4 shadow-sm">
-                            <h3 id="m-form-title" class="text-[11px] font-black uppercase tracking-widest">New Main Category</h3>
+                            <h3 id="m-form-title" class="text-[11px] font-black uppercase tracking-widest">New Main
+                                Category</h3>
                             <input type="hidden" id="edit-megamenu-id">
-                            <input type="text" id="m-name" class="admin-input" placeholder="Display Name (e.g. Personalized Gifts)">
+                            <input type="text" id="m-name" class="admin-input"
+                                placeholder="Display Name (e.g. Personalized Gifts)">
                             <div class="mt-4 border-t border-gray-100 pt-4">
-                                <p class="text-[9px] font-black uppercase text-gray-400 mb-3">Select Categories to include:</p>
-                                <div id="m-categories-checkboxes" class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto w-full">
-                                    <p class="text-[10px] text-gray-400 italic">No categories available yet. Please add normal categories first.</p>
+                                <p class="text-[9px] font-black uppercase text-gray-400 mb-3">Select Categories to
+                                    include:</p>
+                                <div id="m-categories-checkboxes"
+                                    class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto w-full">
+                                    <p class="text-[10px] text-gray-400 italic">No categories available yet. Please add
+                                        normal categories first.</p>
                                 </div>
                             </div>
                             <div class="flex gap-4 mt-4">
-                                <button onclick="resetForm()" class="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-gray-200">Clear Form</button>
-                                <button onclick="saveMegaMenu()" id="m-save-btn" class="flex-[2] bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all">Save Desktop Menu</button>
+                                <button onclick="resetForm()"
+                                    class="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-gray-200">Clear
+                                    Form</button>
+                                <button onclick="saveMegaMenu()" id="m-save-btn"
+                                    class="flex-[2] bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all">Save
+                                    Desktop Menu</button>
                             </div>
                         </div>
                     </div>
@@ -970,79 +1153,111 @@ viewBox="0 0 2.72 2.72"
                     <div id="admin-landing-section" class="hidden fade-in">
                         <div class="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 space-y-6 shadow-sm">
                             <h3 class="text-[11px] font-black uppercase tracking-widest">Landing Page Settings</h3>
-                            <p class="text-[10px] text-gray-400 -mt-4">Design the standalone Google Ads landing page.</p>
-                            
+                            <p class="text-[10px] text-gray-400 -mt-4">Design the standalone Google Ads landing page.
+                            </p>
+
                             <div class="space-y-4">
                                 <!-- Top Bar Announcement -->
                                 <div>
-                                    <label class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Top Announcement Bar</label>
-                                    <input type="text" id="landing-announcement" class="admin-input" placeholder="e.g. 🔥 Fast Delivery in UAE | Order Now">
+                                    <label class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Top
+                                        Announcement Bar</label>
+                                    <input type="text" id="landing-announcement" class="admin-input"
+                                        placeholder="e.g. 🔥 Fast Delivery in UAE | Order Now">
                                 </div>
-                                
+
                                 <hr class="border-gray-50 my-6">
-                                
+
                                 <!-- Hero Image (Desktop & Mobile) -->
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Mobile Hero Image URL</label>
+                                        <label
+                                            class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Mobile
+                                            Hero Image URL</label>
                                         <div class="flex gap-2 items-center p-1 rounded-xl">
-                                            <input type="text" id="landing-hero-mob" class="admin-input flex-1" value="img/" placeholder="Mobile Image URL">
-                                            <button onclick="cloudinaryUpload('landing-hero-mob')" class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
+                                            <input type="text" id="landing-hero-mob" class="admin-input flex-1"
+                                                value="img/" placeholder="Mobile Image URL">
+                                            <button onclick="cloudinaryUpload('landing-hero-mob')"
+                                                class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Desktop Hero Image URL</label>
+                                        <label
+                                            class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Desktop
+                                            Hero Image URL</label>
                                         <div class="flex gap-2 items-center p-1 rounded-xl">
-                                            <input type="text" id="landing-hero-desk" class="admin-input flex-1" value="img/" placeholder="Desktop Image URL">
-                                            <button onclick="cloudinaryUpload('landing-hero-desk')" class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
+                                            <input type="text" id="landing-hero-desk" class="admin-input flex-1"
+                                                value="img/" placeholder="Desktop Image URL">
+                                            <button onclick="cloudinaryUpload('landing-hero-desk')"
+                                                class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <hr class="border-gray-50 my-6">
 
                                 <!-- Section 1 -->
                                 <div>
                                     <h4 class="text-[10px] font-black uppercase tracking-widest mb-3">Section 1</h4>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input type="text" id="landing-sec1-title" class="admin-input" placeholder="Main Title (e.g. Premium Collections)">
-                                        <input type="text" id="landing-sec1-subtitle" class="admin-input" placeholder="Subtitle (e.g. Personalized Awards)">
+                                        <input type="text" id="landing-sec1-title" class="admin-input"
+                                            placeholder="Main Title (e.g. Premium Collections)">
+                                        <input type="text" id="landing-sec1-subtitle" class="admin-input"
+                                            placeholder="Subtitle (e.g. Personalized Awards)">
                                     </div>
-                                    <p class="text-[9px] font-black uppercase text-gray-400 mt-3 mb-2 block">Select Specific Products</p>
+                                    <p class="text-[9px] font-black uppercase text-gray-400 mt-3 mb-2 block">Select
+                                        Specific Products</p>
                                     <div class="relative">
-                                        <div id="landing-sec1-pills" class="flex flex-wrap gap-2 mb-2 min-h-[44px] p-2 bg-white border border-gray-100 rounded-xl items-center shadow-inner">
-                                            <span class="text-[9px] text-gray-400 italic font-bold">No products selected...</span>
+                                        <div id="landing-sec1-pills"
+                                            class="flex flex-wrap gap-2 mb-2 min-h-[44px] p-2 bg-white border border-gray-100 rounded-xl items-center shadow-inner">
+                                            <span class="text-[9px] text-gray-400 italic font-bold">No products
+                                                selected...</span>
                                         </div>
-                                        <input type="text" id="landing-sec1-search" class="admin-input" placeholder="Search product to add..." onkeyup="searchLandingProducts('sec1', this.value)" onfocus="searchLandingProducts('sec1', this.value)">
-                                        <div id="landing-sec1-dropdown" class="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-1 shadow-2xl max-h-[250px] overflow-y-auto hidden">
+                                        <input type="text" id="landing-sec1-search" class="admin-input"
+                                            placeholder="Search product to add..."
+                                            onkeyup="searchLandingProducts('sec1', this.value)"
+                                            onfocus="searchLandingProducts('sec1', this.value)">
+                                        <div id="landing-sec1-dropdown"
+                                            class="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-1 shadow-2xl max-h-[250px] overflow-y-auto hidden">
                                             <!-- JS injected items -->
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <hr class="border-gray-50 my-6">
 
                                 <!-- Section 2 -->
                                 <div>
                                     <h4 class="text-[10px] font-black uppercase tracking-widest mb-3">Section 2</h4>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input type="text" id="landing-sec2-title" class="admin-input" placeholder="Main Title (e.g. Best Sellers)">
-                                        <input type="text" id="landing-sec2-subtitle" class="admin-input" placeholder="Subtitle (e.g. Most Loved Items)">
+                                        <input type="text" id="landing-sec2-title" class="admin-input"
+                                            placeholder="Main Title (e.g. Best Sellers)">
+                                        <input type="text" id="landing-sec2-subtitle" class="admin-input"
+                                            placeholder="Subtitle (e.g. Most Loved Items)">
                                     </div>
-                                    <p class="text-[9px] font-black uppercase text-gray-400 mt-3 mb-2 block">Select Specific Products</p>
+                                    <p class="text-[9px] font-black uppercase text-gray-400 mt-3 mb-2 block">Select
+                                        Specific Products</p>
                                     <div class="relative">
-                                        <div id="landing-sec2-pills" class="flex flex-wrap gap-2 mb-2 min-h-[44px] p-2 bg-white border border-gray-100 rounded-xl items-center shadow-inner">
-                                            <span class="text-[9px] text-gray-400 italic font-bold">No products selected...</span>
+                                        <div id="landing-sec2-pills"
+                                            class="flex flex-wrap gap-2 mb-2 min-h-[44px] p-2 bg-white border border-gray-100 rounded-xl items-center shadow-inner">
+                                            <span class="text-[9px] text-gray-400 italic font-bold">No products
+                                                selected...</span>
                                         </div>
-                                        <input type="text" id="landing-sec2-search" class="admin-input" placeholder="Search product to add..." onkeyup="searchLandingProducts('sec2', this.value)" onfocus="searchLandingProducts('sec2', this.value)">
-                                        <div id="landing-sec2-dropdown" class="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-1 shadow-2xl max-h-[250px] overflow-y-auto hidden">
+                                        <input type="text" id="landing-sec2-search" class="admin-input"
+                                            placeholder="Search product to add..."
+                                            onkeyup="searchLandingProducts('sec2', this.value)"
+                                            onfocus="searchLandingProducts('sec2', this.value)">
+                                        <div id="landing-sec2-dropdown"
+                                            class="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-1 shadow-2xl max-h-[250px] overflow-y-auto hidden">
                                             <!-- JS injected items -->
                                         </div>
                                     </div>
                                 </div>
                                 <div class="flex flex-col sm:flex-row gap-4 mt-6">
-                                    <button onclick="saveLandingSettings()" id="landing-save-btn" class="flex-1 bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl hover:bg-gray-800 transition-colors">Save Landing Page</button>
-                                    <a href="landing.html" target="_blank" class="flex-1 bg-blue-50 text-blue-600 border border-blue-100 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
+                                    <button onclick="saveLandingSettings()" id="landing-save-btn"
+                                        class="flex-1 bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl hover:bg-gray-800 transition-colors">Save
+                                        Landing Page</button>
+                                    <a href="landing.html" target="_blank"
+                                        class="flex-1 bg-blue-50 text-blue-600 border border-blue-100 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
                                         <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Landing Page
                                     </a>
                                 </div>
@@ -1051,7 +1266,8 @@ viewBox="0 0 2.72 2.72"
                     </div>
 
                     <!-- MIGRATION & CLOUD TOOLS -->
-                    <div id="admin-migration-section" class="mt-10 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 space-y-4">
+                    <div id="admin-migration-section"
+                        class="mt-10 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 space-y-4">
                         <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">Migration &
                             Cloud Tools</h3>
                         <div class="grid grid-cols-1 gap-2">
@@ -1110,6 +1326,7 @@ viewBox="0 0 2.72 2.72"
                 column-gap: 12px !important;
                 row-gap: 24px !important;
             }
+
             #app {
                 width: 100% !important;
                 padding-left: 16px !important;
@@ -1126,6 +1343,7 @@ viewBox="0 0 2.72 2.72"
             box-shadow: none !important;
             border: none !important;
         }
+
         .product-card .img-container img {
             width: 100% !important;
             height: 100% !important;
@@ -1133,18 +1351,42 @@ viewBox="0 0 2.72 2.72"
         }
 
         @media (min-width: 640px) {
-            .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .sm\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
+
         @media (min-width: 768px) {
-            .md\:text-center { text-align: center; }
-            .md\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+            .md\:text-center {
+                text-align: center;
+            }
+
+            .md\:grid-cols-5 {
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            }
         }
+
         @media (min-width: 1024px) {
-            .lg\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
-            .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-            .lg\:col-span-2 { grid-column: span 2 / span 2; }
-            .lg\:gap-8 { gap: 2rem; }
-            .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+            .lg\:grid-cols-6 {
+                grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+            }
+
+            .lg\:grid-cols-5 {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+
+            .lg\:col-span-2 {
+                grid-column: span 2 / span 2;
+            }
+
+            .lg\:gap-8 {
+                gap: 2rem;
+            }
+
+            .lg\:px-8 {
+                padding-left: 2rem;
+                padding-right: 2rem;
+            }
 
             /* Force 80% side margins on desktop - override any Tailwind caching */
             #app {
@@ -1153,7 +1395,8 @@ viewBox="0 0 2.72 2.72"
                 padding-left: 0 !important;
                 padding-right: 0 !important;
             }
-            footer > div {
+
+            footer>div {
                 width: 80% !important;
                 max-width: 1440px !important;
                 padding-left: 0 !important;
@@ -1167,8 +1410,11 @@ viewBox="0 0 2.72 2.72"
                 column-gap: 24px !important;
             }
         }
+
         @media (min-width: 1280px) {
-            .xl\:grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+            .xl\:grid-cols-7 {
+                grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+            }
 
             /* Cap at 5 columns on large screens - consistent with user request */
             #product-grid {
@@ -1177,27 +1423,38 @@ viewBox="0 0 2.72 2.72"
         }
     </style>
     <!-- Footer -->
-    <footer class="bg-black text-white border-t border-gray-900" style="margin-top: 6rem; padding-top: 6rem; padding-bottom: 3rem;">
+    <footer class="bg-black text-white border-t border-gray-900"
+        style="margin-top: 6rem; padding-top: 6rem; padding-bottom: 3rem;">
         <div class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16" style="margin-bottom: 4rem; gap: 2.5rem;">
-                
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16"
+                style="margin-bottom: 4rem; gap: 2.5rem;">
+
                 <!-- Brand Info -->
                 <div class="lg:col-span-2">
-                    <h2 class="text-xl font-black uppercase tracking-[0.15em] mb-2 text-white" style="margin-bottom: 0.75rem;">Speed Gifts</h2>
-                    <p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase mb-8" style="margin-bottom: 2.5rem;">Instant Gifting</p>
-                    
+                    <h2 class="text-xl font-black uppercase tracking-[0.15em] mb-2 text-white"
+                        style="margin-bottom: 0.75rem;">Speed Gifts</h2>
+                    <p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase mb-8"
+                        style="margin-bottom: 2.5rem;">Instant Gifting</p>
+
                     <div>
-                        <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-4" style="margin-bottom: 1.5rem;">Follow Us</h4>
+                        <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-4"
+                            style="margin-bottom: 1.5rem;">Follow Us</h4>
                         <div class="flex gap-4">
-                            <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&amp;utm_source=qr" target="_blank" class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i class="fa-brands fa-instagram"></i></a>
-                            <a href="https://wa.me/971561010387" target="_blank" class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i class="fa-brands fa-whatsapp"></i></a>
+                            <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&amp;utm_source=qr"
+                                target="_blank"
+                                class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i
+                                    class="fa-brands fa-instagram"></i></a>
+                            <a href="https://wa.me/971561010387" target="_blank"
+                                class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i
+                                    class="fa-brands fa-whatsapp"></i></a>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Links -->
                 <div>
-                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6" style="margin-bottom: 1.5rem;">Quick Links</h4>
+                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6"
+                        style="margin-bottom: 1.5rem;">Quick Links</h4>
                     <ul class="space-y-3 text-[12px] text-gray-400 font-medium">
                         <li><a href="/" class="hover:text-white transition-colors block">Home</a></li>
                         <li><a href="/?tab=shop" class="hover:text-white transition-colors block">Shop</a></li>
@@ -1208,31 +1465,41 @@ viewBox="0 0 2.72 2.72"
 
                 <!-- Support -->
                 <div>
-                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6" style="margin-bottom: 1.5rem;">Support</h4>
+                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6"
+                        style="margin-bottom: 1.5rem;">Support</h4>
                     <ul class="space-y-3 text-[12px] text-gray-400 font-medium">
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-bolt text-[10px]"></i> Fast Delivery</li>
-                        <li class="flex items-center gap-2"><i class="fa-regular fa-star text-[10px]"></i> High Quality Products</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Custom Orders Available</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-bolt text-[10px]"></i> Fast Delivery
+                        </li>
+                        <li class="flex items-center gap-2"><i class="fa-regular fa-star text-[10px]"></i> High Quality
+                            Products</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+                            Custom Orders Available</li>
                     </ul>
                 </div>
 
                 <!-- Contact Us -->
                 <div>
-                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6" style="margin-bottom: 1.5rem;">Contact Us</h4>
+                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6"
+                        style="margin-bottom: 1.5rem;">Contact Us</h4>
                     <ul class="space-y-4 text-[12px] text-gray-400 font-medium">
                         <li>
-                            <a href="https://wa.me/971561010387" target="_blank" class="hover:text-white transition-colors flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i class="fa-brands fa-whatsapp text-sm"></i></div>
+                            <a href="https://wa.me/971561010387" target="_blank"
+                                class="hover:text-white transition-colors flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i
+                                        class="fa-brands fa-whatsapp text-sm"></i></div>
                                 <span>+971 56 101 0387</span>
                             </a>
                         </li>
                         <li class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i class="fa-solid fa-location-dot text-sm text-gray-500"></i></div>
+                            <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i
+                                    class="fa-solid fa-location-dot text-sm text-gray-500"></i></div>
                             <span>Speed Gifts, WTC Mall, Abu Dhabi, UAE</span>
                         </li>
                         <li>
-                            <a href="mailto:speedgiftsuae@gmail.com" class="hover:text-white transition-colors flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i class="fa-regular fa-envelope text-sm"></i></div>
+                            <a href="mailto:speedgiftsuae@gmail.com"
+                                class="hover:text-white transition-colors flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i
+                                        class="fa-regular fa-envelope text-sm"></i></div>
                                 <span>speedgiftsuae@gmail.com</span>
                             </a>
                         </li>
@@ -1242,12 +1509,13 @@ viewBox="0 0 2.72 2.72"
             </div>
 
             <!-- Bottom Bar -->
-            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase border-t border-gray-900 pt-8 text-left md:text-center block" style="padding-top: 2rem; margin-top: 2rem;">
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase border-t border-gray-900 pt-8 text-left md:text-center block"
+                style="padding-top: 2rem; margin-top: 2rem;">
                 &copy; <span id="year"></span> Speed Gifts. All Rights Reserved.
             </div>
         </div>
     </footer>
-    <script>if(document.getElementById('year')) document.getElementById('year').innerText=new Date().getFullYear();</script>
+    <script>if (document.getElementById('year')) document.getElementById('year').innerText = new Date().getFullYear();</script>
 
     <!-- Firebase SDKs & Logic (Inline for local compatibility) -->
     <!-- Firebase SDKs & Logic -->

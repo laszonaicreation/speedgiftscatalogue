@@ -2138,7 +2138,7 @@ window.applyCustomerSearch = (val) => {
     }, 400); // Slightly longer for search history comfort
 
     // Update Clear Button UI immediately with safety
-    const clearBtn = document.getElementById('app')?.querySelector('#clear-search-btn');
+    const clearBtn = document.getElementById('clear-search-btn');
     if (clearBtn) {
         if (val) clearBtn.classList.remove('hidden');
         else clearBtn.classList.add('hidden');
@@ -2155,6 +2155,13 @@ window.clearCustomerSearch = () => {
     const deskInput = document.getElementById('desk-search');
     if (input) input.value = '';
     if (deskInput) deskInput.value = '';
+    // Clear the clear buttons
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    const deskClearBtn = document.getElementById('desk-clear-btn');
+    if (deskClearBtn) deskClearBtn.classList.add('hidden');
+    // Clear URL search param
+    safePushState({ q: null, c: null, p: null });
     renderHome();
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
@@ -3202,10 +3209,16 @@ window.focusSearch = () => {
 
     setTimeout(() => {
         const searchInput = document.getElementById('customer-search');
-        if (searchInput) {
-            searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            searchInput.focus();
-        }
+        if (!searchInput) return;
+
+        // Ensure the container is visible (renderSlider can hide it based on state)
+        const topElements = document.getElementById('home-top-elements');
+        if (topElements) topElements.classList.remove('hidden');
+        const searchContainer = document.getElementById('customer-search-container');
+        if (searchContainer) searchContainer.classList.remove('hidden');
+
+        searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        searchInput.focus();
     }, 300);
 };
 
@@ -3221,11 +3234,20 @@ function renderSlider() {
 
     // Safety: always hide slider when a product detail is open (?p= in URL)
     const isProductDetail = new URLSearchParams(window.location.search).has('p');
-    if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all' || state.search || state.selectionId) {
+    if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all' || state.selectionId) {
         if (wrapper) wrapper.classList.add('hidden');
         return;
     }
 
+    // When search is active, only hide the slider container — keep the mobile search bar visible
+    if (state.search) {
+        if (container) container.classList.add('hidden');
+        // Keep the wrapper visible so the mobile search bar (md:hidden) stays accessible
+        if (wrapper) wrapper.classList.remove('hidden');
+        return;
+    }
+
+    if (container) container.classList.remove('hidden');
     if (wrapper) wrapper.classList.remove('hidden');
 
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
