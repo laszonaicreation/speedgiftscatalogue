@@ -1275,15 +1275,26 @@ img[src=""] {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.4);
+    background: #e5e7eb;
     transition: all 0.3s ease;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .slider-dot.active {
-    background: #fff;
+    background: #555;
     width: 24px;
     border-radius: 10px;
+}
+
+@media (max-width: 767px) {
+    .slider-dot {
+        width: 6px;
+        height: 6px;
+    }
+    .slider-dot.active {
+        width: 18px;
+    }
 }
 
 /* ADMIN SLIDER LIST */

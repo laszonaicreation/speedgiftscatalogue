@@ -3279,6 +3279,20 @@ function renderSlider() {
 
     currentSlide = 0;
     startSliderAutoPlay();
+
+    // Sync dots on manual scroll/swipe
+    slider.onscroll = () => {
+        const index = Math.round(slider.scrollLeft / slider.offsetWidth);
+        if (index !== currentSlide && !isNaN(index)) {
+            currentSlide = index;
+            const allDots = dots.querySelectorAll('.slider-dot');
+            allDots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentSlide);
+            });
+            // Reset autoplay timer when user interacts manually
+            startSliderAutoPlay();
+        }
+    };
 }
 
 window.moveSlider = (dir) => {
