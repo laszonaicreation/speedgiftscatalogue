@@ -3572,9 +3572,9 @@ function renderAnnouncementBar() {
     if (!bar) return;
 
     let msgs = DATA.announcements || [];
-    if (msgs.length === 0) {
-        // Default fallbacks while DB loads or if empty
-        msgs = ["Fast Delivery Across UAE \uD83D\uDE9A", "Order Any Product & Get a FREE Keychain \uD83C\uDF81"];
+    if (msgs.length === 0 || (msgs.length === 1 && msgs[0].trim() === "")) {
+        bar.style.display = 'none';
+        return;
     }
     bar.style.display = 'flex';
 
@@ -3638,9 +3638,7 @@ function renderAdminAnnouncements() {
     container.innerHTML = '';
     const msgs = DATA.announcements || [];
     if (msgs.length === 0) {
-        // Add default rows for better UX if empty
-        addAnnouncementRow("Fast Delivery Across UAE \uD83D\uDE9A");
-        addAnnouncementRow("Order Any Product & Get a FREE Keychain \uD83C\uDF81");
+        addAnnouncementRow("");
     } else {
         msgs.forEach(m => addAnnouncementRow(m));
     }
