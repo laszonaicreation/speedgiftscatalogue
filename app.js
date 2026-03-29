@@ -3265,7 +3265,10 @@ function renderSlider() {
             <div class="slider-slide relative" data-index="${i}">
                 <img src="${getOptimizedUrl(displayImg, isMobile ? 800 : 1920)}" 
                      class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
-                     alt="${s.title || ''}" onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" style="${s.link ? 'cursor:pointer' : ''}">
+                     alt="${s.title || ''}" 
+                     onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
+                     style="${s.link ? 'cursor:pointer' : ''}"
+                     draggable="false">
                 ${overlayHTML}
             </div>
         `;
@@ -3293,6 +3296,63 @@ function renderSlider() {
             startSliderAutoPlay();
         }
     };
+
+    // Desktop Mouse Drag Support
+    initSliderDrag(slider);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DESKTOP SLIDER DRAG — click-and-drag for better desktop UX
+// ─────────────────────────────────────────────────────────────────────────────
+function initSliderDrag(slider) {
+    if (!slider || slider._dragInitialized) return;
+    slider._dragInitialized = true;
+
+    let isDown = false;
+    let startX = 0;
+    let moveDistance = 0;
+
+    slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        startX = e.clientX;
+        moveDistance = 0;
+        slider.style.cursor = 'grab';
+    });
+
+    slider.addEventListener('mouseup', (e) => {
+        if (!isDown) return;
+        isDown = false;
+        
+        const endX = e.clientX;
+        const diff = endX - startX;
+        moveDistance = Math.abs(diff);
+
+        // TRIGGER ON RELEASE ONLY (Flick)
+        if (moveDistance > 40) { // More sensitive for easier swiping
+            if (diff > 0) {
+                window.moveSlider(-1);
+            } else {
+                window.moveSlider(1);
+            }
+        }
+    });
+
+    slider.addEventListener('mouseleave', () => {
+        isDown = false;
+    });
+
+    slider.addEventListener('mousemove', (e) => {
+        if (isDown) {
+            e.preventDefault();
+        }
+    });
+
+    slider.addEventListener('click', (e) => {
+        if (moveDistance > 15) { // Threshold to distinguish click from swipe
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
 }
 
 window.moveSlider = (dir) => {
