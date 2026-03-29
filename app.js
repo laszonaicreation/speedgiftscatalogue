@@ -2131,9 +2131,10 @@ window.applyCustomerSearch = (val) => {
 };
 window.clearCustomerSearch = () => {
     state.search = '';
+    exitSearchMode();
     const input = document.getElementById('customer-search');
     const deskInput = document.getElementById('desk-search');
-    if (input) input.value = '';
+    if (input) { input.value = ''; input.blur(); }
     if (deskInput) deskInput.value = '';
     // Clear the clear buttons
     const clearBtn = document.getElementById('clear-search-btn');
@@ -4268,6 +4269,17 @@ function renderSearchResults() {
             return;
         }
 
+        // Enter search mode — hides badges, slider, category row (instant, CSS-driven)
+        enterSearchMode();
+
+        // Hide category + sort elements inside #app
+        const catContainer = appMain.querySelector('#category-selector-container');
+        if (catContainer) catContainer.classList.add('hidden');
+        const catScroll = appMain.querySelector('.category-scroll-container');
+        if (catScroll) catScroll.classList.add('hidden');
+        const mobSortBar = appMain.querySelector('.md\\:hidden.mb-6.px-1');
+        if (mobSortBar) mobSortBar.classList.add('hidden');
+
         // Filter products by current search query
         const q = (state.search || '').toLowerCase().trim();
         const words = q.split(' ').filter(w => w.length > 0);
@@ -4389,6 +4401,34 @@ function renderSearchResults() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SEARCH MODE — Enter/Exit helpers (professional e-commerce UX)
+// ─────────────────────────────────────────────────────────────────────────────
+function enterSearchMode() {
+    // Always add the class — hides trust badges + slider on ALL screen sizes via CSS
+    document.body.classList.add('search-mode');
+
+    // Mobile-only: also hide category row + sort bar from DOM
+    if (window.innerWidth < 768) {
+        const catContainer = document.getElementById('category-selector-container');
+        if (catContainer) catContainer.classList.add('hidden');
+        const catScroll = document.querySelector('.category-scroll-container');
+        if (catScroll) catScroll.classList.add('hidden');
+        const sortBar = document.querySelector('.desktop-select-actions');
+        if (sortBar) sortBar.classList.add('hidden');
+    }
+}
+
+function exitSearchMode() {
+    document.body.classList.remove('search-mode');
+    // Restore elements hidden by enterSearchMode — renderHome() will fully rebuild them
+    // but we proactively un-hide for instant visual feedback
+    const catContainer = document.getElementById('category-selector-container');
+    if (catContainer) catContainer.classList.remove('hidden');
+    const catScroll = document.querySelector('.category-scroll-container');
+    if (catScroll) catScroll.classList.remove('hidden');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // INIT: Attach search input listeners exactly ONCE (not on every renderHome)
 // ─────────────────────────────────────────────────────────────────────────────
 let _searchListenersInit = false;
@@ -4402,6 +4442,15 @@ function initSearchListeners() {
         mobileSearch.addEventListener('input', (e) => {
             window.applyCustomerSearch(e.target.value);
         });
+        mobileSearch.addEventListener('focus', () => {
+            enterSearchMode();
+        });
+        mobileSearch.addEventListener('blur', () => {
+            // Small delay so tapping a product card still works
+            setTimeout(() => {
+                if (!state.search) exitSearchMode();
+            }, 200);
+        });
     }
 
     // Desktop nav search
@@ -4409,6 +4458,14 @@ function initSearchListeners() {
     if (desktopSearch) {
         desktopSearch.addEventListener('input', (e) => {
             window.applyCustomerSearch(e.target.value);
+        });
+        desktopSearch.addEventListener('focus', () => {
+            enterSearchMode();
+        });
+        desktopSearch.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (!state.search) exitSearchMode();
+            }, 200);
         });
     }
 }

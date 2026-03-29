@@ -355,6 +355,34 @@
             font-weight: 700 !important;
             display: inline-block !important;
         }
+
+        /* ── SEARCH MODE (mobile) ──────────────────────────────────────────
+           When user focuses search bar, hide everything except the bar + results.
+           Uses a CSS class toggled by JS for instant, smooth UX.
+        ─────────────────────────────────────────────────────────────────── */
+        .trust-badges-section,
+        #home-slider-container {
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        body.search-mode .trust-badges-section,
+        body.search-mode #home-slider-container {
+            display: none !important;
+        }
+
+        /* Result count pill shown in search mode */
+        #search-result-count {
+            display: none;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #9ca3af;
+            padding: 6px 0 2px 4px;
+        }
+        body.search-mode #search-result-count {
+            display: block;
+        }
     </style>
 </head>
 
@@ -456,7 +484,6 @@
                     <i
                         class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-sm transition-colors group-focus-within:text-black"></i>
                     <input type="text" id="customer-search"
-                        onfocus="window.showSearchSuggestions(true)" onblur="window.showSearchSuggestions(false)"
                         class="w-full bg-white border border-gray-100 rounded-[2rem] py-5 pl-14 pr-14 text-[10px] md:text-[11px] font-bold uppercase tracking-widest outline-none focus:border-black transition-all shadow-[0_10px_30px_rgba(0,0,0,0.02)]"
                         placeholder="Search our collection..." autocomplete="off">
                     <!-- CLEAR SEARCH BUTTON -->
@@ -466,22 +493,7 @@
                     </button>
                 </div>
 
-                <!-- TRENDING DROPDOWN -->
-                <div id="search-tags"
-                    class="hidden w-full mt-4 p-4 bg-gray-50/50 rounded-3xl border border-gray-100 transition-all duration-500 overflow-hidden">
-                    <p class="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 mb-3 px-1">Trending
-                        Searches</p>
-                    <div class="flex flex-wrap gap-2">
-                        <span onmousedown="window.applyCustomerSearch('Wood Engraving')"
-                            class="search-tag !bg-white">Wood Engraving</span>
-                        <span onmousedown="window.applyCustomerSearch('Rock Engraving')"
-                            class="search-tag !bg-white">Rock Engraving</span>
-                        <span onmousedown="window.applyCustomerSearch('Cushion')" class="search-tag !bg-white">Cushion
-                            Printing</span>
-                        <span onmousedown="window.applyCustomerSearch('Magic Mug')" class="search-tag !bg-white">Magic
-                            Mug</span>
-                    </div>
-                </div>
+
             </div>
         </div>
 
