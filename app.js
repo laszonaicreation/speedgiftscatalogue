@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, enableIndexedDbPersistence, query, where, documentId } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile, verifyPasswordResetCode, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -33,7 +33,7 @@ const landingSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
 let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
-let state = { filter: 'all', sort: 'all', search: '', user: null, selected: [], wishlist: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1 };
+let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, selected: [], wishlist: [], cart: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1, authMode: 'login' };
 const PAGE_SIZE = 16;
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
@@ -295,6 +295,29 @@ const startSync = async () => {
 
 onAuthStateChanged(auth, async (u) => {
     state.user = u;
+    
+    // CUSTOMER AUTH UI
+    if (u && !u.isAnonymous) {
+        state.authUser = u;
+        const deskIcon = document.getElementById('desk-user-icon');
+        const mobIcon = document.getElementById('mob-user-icon');
+        const navBtn = document.getElementById('nav-user-btn');
+        // Icons remain solid by default now
+        if (navBtn) navBtn.classList.add('text-black');
+        
+        const accountName = document.getElementById('account-user-name');
+        const accountEmail = document.getElementById('account-user-email');
+        if (accountName) accountName.innerText = u.displayName || "User";
+        if (accountEmail) accountEmail.innerText = u.email || "";
+    } else {
+        state.authUser = null;
+        const deskIcon = document.getElementById('desk-user-icon');
+        const mobIcon = document.getElementById('mob-user-icon');
+        const navBtn = document.getElementById('nav-user-btn');
+        // Icons remain solid by default now
+        if (navBtn) navBtn.classList.remove('text-black');
+    }
+
     if (u) {
         console.log("[Auth] Session active. Starting tracking sequence...");
         
@@ -356,10 +379,58 @@ async function loadWishlist() {
     try {
         const wishDoc = await getDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'));
         if (wishDoc.exists()) {
-            state.wishlist = wishDoc.data().ids || [];
+            const cloudIds = wishDoc.data().ids || [];
+            
+            // Merge existing session wishlist (if they favorited items before logging in) with cloud
+            // Need to merge arrays of objects/strings properly.
+            const merged = [...state.wishlist];
+            cloudIds.forEach(cloudId => {
+                const idToCheck = typeof cloudId === 'string' ? cloudId : cloudId.id;
+                const exists = merged.some(x => (typeof x === 'string' ? x : x.id) === idToCheck);
+                if (!exists) merged.push(cloudId);
+            });
+            
+            state.wishlist = merged;
             updateWishlistBadge();
+            updateAllWishlistUI();
+            
+            // Re-sync merged data back to cloud immediately
+            setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e=>console.error);
+            
+        } else {
+            // No cloud data. If they favorited items anonymously before logging in, push to new cloud account.
+            if (state.wishlist.length > 0) {
+                setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e=>console.error);
+            }
+            updateAllWishlistUI();
         }
     } catch (err) { console.error("Wishlist Load Error"); }
+}
+
+function updateAllWishlistUI() {
+    const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
+    
+    // Update all visible product cards
+    document.querySelectorAll('.product-card').forEach(card => {
+        const id = card.getAttribute('data-id');
+        if (id) {
+            card.classList.toggle('wish-active', isInWishlist(id));
+        }
+    });
+
+    // Update detail view if open
+    const detailHeart = document.getElementById('detail-wish-btn');
+    if (detailHeart) {
+        const id = detailHeart.getAttribute('data-id');
+        if (id) {
+            const icon = detailHeart.querySelector('i');
+            if (isInWishlist(id)) {
+                icon.className = 'fa-solid fa-heart text-red-500 text-xl';
+            } else {
+                icon.className = 'fa-regular fa-heart text-xl';
+            }
+        }
+    }
 }
 
 function updateWishlistBadge() {
@@ -4552,4 +4623,215 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initSearchListeners);
 } else {
     initSearchListeners();
+}
+
+// ============================================================================
+// CUSTOMER AUTHENTICATION & PROFILE
+// ============================================================================
+
+window.openAuthModal = () => {
+    if (state.authUser) {
+        document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
+        document.getElementById('auth-account-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+    } else {
+        document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
+        document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+        state.authMode = 'login';
+        window.updateAuthUI();
+    }
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeAuthModals = () => {
+    document.getElementById('auth-modal-overlay')?.classList.remove('opacity-100', 'pointer-events-auto');
+    document.getElementById('auth-login-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+    document.getElementById('auth-account-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+    document.getElementById('auth-reset-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+    document.body.style.overflow = 'auto';
+};
+
+window.handleUserAuthClick = () => {
+    window.openAuthModal();
+};
+
+window.toggleAuthMode = () => {
+    state.authMode = state.authMode === 'login' ? 'register' : 'login';
+    window.updateAuthUI();
+};
+
+window.updateAuthUI = () => {
+    const title = document.getElementById('auth-form-title');
+    const subtitle = document.getElementById('auth-form-subtitle');
+    const nameGroup = document.getElementById('auth-name-group');
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const toggleText = document.getElementById('auth-toggle-text');
+    const toggleBtn = document.getElementById('auth-toggle-btn');
+    const forgotWrap = document.getElementById('auth-forgot-wrap');
+
+    if (!title) return;
+
+    if (state.authMode === 'login') {
+        title.innerText = 'Welcome Back';
+        subtitle.innerText = 'Login to your account';
+        nameGroup.classList.add('hidden');
+        forgotWrap.classList.remove('hidden');
+        submitBtn.innerHTML = `Sign In <i class="fa-solid fa-arrow-right text-[10px]"></i>`;
+        toggleText.innerText = "Don't have an account?";
+        toggleBtn.innerText = "Sign Up";
+    } else {
+        title.innerText = 'Create Account';
+        subtitle.innerText = 'Join us today';
+        nameGroup.classList.remove('hidden');
+        forgotWrap.classList.add('hidden');
+        submitBtn.innerHTML = `Sign Up <i class="fa-solid fa-user-plus text-[10px]"></i>`;
+        toggleText.innerText = "Already have an account?";
+        toggleBtn.innerText = "Sign In";
+    }
+};
+
+window.handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('auth-submit-btn');
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const name = document.getElementById('auth-name').value.trim();
+
+    if (!email || !password) return showToast("Please fill all fields");
+    
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing...`;
+
+    try {
+        if (state.authMode === 'login') {
+            await signInWithEmailAndPassword(auth, email, password);
+            showToast("Welcome Back!");
+        } else {
+            if (!name) throw new Error("Please enter your name");
+            const userCred = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(userCred.user, { displayName: name });
+            showToast("Account Created!");
+        }
+        window.closeAuthModals();
+        document.getElementById('auth-form').reset();
+    } catch (err) {
+        console.error("Auth Error:", err);
+        showToast(err.message.replace("Firebase:", "").trim() || "Authentication Failed");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+};
+
+window.signInWithGoogle = async () => {
+    try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+        window.closeAuthModals();
+        showToast("Logged in with Google!");
+    } catch (err) {
+        console.error("Google Auth Error:", err);
+        showToast("Sign-In Failed or Cancelled");
+    }
+};
+
+window.handleForgotPassword = async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    if (!email) {
+        return showToast("Enter your email address in the field to reset password");
+    }
+    try {
+        await sendPasswordResetEmail(auth, email);
+        showToast("Password reset email sent! Check your inbox.");
+    } catch (err) {
+        showToast("Error: " + err.message.replace("Firebase:", "").trim());
+    }
+};
+
+window.handleSignOut = async () => {
+    try {
+        await signOut(auth);
+        window.closeAuthModals();
+        // Since Firebase automatically signs out the real user, onAuthStateChanged 
+        // will fire. We need to fall back to an anonymous session so they can still browse.
+        await startSync(); 
+        state.wishlist = []; // Clear for security
+        updateWishlistBadge();
+        showToast("Signed Out Successfully");
+    } catch (err) {
+        showToast("Error signing out");
+    }
+};
+
+// ============================================================================
+// CUSTOMER PASSWORD RESET FLOW
+// ============================================================================
+
+window.handlePasswordResetFlow = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
+
+    if (mode === 'resetPassword' && oobCode) {
+        try {
+            // Verify link validity before showing modal to prevent confusing users with dead links
+            await verifyPasswordResetCode(auth, oobCode);
+            
+            // Link is valid, show Reset Modal
+            document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
+            const resetModal = document.getElementById('auth-reset-modal');
+            if (resetModal) {
+                resetModal.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+                document.getElementById('auth-reset-oobCode').value = oobCode;
+            }
+            document.body.style.overflow = 'hidden';
+
+        } catch (err) {
+            console.error("Reset Code Error:", err);
+            showToast("Password reset link is invalid or expired.");
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+};
+
+window.handlePasswordResetFormSubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('auth-reset-submit-btn');
+    const newPassword = document.getElementById('auth-reset-new-password').value;
+    const oobCode = document.getElementById('auth-reset-oobCode').value;
+
+    if (!newPassword || newPassword.length < 6) return showToast("Password must be at least 6 characters");
+    
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+
+    try {
+        await confirmPasswordReset(auth, oobCode, newPassword);
+        showToast("Password Reset Successfully! Please login.");
+        
+        // Clean up URL and UI
+        window.history.replaceState({}, document.title, window.location.pathname);
+        document.getElementById('auth-reset-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+        
+        // Open standard login window automatically
+        state.authMode = 'login';
+        window.updateAuthUI();
+        document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+        document.getElementById('auth-reset-form').reset();
+        
+    } catch (err) {
+        showToast(err.message.replace("Firebase:", "").trim() || "Failed to reset password");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+};
+
+// Check for reset links on boot
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', handlePasswordResetFlow);
+} else {
+    handlePasswordResetFlow();
 }

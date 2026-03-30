@@ -392,6 +392,147 @@
             display: block;
         }
     </style>
+    <style id="premium-auth-styles">
+        .auth-form-container {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 18px !important;
+            width: 100% !important;
+        }
+
+        .auth-premium-modal {
+            width: calc(100% - 36px) !important;
+            max-width: 380px !important;
+            background: #ffffff !important;
+            border-radius: 24px !important;
+            box-shadow: 0 20px 60px -15px rgba(0,0,0,0.1) !important;
+            padding: 30px 24px !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+
+        @media (min-width: 768px) {
+            .auth-premium-modal {
+                max-width: 420px !important;
+                border-radius: 32px !important;
+                padding: 40px 36px !important;
+            }
+        }
+
+        .auth-premium-input {
+            width: 100% !important;
+            background-color: #f8f9fa !important;
+            border: 1px solid transparent !important;
+            border-radius: 12px !important;
+            padding: 16px 20px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            color: #111 !important;
+            font-family: 'Poppins', sans-serif !important;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+            outline: none !important;
+            letter-spacing: 0.03em !important;
+        }
+
+        .auth-premium-input::placeholder {
+            color: #a0aab2 !important;
+            font-weight: 500 !important;
+        }
+
+        .auth-premium-input:focus {
+            background-color: #ffffff !important;
+            border-color: #000000 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+        }
+
+        .auth-close-btn {
+            position: absolute !important;
+            top: 20px !important;
+            right: 20px !important;
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: #9ca3af !important;
+            background: transparent !important;
+            transition: all 0.2s !important;
+            cursor: pointer !important;
+            border: none;
+            outline: none;
+        }
+
+        @media (min-width: 768px) {
+            .auth-close-btn {
+                top: 24px !important;
+                right: 24px !important;
+            }
+        }
+
+        .auth-close-btn:hover {
+            background-color: #f3f4f6 !important;
+            color: #000 !important;
+        }
+
+        .auth-outline-btn {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 12px !important;
+            padding: 16px 20px !important;
+            margin-bottom: 20px !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 12px !important;
+            background-color: #ffffff !important;
+            transition: all 0.3s ease !important;
+            cursor: pointer !important;
+            outline: none !important;
+        }
+
+        .auth-outline-btn:hover {
+            background-color: #f9fafb !important;
+            border-color: #d1d5db !important;
+        }
+
+        .auth-outline-btn span {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            color: #374151 !important;
+            letter-spacing: 0.02em !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+
+        .auth-solid-btn {
+            width: 100% !important;
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            padding: 18px !important;
+            border-radius: 12px !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.15em !important;
+            font-family: 'Poppins', sans-serif !important;
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 10px !important;
+            cursor: pointer !important;
+            border: none !important;
+            margin-top: 8px !important;
+        }
+
+        .auth-solid-btn:hover {
+            transform: scale(1.02) !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+        }
+        
+        .auth-solid-btn:active {
+            transform: scale(0.98) !important;
+        }
+    </style>
 </head>
 
 <body class="selection:bg-black selection:text-white">
@@ -458,15 +599,25 @@
                     </button>
                 </div>
 
-                <!-- WISHLIST NAV BUTTON - Icon only on desktop -->
-                <button onclick="window.handleFavoritesClick()"
-                    class="relative flex items-center text-gray-400 hover:text-red-500 transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-red-50">
-                    <div class="relative">
-                        <i class="fa-solid fa-heart text-[18px]"></i>
-                        <span id="nav-wishlist-count"
-                            class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[7px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white hidden">0</span>
-                    </div>
-                </button>
+                <div class="flex items-center gap-0">
+                    <!-- USER NAV BUTTON -->
+                    <button id="nav-user-btn" onclick="window.handleUserAuthClick()"
+                        class="relative flex items-center text-gray-400 hover:text-black transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-gray-50">
+                        <div class="relative">
+                            <i class="fa-solid fa-user text-[18px]" id="desk-user-icon"></i>
+                        </div>
+                    </button>
+
+                    <!-- WISHLIST NAV BUTTON - Icon only on desktop -->
+                    <button onclick="window.handleFavoritesClick()" style="margin-left: -8px;"
+                        class="relative flex items-center text-gray-400 hover:text-red-500 transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-red-50">
+                        <div class="relative">
+                            <i class="fa-solid fa-heart text-[18px]"></i>
+                            <span id="nav-wishlist-count"
+                                class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[7px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white hidden">0</span>
+                        </div>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1595,8 +1746,128 @@
                 <i class="fa-solid fa-list-ul"></i>
                 <span>Categories</span>
             </button>
+            <button onclick="window.handleUserAuthClick()" class="mobile-nav-btn">
+                <i class="fa-solid fa-user" id="mob-user-icon"></i>
+                <span id="mob-user-text">Account</span>
+            </button>
         </div>
     </nav>
+
+    <!-- AUTH & ACCOUNT MODALS -->
+    <!-- OVERLAY -->
+    <div id="auth-modal-overlay" onclick="window.closeAuthModals()"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] opacity-0 pointer-events-none transition-all duration-300">
+    </div>
+
+    <!-- LOGIN / REGISTER MODAL -->
+    <div id="auth-login-modal"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2001] opacity-0 pointer-events-none transition-all duration-500 scale-95 flex flex-col auth-premium-modal">
+        
+        <button onclick="window.closeAuthModals()" class="auth-close-btn">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-black text-black tracking-tight" id="auth-form-title" style="font-family: 'Poppins', sans-serif;">Welcome Back</h2>
+            <p class="text-[11px] text-gray-500 font-medium mt-1 uppercase tracking-widest" id="auth-form-subtitle">Login to your account</p>
+        </div>
+
+        <!-- Google Sign In -->
+        <button type="button" onclick="window.signInWithGoogle()" class="auth-outline-btn group">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5 group-hover:scale-110 transition-transform">
+            <span>Continue with Google</span>
+        </button>
+
+        <div class="flex items-center gap-4 mb-5 opacity-40">
+            <div class="flex-1 h-px bg-gray-300"></div>
+            <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">OR EMAIL</span>
+            <div class="flex-1 h-px bg-gray-300"></div>
+        </div>
+
+        <!-- Email & Pass Form -->
+        <form id="auth-form" onsubmit="window.handleAuthSubmit(event)" class="auth-form-container">
+            <div id="auth-name-group" class="hidden">
+                 <input type="text" id="auth-name" placeholder="Full Name" class="auth-premium-input">
+            </div>
+            <div>
+                 <input type="email" id="auth-email" required placeholder="Email Address" class="auth-premium-input">
+            </div>
+            <div>
+                 <input type="password" id="auth-password" required placeholder="Password" class="auth-premium-input">
+            </div>
+
+            <div class="flex items-center justify-end -mt-1" id="auth-forgot-wrap">
+                <button type="button" onclick="window.handleForgotPassword()" class="text-[10px] font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-widest">Forgot Password?</button>
+            </div>
+
+            <button type="submit" id="auth-submit-btn" class="auth-solid-btn">
+                Sign In <i class="fa-solid fa-arrow-right text-[12px]"></i>
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <p class="text-[11px] font-medium text-gray-500">
+                <span id="auth-toggle-text">Don't have an account?</span> 
+                <button onclick="window.toggleAuthMode()" class="text-black font-black uppercase tracking-wider underline underline-offset-4 ml-1" id="auth-toggle-btn">Sign Up</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- MY ACCOUNT MODAL -->
+    <div id="auth-account-modal"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2001] opacity-0 pointer-events-none transition-all duration-500 scale-95 flex flex-col items-center auth-premium-modal" style="max-width: 360px !important;">
+        
+        <button onclick="window.closeAuthModals()" class="auth-close-btn">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 mt-2 border-4 border-gray-100">
+            <i class="fa-solid fa-user text-3xl text-gray-300" id="account-avatar-icon"></i>
+        </div>
+
+        <h2 class="text-[20px] font-black text-black tracking-tight" id="account-user-name" style="font-family: 'Poppins', sans-serif;">User</h2>
+        <p class="text-[11px] text-gray-500 font-medium mt-1 mb-8" id="account-user-email">email@example.com</p>
+
+        <div class="w-full bg-gray-50 rounded-2xl p-4 flex items-center justify-between mb-6 border border-gray-100 cursor-pointer hover:border-black transition-all" onclick="window.closeAuthModals(); window.handleFavoritesClick();">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-white rounded-full flex justify-center items-center text-red-400 shadow-sm"><i class="fa-solid fa-heart text-[10px]"></i></div>
+                <span class="text-[12px] font-bold text-gray-700">My Favorites</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-300 text-[10px]"></i>
+        </div>
+
+        <button onclick="window.handleSignOut()" class="w-full flex items-center justify-center gap-2 py-4 bg-[#fff0f0] text-red-500 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+        </button>
+    </div>
+
+    <!-- RESET PASSWORD MODAL -->
+    <div id="auth-reset-modal"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2001] opacity-0 pointer-events-none transition-all duration-500 scale-95 flex flex-col auth-premium-modal">
+        
+        <button onclick="window.closeAuthModals()" class="auth-close-btn">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <div class="text-center mb-6 mt-4">
+            <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-gray-100">
+                <i class="fa-solid fa-lock text-2xl text-black"></i>
+            </div>
+            <h2 class="text-2xl font-black text-black tracking-tight" style="font-family: 'Poppins', sans-serif;">New Password</h2>
+            <p class="text-[11px] text-gray-500 font-medium mt-1 uppercase tracking-widest px-4">Create a new secure password</p>
+        </div>
+
+        <form id="auth-reset-form" onsubmit="window.handlePasswordResetFormSubmit(event)" class="auth-form-container">
+            <input type="hidden" id="auth-reset-oobCode">
+            <div>
+                 <input type="password" id="auth-reset-new-password" required placeholder="Enter new password" class="auth-premium-input">
+            </div>
+            
+            <button type="submit" id="auth-reset-submit-btn" class="auth-solid-btn">
+                Save Password <i class="fa-solid fa-check text-[12px]"></i>
+            </button>
+        </form>
+    </div>
 
     <!-- CATEGORIES SIDEBAR -->
     <div id="categories-sidebar-overlay" onclick="window.closeCategoriesSidebar()"

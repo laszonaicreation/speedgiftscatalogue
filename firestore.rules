@@ -1,42 +1,63 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper: Check if user is authenticated (includes anonymous)
+    
+    // Helper: Check if anyone is logged in
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // 1. Products: Public Read, Authenticated Write (Except for Ad Stats)
+    // Helper: Check if user is the Admin (Shop Owner)
+    // Replace "laszonaicreation@gmail.com" with your actual Google login email!
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email == "laszonaicreation@gmail.com";
+    }
+
+    // 1. Products, Categories, Menus: Public Read, ONLY ADMIN Can Write/Edit
     match /artifacts/{anyAppId}/public/data/products/{productId} {
       allow read: if true;
-      allow write: if isAuthenticated();
-    }
-    // Allow public updates to ad stats for instant tracking of all landings
-    match /artifacts/{anyAppId}/public/data/products/_ad_stats_ {
-      allow read: if true;
-      allow write: if true; 
+      allow write: if isAdmin();
     }
     match /artifacts/{anyAppId}/public/data/categories/{categoryId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
     match /artifacts/{anyAppId}/public/data/sliders/{sliderId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
     match /artifacts/{anyAppId}/public/data/mega_menus/{menuId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /artifacts/{anyAppId}/public/data/popupSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // 2. Shared Selections: Public Read, Authenticated Create
+    // 2. Leads (Customer Data): Public Create, ONLY ADMIN Can Read/Delete
+    match /artifacts/{anyAppId}/public/data/leads/{leadId} {
+      allow create: if true; 
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 3. Wishlists: Only the owner can read/write their own wishlist (Perfectly secure)
+    match /artifacts/{anyAppId}/users/{userId}/data/wishlist {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 4. Shared Selections
     match /artifacts/{anyAppId}/public/data/selections/{selectionId} {
       allow read: if true;
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated();
     }
 
-    // 3. New Insights Collections (Wildcard appId for reliability)
+    // 5. Stats & Tracking: Open purely for tracking scripts
+    match /artifacts/{anyAppId}/public/data/products/_ad_stats_ {
+      allow read: if true;
+      allow write: if true; 
+    }
     match /artifacts/{anyAppId}/public/data/daily_stats/{dateId} {
       allow read: if true;
       allow write: if true; 
@@ -46,23 +67,7 @@ service cloud.firestore {
       allow write: if true;
     }
 
-    // 4. Wishlists: Only the owner can read/write their own wishlist
-    match /artifacts/{anyAppId}/users/{userId}/data/wishlist {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // 4. Popup Settings: Public Read/Write for Testing
-    match /artifacts/{anyAppId}/public/data/popupSettings/{settingId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    // 5. Leads: Public Read/Write for Testing
-    match /artifacts/{anyAppId}/public/data/leads/{leadId} {
-      allow read, write: if true;
-    }
-    
-    // 4. Default deny for all other paths
+    // 6. Default deny for all other paths
     match /{document=**} {
       allow read, write: if false;
     }
