@@ -83,8 +83,15 @@
         window.signInAnonymously = signInAnonymously;
         window.onAuthStateChanged = onAuthStateChanged;
 
-        // Start Auth immediately
-        signInAnonymously(auth).catch(console.error);
+        // Start Auth immediately only if no session exists (preserves Google Login)
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                console.log("[Auth] No session on landing, signing in anonymously...");
+                signInAnonymously(auth).catch(console.error);
+            } else {
+                console.log("[Auth] Session restored on landing:", user.uid);
+            }
+        });
     </script>
 </head>
 

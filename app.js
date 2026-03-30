@@ -288,19 +288,24 @@ async function trackAdVisit() {
     }
 }
 
-const startSync = async () => {
-    try { await signInAnonymously(auth); }
-    catch (err) { console.error(err); }
-};
-
+let _authInitialized = false;
 onAuthStateChanged(auth, async (u) => {
+    // SECURITY: If we haven't checked for an existing session yet, do so now.
+    // If no user is found on initial boot, we force an anonymous session.
+    if (!_authInitialized) {
+        _authInitialized = true;
+        if (!u) {
+            console.log("[Auth] Boot: No session found. Initializing Guest.");
+            signInAnonymously(auth).catch(console.error);
+            return; 
+        }
+    }
+
     state.user = u;
     
     // CUSTOMER AUTH UI
     if (u && !u.isAnonymous) {
         state.authUser = u;
-        const deskIcon = document.getElementById('desk-user-icon');
-        const mobIcon = document.getElementById('mob-user-icon');
         const navBtn = document.getElementById('nav-user-btn');
         // Icons remain solid by default now
         if (navBtn) navBtn.classList.add('text-black');
@@ -3824,6 +3829,7 @@ window.renderAdminUI = () => {
     }
 };
 
+// Main entry point for data syncing is now managed more safely.
 startSync();
 refreshData();
 
@@ -4652,7 +4658,7 @@ function initSearchListeners() {
 }
 
 initPopup();
-startSync();
+// Removed redundant startSync call to prevent session override bugs.
 // Attach search listeners once the DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initSearchListeners);
@@ -4789,8 +4795,7 @@ window.handleSignOut = async () => {
         window.closeAuthModals();
         // Since Firebase automatically signs out the real user, onAuthStateChanged 
         // will fire. We need to fall back to an anonymous session so they can still browse.
-        await startSync(); 
-        state.wishlist = []; // Clear for security
+        // Removed redundant startSync inside auth submissions to maintain single session flow.        state.wishlist = []; // Clear for security
         updateWishlistBadge();
         showToast("Signed Out Successfully");
     } catch (err) {
