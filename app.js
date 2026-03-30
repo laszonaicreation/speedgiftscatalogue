@@ -288,26 +288,26 @@ async function trackAdVisit() {
     }
 }
 
-let _authInitialized = false;
-onAuthStateChanged(auth, async (u) => {
-    // SECURITY: If we haven't checked for an existing session yet, do so now.
-    // If no user is found on initial boot, we force an anonymous session.
-    if (!_authInitialized) {
-        _authInitialized = true;
-        if (!u) {
-            console.log("[Auth] Boot: No session found. Initializing Guest.");
-            signInAnonymously(auth).catch(console.error);
-            return; 
-        }
+const startSync = async () => {
+    // SECURITY: Only sign in anonymously if NO session exists.
+    // We check auth.currentUser (immediate) and wait briefly for Firebase restoration.
+    if (auth.currentUser) return;
+    
+    try {
+        console.log("[Auth] Initializing secure guest session...");
+        await signInAnonymously(auth);
+    } catch (e) {
+        console.error("[Auth] Sync failed:", e);
     }
+};
 
+onAuthStateChanged(auth, async (u) => {
     state.user = u;
     
     // CUSTOMER AUTH UI
     if (u && !u.isAnonymous) {
         state.authUser = u;
         const navBtn = document.getElementById('nav-user-btn');
-        // Icons remain solid by default now
         if (navBtn) navBtn.classList.add('text-black');
         
         const accountName = document.getElementById('account-user-name');
@@ -316,30 +316,21 @@ onAuthStateChanged(auth, async (u) => {
         if (accountEmail) accountEmail.innerText = u.email || "";
     } else {
         state.authUser = null;
-        const deskIcon = document.getElementById('desk-user-icon');
-        const mobIcon = document.getElementById('mob-user-icon');
         const navBtn = document.getElementById('nav-user-btn');
-        // Icons remain solid by default now
         if (navBtn) navBtn.classList.remove('text-black');
     }
 
     if (u) {
-        console.log("[Auth] Session active. Starting tracking sequence...");
-        
-        // 1. Detect Traffic Source first (guarantees sessionStorage is ready)
+        console.log("[Auth] Session active. Updating data...");
         await initTrafficTracking();
-
-        // 2. Initial Data Sync for Dashboard
         await refreshData();
         
-        // 3. Track Initial Visit metrics based on detected source
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
             trackAdHop();
             setTimeout(() => trackAdVisit(), 5000);
         } else {
             trackNormalVisit();
         }
-
         await loadWishlist();
     }
 });
@@ -3829,8 +3820,8 @@ window.renderAdminUI = () => {
     }
 };
 
-// Main entry point for data syncing is now managed more safely.
-startSync();
+// Trigger startSync after a short delay to allow Firebase to restore local session
+setTimeout(() => startSync(), 500);
 refreshData();
 
 // Responsive Slider Refresh
