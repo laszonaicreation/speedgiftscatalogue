@@ -206,11 +206,12 @@
             gap: 5px;
             height: 100%;
             padding: 0 18px;
-            font-size: 11px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #6b7280;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            text-transform: capitalize;
+            letter-spacing: 0.05em;
+            color: #374151;
             text-decoration: none;
             white-space: nowrap;
             cursor: pointer;
@@ -310,8 +311,9 @@
         }
 
         .mega-cat-name {
+            font-family: 'Poppins', sans-serif;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 400;
             color: #374151;
             line-height: 1.2;
             transition: color 0.15s;
@@ -344,16 +346,22 @@
         }
 
         /* Robust Typography Isolation for Trust Badges (Copied from landing) */
-        .my-super-unique-badge-style,
-        .my-super-unique-badge-style span {
-            font-family: 'Montserrat', sans-serif !important;
-            text-transform: none !important;
+        .my-super-unique-badge-style {
+            font-family: 'Poppins', sans-serif !important;
+            text-transform: capitalize !important;
             font-variant: normal !important;
-            font-variant-caps: normal !important;
-            font-feature-settings: "case" 0, "cpsp" 0 !important;
-            letter-spacing: -0.01em !important;
-            font-weight: 700 !important;
+            font-feature-settings: normal !important;
+            letter-spacing: 0.02em !important;
+            font-weight: 600 !important;
             display: inline-block !important;
+            color: #222 !important;
+        }
+        .my-super-unique-badge-style span {
+            font-family: 'Poppins', sans-serif !important;
+            font-weight: 400 !important;
+            color: #888 !important;
+            text-transform: capitalize !important;
+            letter-spacing: 0.02em !important;
         }
 
         /* ── SEARCH MODE (mobile) ──────────────────────────────────────────
