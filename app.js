@@ -798,6 +798,15 @@ window.handleLogoClick = () => {
     if (now - lastClickTime > 5000) clicks = 0;
     clicks++; lastClickTime = now;
     if (clicks >= 5) {
+        clicks = 0; // Reset
+        
+        // SECURITY: Only allow real admin to unlock the hidden dashboard button
+        const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
+        if (!u || u.email !== "laszonaicreation@gmail.com") {
+            showToast("Admin access denied");
+            return;
+        }
+
         const btn = document.getElementById('admin-entry-btn');
         const hideBtn = document.getElementById('admin-hide-btn');
         if (btn) {
@@ -806,7 +815,6 @@ window.handleLogoClick = () => {
             showToast("Dashboard Unlocked");
             renderHome(); // Re-render to show pin icons
         }
-        clicks = 0;
     } else {
         // Stability: Only navigate home if we're not already viewing the main collection
         const urlParams = new URLSearchParams(window.location.search);
@@ -2218,6 +2226,26 @@ window.clearCustomerSearch = () => {
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
 window.showAdminPanel = () => {
+    const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
+    
+    // Auto-retry once to give Firebase time to log in
+    if (!u && !window._adminAuthAttempted) {
+        window._adminAuthAttempted = true;
+        showToast("Verifying Admin Access...");
+        setTimeout(() => window.showAdminPanel(), 1500);
+        return;
+    }
+    
+    // Strict block
+    if (!u || u.email !== "laszonaicreation@gmail.com") {
+        alert("ACCESS DENIED: You are not authorized to view the control panel.");
+        window.hideAdminPanel();
+        const url = new URL(window.location);
+        url.searchParams.delete('admin');
+        window.history.replaceState({}, '', url);
+        return;
+    }
+
     if (window.innerWidth < 1024) {
         alert("The Admin Panel is only accessible on Desktop devices. Please switch to a computer.");
         return;
@@ -4237,6 +4265,13 @@ document.addEventListener('mousedown', (e) => {
 window.renderAdminLeads = async () => {
     const container = document.getElementById('admin-leads-list');
     if (!container) return;
+
+    // Check if Auth has initialized. If not, wait.
+    if (!state.authUser && getAuth().currentUser === null) {
+        container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-300 animate-pulse"><i class="fa-solid fa-cloud-arrow-down text-3xl mb-4"></i><p class="text-[10px] font-bold uppercase tracking-widest">Verifying Admin Access...</p></div>';
+        setTimeout(() => renderAdminLeads(), 1000); // Retry automatically after 1s
+        return;
+    }
 
     container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-300 animate-pulse"><i class="fa-solid fa-cloud-arrow-down text-3xl mb-4"></i><p class="text-[10px] font-bold uppercase tracking-widest">Fetching live leads...</p></div>';
 
