@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, enableIndexedDbPersistence, query, where, documentId } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, arrayUnion, query, where, documentId } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile, verifyPasswordResetCode, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -12,13 +12,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        console.warn('Multiple tabs open, persistence disabled in this tab.');
-    } else if (err.code == 'unimplemented') {
-        console.warn('Browser does not support persistence.');
-    }
+// Use new cache API instead of deprecated enableIndexedDbPersistence()
+const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
 });
 const auth = getAuth(app);
 const appId = firebaseConfig.projectId;
@@ -177,7 +173,11 @@ async function trackImageError(src) {
     try {
         const today = getTodayStr();
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
-        await setDoc(statsRef, { imageLoadFail: increment(1) }, { merge: true });
+        // Save both the count AND the specific broken URL for admin visibility
+        await setDoc(statsRef, {
+            imageLoadFail: increment(1),
+            brokenImages: arrayUnion(src)
+        }, { merge: true });
         console.warn("[Health Check] Image failed to load:", src);
     } catch (e) {}
 }
@@ -3071,6 +3071,22 @@ function renderInsights(container, rangeData = null) {
                     <p class="text-[11px] font-medium text-gray-500 mt-1">
                         ${imageFail === 0 ? 'All assets loading fine' : imageFail <= 10 ? 'Minor — a few broken images' : imageFail <= 30 ? 'Fair — check product images' : 'Action needed — many broken images'}
                     </p>
+                    ${(source.stats.brokenImages || []).length > 0 ? `
+                    <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.08);padding-top:12px;">
+                        <p style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;margin-bottom:8px;">Broken Image URLs</p>
+                        <div style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;">
+                            ${(source.stats.brokenImages || []).map(url => {
+                                // Try to match URL to a product or category name
+                                const matchedProd = DATA.p.find(p => p.img && url.includes(p.img.split('/').pop().split('?')[0]));
+                                const matchedCat = DATA.c.find(c => c.img && url.includes(c.img.split('/').pop().split('?')[0]));
+                                const label = matchedProd ? matchedProd.name : matchedCat ? matchedCat.name + ' (Category)' : url.split('/').pop().split('?')[0].substring(0, 30);
+                                return `<div style="display:flex;align-items:center;gap:8px;background:rgba(239,68,68,0.1);border-radius:8px;padding:6px 8px;">
+                                    <i class="fa-solid fa-triangle-exclamation" style="color:#f87171;font-size:9px;flex-shrink:0;"></i>
+                                    <span style="font-size:9px;font-weight:600;color:#d1d5db;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${url}">${label}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>` : ''}
                 </div>
             </div>
 
@@ -3139,7 +3155,7 @@ window.updateInsightsRange = async function(passedStart = null, passedEnd = null
         const aggregatedStats = {
             adVisits: 0, normalVisits: 0, adProductClicks: 0, 
             normalProductClicks: 0, adInquiries: 0, imageLoadFail: 0,
-            landingAdVisits: 0
+            landingAdVisits: 0, brokenImages: []
         };
 
         globalSnap.forEach(doc => {
@@ -3154,6 +3170,12 @@ window.updateInsightsRange = async function(passedStart = null, passedEnd = null
                 aggregatedStats.normalProductClicks += (d.normalProductClicks || 0);
                 aggregatedStats.adInquiries += (d.adInquiries || 0);
                 aggregatedStats.imageLoadFail += (d.imageLoadFail || d.imageFail || 0);
+                // Collect all unique broken image URLs across the range
+                if (Array.isArray(d.brokenImages)) {
+                    d.brokenImages.forEach(u => {
+                        if (!aggregatedStats.brokenImages.includes(u)) aggregatedStats.brokenImages.push(u);
+                    });
+                }
             }
         });
 
