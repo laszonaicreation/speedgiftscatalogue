@@ -13,7 +13,7 @@
 
     /* DETAIL VIEW PAGE SETTINGS */
     --detail-page-bg: #ffffff;
-    --detail-name-font: 'Plus Jakarta Sans', sans-serif;
+    --detail-name-font: 'Inter', sans-serif;
     --detail-name-color: #111111;
     --detail-name-weight: 800;
     --detail-name-size-mob: 1.5rem;
@@ -43,7 +43,7 @@ body {
 }
 
 .serif-text {
-    font-family: 'Playfair Display', serif;
+    font-family: Georgia, 'Times New Roman', serif;
 }
 
 /* DETAIL VIEW CSS CLASSES */

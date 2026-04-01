@@ -160,10 +160,17 @@ async function initTrafficTracking() {
 }
 
 // Global Image Error Tracking (Site Health)
+// Session-scoped deduplication: each unique broken URL counted only ONCE per session
+const _errorTrackedUrls = new Set();
+
 window.addEventListener('error', function(e) {
-    if (e.target.tagName === 'IMG') {
-        trackImageError(e.target.src);
-    }
+    if (e.target.tagName !== 'IMG') return;
+    const src = e.target.src || '';
+    // Skip: placeholder images, empty src, data URIs, already-tracked this session
+    if (!src || src.startsWith('data:') || src.includes('placehold.co') || src.includes('placeholder')) return;
+    if (_errorTrackedUrls.has(src)) return;  // Already counted this session — skip
+    _errorTrackedUrls.add(src);
+    trackImageError(src);
 }, true);
 
 async function trackImageError(src) {
@@ -938,7 +945,7 @@ function renderHome() {
             categories.forEach(c => {
                 cHtml += `<div class="category-item ${state.filter === c.id ? 'active' : ''}" onclick="applyFilter('${c.id}', event)">
                     <div class="category-img-box">
-                        <img src="${getOptimizedUrl(c.img, 200)}" onerror="this.src='https://placehold.co/100x100?text=Gift'">
+                        <img src="${getOptimizedUrl(c.img, 200)}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/100x100?text=Gift'">
                         ${c.isPinned && isAdminVisible ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm"><i class="fa-solid fa-thumbtack text-[6px]"></i></div>' : ''}
                     </div>
                     <p class="category-label truncate px-1 w-full">${c.name}</p>
@@ -3052,9 +3059,18 @@ function renderInsights(container, rangeData = null) {
 
                 <!-- Website Health Card -->
                 <div class="bg-black p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
-                    <h5 class="text-[11px] font-semibold text-gray-400 mb-4">Website Health</h5>
-                    <p class="text-[26px] font-semibold text-green-400 leading-none">${healthRate}%</p>
-                    <p class="text-[11px] font-medium text-gray-500 mt-1">${healthRate > 95 ? 'Excellent' : 'Check Assets'} (${imageFail} Errors)</p>
+                    <div class="flex justify-between items-start mb-4">
+                        <h5 class="text-[11px] font-semibold text-gray-400">Website Health</h5>
+                        ${imageFail > 0 ? `<button onclick="window.clearHealthErrors()" title="Clear error count" style="background:rgba(255,255,255,0.08);border:none;cursor:pointer;border-radius:999px;padding:4px 10px;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9ca3af;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#9ca3af'">
+                            <i class="fa-solid fa-rotate-left" style="margin-right:4px;"></i>Clear
+                        </button>` : ''}
+                    </div>
+                    <p class="text-[26px] font-semibold leading-none ${imageFail === 0 ? 'text-green-400' : imageFail <= 10 ? 'text-yellow-400' : imageFail <= 30 ? 'text-orange-400' : 'text-red-400'}">
+                        ${imageFail === 0 ? '✓ Clean' : imageFail + ' Errors'}
+                    </p>
+                    <p class="text-[11px] font-medium text-gray-500 mt-1">
+                        ${imageFail === 0 ? 'All assets loading fine' : imageFail <= 10 ? 'Minor — a few broken images' : imageFail <= 30 ? 'Fair — check product images' : 'Action needed — many broken images'}
+                    </p>
                 </div>
             </div>
 
@@ -3232,6 +3248,33 @@ window.resetAdTraffic = async () => {
     }
 };
 
+// Clear today's image error count (used by admin health card "Clear" button)
+window.clearHealthErrors = async () => {
+    try {
+        const today = getTodayStr();
+        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+        await setDoc(statsRef, { imageLoadFail: 0 }, { merge: true });
+
+        // Also clear legacy/all-time counter
+        const legacyRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
+        await setDoc(legacyRef, { imageLoadFail: 0 }, { merge: true });
+
+        // Clear in-memory tracking so fresh errors are counted from now
+        DATA.stats.imageLoadFail = 0;
+        _errorTrackedUrls.clear();
+
+        // Re-render the admin UI so health card updates immediately
+        const container = document.getElementById('admin-insights-list');
+        if (container) {
+            window.updateInsightsRange(today, today, false);
+        }
+        showToast("Health errors cleared ✓");
+    } catch (e) {
+        console.error("Clear Health Error:", e);
+        showToast("Failed to clear errors");
+    }
+};
+
 window.resetAllAnalytics = async () => {
     if (!confirm("CRITICAL: This will reset ALL VIEWS, AD TRAFFIC, IMPRESSIONS, and LEADS. This cannot be undone. Proceed?")) return;
 
@@ -3361,6 +3404,7 @@ function renderSlider() {
                 <img src="${getOptimizedUrl(displayImg, isMobile ? 800 : 1920)}" 
                      class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                      alt="${s.title || ''}" 
+                     ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                      onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
                      style="${s.link ? 'cursor:pointer' : ''}"
                      draggable="false">
