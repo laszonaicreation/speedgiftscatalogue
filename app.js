@@ -164,6 +164,11 @@ window.addEventListener('error', function(e) {
     const src = e.target.src || '';
     // Skip: placeholder images, empty src, data URIs, already-tracked this session
     if (!src || src.startsWith('data:') || src.includes('placehold.co') || src.includes('placeholder')) return;
+    // Skip: non-http URLs, directory-style paths (e.g. "/img/"), and site-own-page URLs
+    if (!src.startsWith('http')) return;
+    const ownOrigin = window.location.origin;
+    const srcPath = src.replace(ownOrigin, '');
+    if (!srcPath || srcPath === '/' || srcPath.startsWith('/admin') || srcPath === '/img/' || !srcPath.includes('.')) return;
     if (_errorTrackedUrls.has(src)) return;  // Already counted this session — skip
     _errorTrackedUrls.add(src);
     trackImageError(src);
@@ -562,11 +567,12 @@ window.renderDesktopMegaMenu = () => {
                 thumb.style.border       = '1px solid #eee';
                 
                 const img = document.createElement('img');
-                img.src = getOptimizedUrl(c.img, 80);
+                const _catImgUrl = getOptimizedUrl(c.img, 80);
+                img.src = _catImgUrl || 'https://placehold.co/80x80?text=?';
                 img.style.width       = '100%';
                 img.style.height      = '100%';
                 img.style.objectFit   = 'cover';
-                img.onerror = () => { img.src = 'https://placehold.co/80x80?text=?'; };
+                if (_catImgUrl) img.onerror = () => { img.src = 'https://placehold.co/80x80?text=?'; };
                 thumb.appendChild(img);
 
                 const label = document.createElement('span');
@@ -945,7 +951,7 @@ function renderHome() {
             categories.forEach(c => {
                 cHtml += `<div class="category-item ${state.filter === c.id ? 'active' : ''}" onclick="applyFilter('${c.id}', event)">
                     <div class="category-img-box">
-                        <img src="${getOptimizedUrl(c.img, 200)}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/100x100?text=Gift'">
+                        <img src="${getOptimizedUrl(c.img, 200) || 'https://placehold.co/100x100?text=Gift'}" loading="lazy" decoding="async" ${getOptimizedUrl(c.img, 200) ? "onerror=\"this.src='https://placehold.co/100x100?text=Gift'\"" : ''}>
                         ${c.isPinned && isAdminVisible ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm"><i class="fa-solid fa-thumbtack text-[6px]"></i></div>' : ''}
                     </div>
                     <p class="category-label truncate px-1 w-full">${c.name}</p>
@@ -2128,7 +2134,7 @@ window.renderAdminUI = () => {
     cList.innerHTML = DATA.c.map(c => `
                         <div class="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 relative">
                             <div class="relative shrink-0">
-                                <img src="${getOptimizedUrl(c.img, 100)}" class="w-14 h-14 rounded-full object-cover border-4 border-white shadow-sm" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+                                <img src="${getOptimizedUrl(c.img, 100) || 'https://placehold.co/100x100?text=Icon'}" class="w-14 h-14 rounded-full object-cover border-4 border-white shadow-sm" ${getOptimizedUrl(c.img, 100) ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
                                     ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-lg"><i class="fa-solid fa-thumbtack text-[8px]"></i></div>' : ''}
                             </div>
                             <div class="flex-1 font-bold text-[13px] uppercase">${c.name}</div>
@@ -2778,7 +2784,7 @@ window.renderCategoriesSidebar = () => {
         return `
             <div class="sidebar-cat-item group" onclick="window.closeCategoriesSidebar(); applyFilter('${c.id}')">
                 <div class="sidebar-cat-img-box">
-                    <img src="${getOptimizedUrl(c.img, 100)}" alt="${c.name}" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+                    <img src="${getOptimizedUrl(c.img, 100) || 'https://placehold.co/100x100?text=Icon'}" alt="${c.name}" ${getOptimizedUrl(c.img, 100) ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
                 </div>
                 <h4 class="sidebar-cat-name">${c.name}</h4>
                 <span class="sidebar-cat-count">${productCount}</span>
@@ -2872,7 +2878,8 @@ window.preloadInitialBatch = () => {
 
 
 function getOptimizedUrl(url, width) {
-    if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return url;
+    if (!url || typeof url !== 'string') return '';
+    if (!url.includes('cloudinary.com')) return url;
 
     const baseTransform = 'f_auto,q_auto';
     const widthTransform = width ? `,w_${width},c_limit` : '';
