@@ -300,21 +300,14 @@ async function trackAdVisit() {
     }
 }
 
-const startSync = async () => {
-    // SECURITY: Only sign in anonymously if NO session exists.
-    // We check auth.currentUser (immediate) and wait briefly for Firebase restoration.
-    if (auth.currentUser) return;
-    
-    try {
-        console.log("[Auth] Initializing secure guest session...");
-        await signInAnonymously(auth);
-    } catch (e) {
-        console.error("[Auth] Sync failed:", e);
-    }
-};
-
 onAuthStateChanged(auth, async (u) => {
     state.user = u;
+    
+    if (!u) {
+        console.log("[Auth] No session found, initializing guest session...");
+        await signInAnonymously(auth).catch(e => console.error("[Auth] Guest sync failed:", e));
+        return; // Wait for the next trigger with the anonymous user
+    }
     
     // CUSTOMER AUTH UI
     if (u && !u.isAnonymous) {
@@ -3068,7 +3061,7 @@ function renderInsights(container, rangeData = null) {
                 <div class="bg-black p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
                     <div class="flex justify-between items-start mb-4">
                         <h5 class="text-[11px] font-semibold text-gray-400">Website Health</h5>
-                        ${imageFail > 0 ? `<button onclick="window.clearHealthErrors()" title="Clear error count" style="background:rgba(255,255,255,0.08);border:none;cursor:pointer;border-radius:999px;padding:4px 10px;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9ca3af;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#9ca3af'">
+                        ${(imageFail > 0 || (source.stats.brokenImages || []).length > 0) ? `<button onclick="window.clearHealthErrors()" title="Clear error count" style="background:rgba(255,255,255,0.08);border:none;cursor:pointer;border-radius:999px;padding:4px 10px;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9ca3af;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#9ca3af'">
                             <i class="fa-solid fa-rotate-left" style="margin-right:4px;"></i>Clear
                         </button>` : ''}
                     </div>
@@ -3282,14 +3275,15 @@ window.clearHealthErrors = async () => {
     try {
         const today = getTodayStr();
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
-        await setDoc(statsRef, { imageLoadFail: 0 }, { merge: true });
+        await setDoc(statsRef, { imageLoadFail: 0, brokenImages: [] }, { merge: true });
 
         // Also clear legacy/all-time counter
         const legacyRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-        await setDoc(legacyRef, { imageLoadFail: 0 }, { merge: true });
+        await setDoc(legacyRef, { imageLoadFail: 0, brokenImages: [] }, { merge: true });
 
         // Clear in-memory tracking so fresh errors are counted from now
         DATA.stats.imageLoadFail = 0;
+        DATA.stats.brokenImages = [];
         _errorTrackedUrls.clear();
 
         // Re-render the admin UI so health card updates immediately
@@ -3893,8 +3887,7 @@ window.renderAdminUI = () => {
     }
 };
 
-// Trigger startSync after a short delay to allow Firebase to restore local session
-setTimeout(() => startSync(), 500);
+// Auth state and data fetching are handled by onAuthStateChanged.
 refreshData();
 
 // Responsive Slider Refresh
@@ -4444,7 +4437,7 @@ window.resetInsightsData = async () => {
         const globalStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
         batch1.set(globalStatsRef, {
             adVisits: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0,
-            adInquiries: 0, imageLoadFail: 0, totalSessionSeconds: 0
+            adInquiries: 0, imageLoadFail: 0, totalSessionSeconds: 0, brokenImages: []
         }, { merge: true });
         await batch1.commit();
 
