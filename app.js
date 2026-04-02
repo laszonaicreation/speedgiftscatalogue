@@ -332,7 +332,7 @@ onAuthStateChanged(auth, async (u) => {
         
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
             trackAdHop();
-            setTimeout(() => trackAdVisit(), 5000);
+            trackAdVisit(); // Fix: Track immediately so visits aren't lost if they bounce quickly or click WhatsApp
         } else {
             trackNormalVisit();
         }
@@ -3193,7 +3193,8 @@ window.updateInsightsRange = async function(passedStart = null, passedEnd = null
             const pid = d.productId;
             if (!pid) return;
             if (!prodMap[pid]) {
-                const original = DATA.p.find(p => p.id === pid) || { name: 'Unknown', img: '', catId: '' };
+                const specialNames = { 'floating_button': 'Main Floating WhatsApp', 'landing_floating': 'Landing Floating WhatsApp', 'bulk_inquiry': 'Cart Checkout Inquiry' };
+                const original = DATA.p.find(p => p.id === pid) || { name: specialNames[pid] || 'Unknown', img: '', catId: '' };
                 prodMap[pid] = { ...original, views: 0, adViews: 0, adInquiries: 0 };
             }
             prodMap[pid].views += (d.views || 0);
