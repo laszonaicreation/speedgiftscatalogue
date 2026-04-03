@@ -893,7 +893,7 @@
 
     <!-- MAIN APP CONTAINER -->
     <main id="app"
-        class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0 pt-8 lg:pt-2 pb-48 min-h-screen">
+        class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0 pt-0 md:pt-8 lg:pt-2 pb-48 min-h-screen">
         <!-- Unified App Container -->
         <!-- Static Skeleton UI for SEO & Ads bots -->
         <div class="animate-pulse space-y-8 mt-8">
@@ -956,22 +956,40 @@
         <div id="category-selector-container" class="mb-0 fade-in md:hidden">
         </div>
 
+        <!-- SPACER FOR MOBILE (Fix for missing tailwind compilation on padding changes) -->
+        <div class="md:hidden w-full" style="height: 1rem;"></div>
+
         <div class="category-scroll-container md:hidden">
             <div id="category-row"
                 class="no-scrollbar flex gap-1 overflow-x-auto py-4 md:py-8 items-center border-b border-gray-50 px-1 scroll-smooth"
                 onscroll="window.handleCategoryRowScroll(this)"></div>
         </div>
 
-        <div class="desktop-select-actions flex justify-between items-center mb-6 hidden md:flex">
-            <h3 id="active-category-title"
-                class="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400 px-1"></h3>
-            <button id="select-all-btn" onclick="toggleSelectAll()"
-                class="text-[8.5px] font-black uppercase tracking-widest py-2 px-4 rounded-full border border-gray-100 bg-gray-50 hover:bg-black hover:text-white transition-all text-gray-400">
-                Select All Visible
-            </button>
-        </div>
+        <!-- SPACER FOR DESKTOP (Fix for missing tailwind compilation) -->
+        <div class="hidden md:block w-full" style="height: 3.5rem;"></div>
 
-        <div class="md:hidden mb-0 px-1 hidden justify-between items-end">
+        <!-- MODERN CATEGORY HEADER -->
+        <div class="relative w-full flex items-center justify-center mb-8 md:mb-12 mt-0 fade-in">
+            <div class="flex flex-col items-center justify-center text-center px-4 w-full">
+                <h3 id="active-category-title" class="font-black capitalize tracking-wide text-gray-900" style="font-family: 'Poppins', sans-serif; font-size: clamp(26px, 4vw, 38px); margin-bottom: 0; line-height: 1.1;"></h3>
+                
+                <div class="flex items-center gap-3 shrink-0" style="margin-bottom: 0.1rem; margin-top: 0.2rem;">
+                    <div class="w-8 md:w-16 h-[1px] bg-gradient-to-r from-transparent to-gray-300"></div>
+                    <div class="w-1 h-1 rounded-full bg-black rotate-45"></div>
+                    <div class="w-8 md:w-16 h-[1px] bg-gradient-to-l from-transparent to-gray-300"></div>
+                </div>
+                
+                <p id="active-category-subtitle" class="font-normal capitalize text-gray-400" style="font-family: 'Poppins', sans-serif; font-size: clamp(12px, 2vw, 16px); margin-top: 0; letter-spacing: 1px;">
+                    Premium Curated Selection
+                </p>
+            </div>
+            
+            <div class="hidden md:flex md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2 desktop-select-actions items-center">
+                <button id="select-all-btn" onclick="toggleSelectAll()"
+                    class="text-[8.5px] font-black uppercase tracking-widest py-2 px-4 rounded-full border border-gray-100 bg-gray-50 hover:bg-black hover:text-white transition-all text-gray-400">
+                    Select All Visible
+                </button>
+            </div>
         </div>
 
         <!-- PRODUCT GRID -->

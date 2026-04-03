@@ -1028,7 +1028,7 @@ function renderHome() {
             }
             return (b.updatedAt || 0) - (a.updatedAt || 0); // Default sort: Newest first
         });
-        let catNameDisplay = (!state.selectionId && state.filter === 'all' && filtered.length > 0 && filtered.length < stockFilter(DATA.p).length) ? "Featured Collections" : "All Collections";
+        let catNameDisplay = (!state.selectionId && state.filter === 'all' && filtered.length > 0 && filtered.length < stockFilter(DATA.p).length) ? "Our Bestsellers" : "All Collections";
         if (state.selectionId) catNameDisplay = "Shared Selection";
         else if (state.filter !== 'all') {
             const catObj = DATA.c.find(c => c.id === state.filter);
@@ -1046,19 +1046,27 @@ function renderHome() {
         } catch (e) { console.error("SEO Update failed:", e); }
 
         if (selectAllBtn) {
+            let uAdmin=null;try{uAdmin=state.authUser||window._fbAuth?.currentUser||(typeof getAuth!=='undefined'?getAuth().currentUser:null);}catch(e){}
+            const isAdmin = uAdmin && uAdmin.email === "laszonaicreation@gmail.com";
             const visibleIds = filtered.map(p => p.id);
             const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
             selectAllBtn.innerText = allVisibleSelected ? "Deselect Visible" : "Select Visible Items";
-            if (state.selectionId) selectAllBtn.parentElement?.classList.add('hidden');
+            
+            if (state.selectionId || !isAdmin) {
+                if (selectAllBtn.parentElement) selectAllBtn.parentElement.style.display = 'none';
+            } else {
+                if (selectAllBtn.parentElement) selectAllBtn.parentElement.style.display = '';
+            }
         }
         if (grid) {
             const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
+            let uAdmin=null;try{uAdmin=state.authUser||window._fbAuth?.currentUser||(typeof getAuth!=='undefined'?getAuth().currentUser:null);}catch(e){}
+            const isAdmin = uAdmin && uAdmin.email === "laszonaicreation@gmail.com";
 
             // Always show complete rows — never leave an orphan product on the last row
             const cols = getColumnsCount();
-            const rawLimit = state.visibleChunks * PAGE_SIZE;
-            // Round rawLimit to nearest multiple of cols (round down so we don't overshoot)
-            const limit = Math.max(cols, Math.floor(rawLimit / cols) * cols);
+            // Start with exactly 2 rows. Each load more click adds 2 rows.
+            const limit = state.visibleChunks * (cols * 2);
             const visibleProducts = filtered.slice(0, limit);
             const hasMore = filtered.length > limit;
 
@@ -1075,7 +1083,7 @@ function renderHome() {
                     <div class="img-container mb-4 shadow-sm relative">
                         ${badgeHtml}
                         <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                        ${!state.selectionId ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
+                        ${(!state.selectionId && isAdmin) ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
                         <img src="${getOptimizedUrl(displayP.img, 600)}" 
                              class="${idx < 4 ? 'no-animation' : ''}"
                              ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
@@ -1147,7 +1155,7 @@ function renderHome() {
             if (hasMore) {
                 loadMoreContainer.innerHTML = `
                     <button onclick="window.loadMoreProducts()" class="bg-white border-2 border-black text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group">
-                        Load More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i>
+                        View More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i>
                     </button>
                 `;
                 loadMoreContainer.style.display = 'flex';
@@ -4561,8 +4569,7 @@ function renderSearchResults() {
         });
 
         const cols = getColumnsCount();
-        const rawLimit = state.visibleChunks * PAGE_SIZE;
-        const limit = Math.max(cols, Math.floor(rawLimit / cols) * cols);
+        const limit = state.visibleChunks * (cols * 2);
         const visibleProducts = filtered.slice(0, limit);
         const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
 
@@ -4634,7 +4641,7 @@ function renderSearchResults() {
         const loadMoreContainer = document.getElementById('load-more-container');
         if (loadMoreContainer) {
             if (hasMore) {
-                loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-white border-2 border-black text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group">Load More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
+                loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-white border-2 border-black text-black px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group">View More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
                 loadMoreContainer.style.display = 'flex';
             } else {
                 loadMoreContainer.style.display = 'none';
