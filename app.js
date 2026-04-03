@@ -993,7 +993,10 @@ function renderHome() {
             }
             filtered = stockFilter(DATA.p.filter(p => validIds.includes(p.catId)));
         }
-        else filtered = stockFilter(DATA.p);
+        else {
+            filtered = stockFilter(DATA.p.filter(p => p.isFeatured));
+            if (filtered.length === 0) filtered = stockFilter(DATA.p);
+        }
 
         if (state.search) {
             const q = state.search.toLowerCase().trim();
@@ -1025,7 +1028,7 @@ function renderHome() {
             }
             return (b.updatedAt || 0) - (a.updatedAt || 0); // Default sort: Newest first
         });
-        let catNameDisplay = "All Collections";
+        let catNameDisplay = (!state.selectionId && state.filter === 'all' && filtered.length > 0 && filtered.length < stockFilter(DATA.p).length) ? "Featured Collections" : "All Collections";
         if (state.selectionId) catNameDisplay = "Shared Selection";
         else if (state.filter !== 'all') {
             const catObj = DATA.c.find(c => c.id === state.filter);
@@ -1533,6 +1536,7 @@ window.saveProduct = async () => {
         images: images || [],
         catId: document.getElementById('p-cat-id')?.value || "",
         badge: document.getElementById('p-badge')?.value || "",
+        isFeatured: document.getElementById('p-featured')?.value === 'true',
         desc: document.getElementById('p-desc')?.value || "",
         keywords: document.getElementById('p-keywords')?.value || "",
         isPinned: document.getElementById('p-pinned')?.checked || false,
@@ -1631,6 +1635,7 @@ window.editProduct = (id) => {
     const pPinned = document.getElementById('p-pinned');
     const pCatId = document.getElementById('p-cat-id');
     const pBadge = document.getElementById('p-badge'); // Added
+    const pFeatured = document.getElementById('p-featured');
     const pDesc = document.getElementById('p-desc');
     const pKeywords = document.getElementById('p-keywords');
     const pFormTitle = document.getElementById('p-form-title');
@@ -1644,6 +1649,7 @@ window.editProduct = (id) => {
     if (pPinned) pPinned.checked = item.isPinned || false;
     if (pCatId) pCatId.value = item.catId || "";
     if (pBadge) pBadge.value = item.badge || ""; // Added
+    if (pFeatured) pFeatured.value = item.isFeatured ? 'true' : 'false';
 
     if (pDesc) pDesc.value = item.desc;
     if (pKeywords) pKeywords.value = item.keywords || "";
