@@ -140,9 +140,9 @@ body {
     width: 80px;
     height: 80px;
     border-radius: 20px;
-    padding: 3px;
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0;
+    
+    
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     display: flex;
@@ -154,32 +154,12 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 15px;
+    border-radius: 20px;
     transition: transform 0.6s ease;
 }
 
-/* PREMIUM GOLD BREATHING ANIMATION WITH WHITE GAP */
-@keyframes goldBreathing {
-    0% {
-        box-shadow: 0 0 0 3px #fff, 0 0 0 4px #111;
-        transform: translateY(-6px);
-    }
-
-    50% {
-        box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px #D4AF37;
-        transform: translateY(-8px);
-    }
-
-    100% {
-        box-shadow: 0 0 0 3px #fff, 0 0 0 4px #111;
-        transform: translateY(-6px);
-    }
-}
-
 .active.category-item .category-img-box {
-    animation: goldBreathing 3s infinite ease-in-out;
-    border-color: transparent;
-    /* Hide direct border when active to show the gap shadow */
+    transform: translateY(-4px);
 }
 
 .active.category-item .category-img-box img {
@@ -188,7 +168,7 @@ body {
 
 .active.category-item .category-label {
     color: #111;
-    font-weight: 900;
+    font-weight: 500;
     position: relative;
 }
 
@@ -229,8 +209,9 @@ body {
 }
 
 .category-label {
+    font-family: 'Poppins', sans-serif !important;
     font-size: 8.5px;
-    font-weight: 700;
+    font-weight: 400;
     text-transform: capitalize;
     letter-spacing: 0.1em;
     color: #888;
@@ -543,7 +524,7 @@ img[src=""] {
 }
 
 .admin-input:focus {
-    background: #fff;
+    
     border-color: var(--accent-black);
     outline: none;
 }
@@ -591,7 +572,7 @@ img[src=""] {
 .drop-zone {
     transition: all 0.3s ease;
     position: relative;
-    background: #fff;
+    
     border: 2px dashed #eee;
     min-height: 80px;
     display: flex;
@@ -785,7 +766,7 @@ img[src=""] {
     overflow: hidden;
     cursor: zoom-in;
     border-radius: 2.5rem;
-    background: #fff;
+    
     border: 1px solid #f5f5f5;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
@@ -857,7 +838,7 @@ img[src=""] {
 }
 
 .admin-input:focus {
-    background: #fff;
+    
     border-color: var(--accent-black);
     outline: none;
 }
@@ -876,7 +857,7 @@ img[src=""] {
 }
 
 .admin-product-card {
-    background: #fff;
+    
     border: 1px solid #eee;
     border-radius: 20px;
     overflow: hidden;
@@ -964,7 +945,7 @@ img[src=""] {
     align-items: center;
     gap: 15px;
     padding: 12px 16px;
-    background: #fff;
+    
     border: 1px solid #f8f8f8;
     border-radius: 16px;
     transition: all 0.3s ease;
@@ -1016,7 +997,7 @@ img[src=""] {
     display: flex;
     gap: 15px;
     padding: 12px;
-    background: #fff;
+    
     border: 1px solid #f8f8f8;
     border-radius: 20px;
     transition: all 0.3s ease;
@@ -1034,7 +1015,7 @@ img[src=""] {
 .sidebar-img-box {
     width: 70px;
     height: 70px;
-    border-radius: 15px;
+    border-radius: 20px;
     overflow: hidden;
     flex-shrink: 0;
     background: #fdfdfd;
@@ -1244,6 +1225,12 @@ img[src=""] {
     width: 100%;
 }
 
+@media (min-width: 768px) {
+    .slider-wrapper {
+        border-radius: 2.5rem !important;
+    }
+}
+
 #home-slider {
     scroll-behavior: smooth;
     -ms-overflow-style: none;
@@ -1257,7 +1244,7 @@ img[src=""] {
 .slider-slide {
     flex: 0 0 100%;
     width: 100%;
-    aspect-ratio: 2/1;
+    aspect-ratio: 4/3;
     /* Default/Mobile */
     overflow: hidden;
     position: relative;
@@ -1309,7 +1296,7 @@ img[src=""] {
 
 /* ADMIN SLIDER LIST */
 .admin-slider-card {
-    background: #fff;
+    
     border: 1px solid #eee;
     padding: 1rem;
     border-radius: 1.5rem;
@@ -1622,7 +1609,7 @@ img[src=""] {
     width: max-content;
     min-width: 450px;
     max-width: 90vw;
-    background: #fff;
+    
     border-radius: 1.5rem;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.03);
     padding: 2rem;
@@ -1664,9 +1651,9 @@ img[src=""] {
 .mega-sub-img {
     width: 65px;
     height: 65px;
-    background: #fff;
+    
     border-radius: 16px;
-    padding: 3px;
+    padding: 0;
     border: 1px solid #eee;
     object-fit: cover;
     transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), border-color 0.3s ease;
@@ -1686,4 +1673,14 @@ img[src=""] {
     letter-spacing: 0.05em;
     text-align: center;
     max-width: 100%;
+}
+/* Custom Mobile Search Bar Styles */
+#customer-search {
+    border-color: #d4af37 !important;
+    border-radius: 1rem !important;
+}
+
+#customer-search:focus {
+    border-color: #bfa139 !important;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
 }
