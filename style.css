@@ -698,22 +698,24 @@ img[src=""] {
     z-index: 10;
     padding: 4px 10px;
     border-radius: 6px;
-    font-size: 8px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: white;
+    font-size: 11px;
+    font-weight: 400;
+    font-family: 'Poppins', sans-serif;
+    text-transform: capitalize;
+    letter-spacing: 0.05em;
+    color: #000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .detail-badge {
     padding: 6px 14px;
     border-radius: 8px;
-    font-size: 9px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: white;
+    font-size: 11px;
+    font-weight: 400;
+    font-family: 'Poppins', sans-serif;
+    text-transform: capitalize;
+    letter-spacing: 0.05em;
+    color: #000;
 }
 
 .badge-new,

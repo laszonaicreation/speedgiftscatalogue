@@ -101,6 +101,24 @@
                 display: flex !important;
             }
         }
+
+        /* PRODUCT BADGE OVERRIDES */
+        .p-badge-card {
+            font-weight: 400 !important;
+            font-family: 'Poppins', sans-serif !important;
+            text-transform: capitalize !important;
+            letter-spacing: 0.05em !important;
+            color: #000 !important;
+            font-size: 11px !important;
+        }
+        .detail-badge {
+            font-weight: 400 !important;
+            font-family: 'Poppins', sans-serif !important;
+            text-transform: capitalize !important;
+            letter-spacing: 0.05em !important;
+            color: #000 !important;
+            font-size: 11px !important;
+        }
     </style>
     <!-- Intl-Tel-Input CSS & JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.min.css"
@@ -794,6 +812,32 @@
                 transform-origin: center !important;
                 overflow: visible !important;
             }
+
+            .view-more-btn-custom {
+                padding: 0.75rem 2rem !important;
+                font-size: 11px !important;
+                border: 1.5px solid #f3f4f6 !important; /* Off-white/Light gray border */
+                color: #4b5563 !important; /* Softer dark text */
+            }
+
+            @media (max-width: 767px) {
+                .view-more-btn-custom {
+                    padding: 0.4rem 1rem !important;
+                    font-size: 9.5px !important;
+                }
+            }
+
+            .view-more-container-custom {
+                margin-top: 3rem !important;
+                margin-bottom: 2rem !important;
+            }
+
+            @media (max-width: 767px) {
+                .view-more-container-custom {
+                    margin-top: 1.5rem !important;
+                    margin-bottom: 1.5rem !important;
+                }
+            }
         </style>
         <section class="trust-badges-section pt-6 pb-0 sm:pt-16 sm:pb-24 mt-4 sm:mt-6">
             <div class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-4 md:px-0">
@@ -973,13 +1017,9 @@
             <div class="flex flex-col items-center justify-center text-center px-4 w-full">
                 <h3 id="active-category-title" class="font-black capitalize tracking-wide text-gray-900" style="font-family: 'Poppins', sans-serif; font-size: clamp(26px, 4vw, 38px); margin-bottom: 0; line-height: 1.1;"></h3>
                 
-                <div class="flex items-center gap-3 shrink-0" style="margin-bottom: 0.1rem; margin-top: 0.2rem;">
-                    <div class="w-8 md:w-16 h-[1px] bg-gradient-to-r from-transparent to-gray-300"></div>
-                    <div class="w-1 h-1 rounded-full bg-black rotate-45"></div>
-                    <div class="w-8 md:w-16 h-[1px] bg-gradient-to-l from-transparent to-gray-300"></div>
-                </div>
+
                 
-                <p id="active-category-subtitle" class="font-normal capitalize text-gray-400" style="font-family: 'Poppins', sans-serif; font-size: clamp(12px, 2vw, 16px); margin-top: 0; letter-spacing: 1px;">
+                <p id="active-category-subtitle" class="font-normal capitalize text-gray-400" style="font-family: 'Poppins', sans-serif; font-size: clamp(12px, 2vw, 16px); margin-top: 0.4rem; letter-spacing: 1px;">
                     Premium Curated Selection
                 </p>
             </div>
