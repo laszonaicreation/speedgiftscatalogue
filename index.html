@@ -1013,8 +1013,8 @@
         <div class="hidden md:block w-full" style="height: 3.5rem;"></div>
 
         <!-- MODERN CATEGORY HEADER -->
-        <div class="relative w-full flex items-center justify-center mb-8 md:mb-12 mt-0 fade-in">
-            <div class="flex flex-col items-center justify-center text-center px-4 w-full">
+        <div class="relative w-full flex items-center justify-center mb-8 md:mb-12 mt-0 fade-in min-h-[90px]">
+            <div class="text-center px-4 w-full md:px-48">
                 <h3 id="active-category-title" class="font-black capitalize tracking-wide text-gray-900" style="font-family: 'Poppins', sans-serif; font-size: clamp(26px, 4vw, 38px); margin-bottom: 0; line-height: 1.1;"></h3>
                 
 
@@ -1023,10 +1023,10 @@
                     Premium Curated Selection
                 </p>
             </div>
-            
-            <div class="hidden md:flex md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2 desktop-select-actions items-center">
+            <!-- Admin Button - Absolute via inline styles for guaranteed right-alignment -->
+            <div class="hidden md:flex desktop-select-actions items-center" style="position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);">
                 <button id="select-all-btn" onclick="toggleSelectAll()"
-                    class="text-[8.5px] font-black uppercase tracking-widest py-2 px-4 rounded-full border border-gray-100 bg-gray-50 hover:bg-black hover:text-white transition-all text-gray-400">
+                    class="text-[8.5px] font-black uppercase tracking-widest py-2 px-4 rounded-full border border-gray-100 bg-gray-50 hover:bg-black hover:text-white transition-all text-gray-400 shadow-sm">
                     Select All Visible
                 </button>
             </div>

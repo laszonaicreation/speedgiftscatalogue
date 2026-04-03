@@ -860,6 +860,9 @@ window.toggleSelectAll = () => {
     const allVisibleSelected = visibleIds.every(id => state.selected.includes(id));
     if (allVisibleSelected) state.selected = state.selected.filter(id => !visibleIds.includes(id));
     else state.selected = Array.from(new Set([...state.selected, ...visibleIds]));
+    
+    // Flag to prevent the jump when selecting items
+    state.skipScroll = true;
     renderHome();
 };
 
@@ -876,6 +879,22 @@ window.loadMoreProducts = () => {
     state.isLoadMore = true;
     state.visibleChunks++;
     renderHome();
+};
+
+window.showLessProducts = () => {
+    state.isLoadMore = false;
+    state.visibleChunks = 1;
+    renderHome();
+    
+    // Scroll back to the collection title
+    setTimeout(() => {
+        const title = document.getElementById('active-category-title');
+        if (title) {
+            const yOffset = -200; 
+            const y = title.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({top: y, behavior: 'smooth'});
+        }
+    }, 100);
 };
 
 
@@ -1159,6 +1178,13 @@ function renderHome() {
                     </button>
                 `;
                 loadMoreContainer.style.display = 'flex';
+            } else if (state.visibleChunks > 1) {
+                loadMoreContainer.innerHTML = `
+                    <button onclick="window.showLessProducts()" class="bg-white text-black rounded-full font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
+                        Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i>
+                    </button>
+                `;
+                loadMoreContainer.style.display = 'flex';
             } else {
                 loadMoreContainer.style.display = 'none';
             }
@@ -1194,8 +1220,9 @@ function renderHome() {
             document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
         }
 
-        if (state.isLoadMore) {
+        if (state.isLoadMore || state.skipScroll) {
             state.isLoadMore = false;
+            state.skipScroll = false;
         } else {
             if (!state.selectionId && !state.search) window.scrollTo({ top: state.scrollPos });
             else if (!state.search) window.scrollTo({ top: 0 });
@@ -1907,7 +1934,7 @@ window.toggleSelect = (e, id) => {
     updateSelectionBar();
 };
 
-window.clearSelection = () => { state.selected = []; state.selectionId = null; renderHome(); };
+window.clearSelection = () => { state.selected = []; state.selectionId = null; state.skipScroll = true; renderHome(); };
 
 window.shareSelection = async () => {
     if (state.selected.length === 0) return;
@@ -4642,6 +4669,9 @@ function renderSearchResults() {
         if (loadMoreContainer) {
             if (hasMore) {
                 loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-white text-black rounded-full font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
+                loadMoreContainer.style.display = 'flex';
+            } else if (state.visibleChunks > 1) {
+                loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-white text-black rounded-full font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i></button>`;
                 loadMoreContainer.style.display = 'flex';
             } else {
                 loadMoreContainer.style.display = 'none';
