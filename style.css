@@ -1678,11 +1678,11 @@ img[src=""] {
 }
 /* Custom Mobile Search Bar Styles */
 #customer-search {
-    border-color: #d4af37 !important;
+    border-color: #e5e7eb !important;
     border-radius: 1rem !important;
 }
 
 #customer-search:focus {
-    border-color: #bfa139 !important;
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
+    border-color: #d1d5db !important;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05) !important;
 }
