@@ -1108,6 +1108,7 @@ function renderHome() {
                              ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                              decoding="async"
                              onload="this.classList.add('loaded')"
+                             onerror="window.handleImgError(this)"
                              alt="${displayP.name}">
                     </div>
                     <div class="px-1 text-left flex justify-between items-start mt-4">
@@ -2898,7 +2899,7 @@ window.preloadInitialBatch = () => {
     if (DATA.s && DATA.s.length) {
         DATA.s.forEach(s => {
             const isMobile = window.innerWidth < 768;
-            const imgUrl = getOptimizedUrl(isMobile ? s.mobileImg : s.img, isMobile ? 800 : 1920);
+            const imgUrl = getOptimizedUrl(isMobile ? s.mobileImg : s.img, isMobile ? 1200 : 1920);
             const img = new Image();
             img.fetchPriority = 'high';
             img.src = imgUrl;
@@ -2928,6 +2929,19 @@ function getOptimizedUrl(url, width) {
 
     return url.replace('/upload/', `/upload/${fullTransform}/`);
 }
+
+// Fallback: If Cloudinary transform URL fails, retry with original URL
+window.handleImgError = function(img) {
+    if (img._retried) return; // Avoid infinite loop
+    img._retried = true;
+    const src = img.src || '';
+    if (!src.includes('cloudinary.com')) return;
+    // Strip all transforms and load the raw original URL
+    const originalUrl = src.replace(/\/upload\/[^/]+\//, '/upload/');
+    if (originalUrl !== src) {
+        img.src = originalUrl;
+    }
+};
 
 
 async function trackProductView(id) {
@@ -3466,7 +3480,7 @@ function renderSlider() {
 
         return `
             <div class="slider-slide relative" data-index="${i}">
-                <img src="${getOptimizedUrl(displayImg, isMobile ? 800 : 1920)}" 
+                <img src="${getOptimizedUrl(displayImg, isMobile ? 1200 : 1920)}" 
                      class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                      alt="${s.title || ''}" 
                      ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
