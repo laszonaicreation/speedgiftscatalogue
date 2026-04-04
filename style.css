@@ -1246,8 +1246,6 @@ img[src=""] {
 .slider-slide {
     flex: 0 0 100%;
     width: 100%;
-    aspect-ratio: 4/3;
-    /* Default/Mobile */
     overflow: hidden;
     position: relative;
     user-select: none;
@@ -1257,16 +1255,9 @@ img[src=""] {
 
 .slider-slide img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    display: block;
     transition: transform 1s ease;
-}
-
-@media (min-width: 768px) {
-    .slider-slide {
-        aspect-ratio: 16/7;
-        max-height: 500px;
-    }
 }
 
 .slider-dot {

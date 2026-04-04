@@ -393,11 +393,15 @@
         }
     </style>
     <style>
-        /* EXACT ALIGNMENT TO NAV ITEMS ON DESKTOP */
+        /* DESKTOP SLIDER: Full width breakout from max-width parent */
         @media (min-width: 768px) {
             #home-slider-container {
-                padding-left: calc(clamp(20px, 5vw, 96px) + 12px) !important;
-                padding-right: clamp(20px, 5vw, 96px) !important;
+                width: 100vw;
+                position: relative;
+                left: 50%;
+                right: 50%;
+                margin-left: -50vw;
+                margin-right: -50vw;
             }
         }
 
@@ -719,9 +723,9 @@
             Mobile: px-6 to match the exact spacing of the old inward slider
             Desktop: style padding to match the Nav's exact alignment (logo to fav icon)
         -->
-        <div id="home-slider-container" class="fade-in px-0" style="--desk-pad: clamp(20px, 5vw, 96px);">
+        <div id="home-slider-container" class="fade-in px-0">
             <div
-                class="slider-wrapper relative overflow-hidden rounded-none md:rounded-[2.5rem] md:bg-[#f9f9f9] md:border md:border-gray-100 shadow-none md:shadow-[0_10px_40px_rgba(0,0,0,0.03)] group">
+                class="slider-wrapper relative overflow-hidden rounded-none shadow-none group">
                 <div id="home-slider"
                     class="flex transition-transform duration-500 ease-out no-scrollbar overflow-x-auto snap-x snap-mandatory">
                     <!-- Slides injected here -->
