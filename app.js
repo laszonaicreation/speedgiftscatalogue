@@ -134,15 +134,15 @@ async function initTrafficTracking() {
 
     console.log("[Traffic] Detecting source...");
 
-    if (urlParams.has('gclid') || 
-        urlParams.has('gbraid') || 
-        urlParams.has('wbraid') || 
+    if (urlParams.has('gclid') ||
+        urlParams.has('gbraid') ||
+        urlParams.has('wbraid') ||
         urlParams.has('gad_source') ||
-        utmSrc === 'google' || 
-        utmSrc === 'google_ads' || 
+        utmSrc === 'google' ||
+        utmSrc === 'google_ads' ||
         utmSrc === 'googleads' ||
-        utmMed === 'cpc' || 
-        utmMed === 'ppc' || 
+        utmMed === 'cpc' ||
+        utmMed === 'ppc' ||
         utmMed === 'google_ads') {
         sessionStorage.setItem('traffic_source', 'Google Ads');
         console.log("[Traffic] Google Ads source verified.");
@@ -159,7 +159,7 @@ async function initTrafficTracking() {
 // Session-scoped deduplication: each unique broken URL counted only ONCE per session
 const _errorTrackedUrls = new Set();
 
-window.addEventListener('error', function(e) {
+window.addEventListener('error', function (e) {
     if (e.target.tagName !== 'IMG') return;
     const src = e.target.src || '';
     // Skip: placeholder images, empty src, data URIs, already-tracked this session
@@ -184,7 +184,7 @@ async function trackImageError(src) {
             brokenImages: arrayUnion(src)
         }, { merge: true });
         console.warn("[Health Check] Image failed to load:", src);
-    } catch (e) {}
+    } catch (e) { }
 }
 
 async function trackNormalVisit() {
@@ -302,19 +302,19 @@ async function trackAdVisit() {
 
 onAuthStateChanged(auth, async (u) => {
     state.user = u;
-    
+
     if (!u) {
         console.log("[Auth] No session found, initializing guest session...");
         await signInAnonymously(auth).catch(e => console.error("[Auth] Guest sync failed:", e));
         return; // Wait for the next trigger with the anonymous user
     }
-    
+
     // CUSTOMER AUTH UI
     if (u && !u.isAnonymous) {
         state.authUser = u;
         const navBtn = document.getElementById('nav-user-btn');
         if (navBtn) navBtn.classList.add('text-black');
-        
+
         const accountName = document.getElementById('account-user-name');
         const accountEmail = document.getElementById('account-user-email');
         if (accountName) accountName.innerText = u.displayName || "User";
@@ -329,7 +329,7 @@ onAuthStateChanged(auth, async (u) => {
         console.log("[Auth] Session active. Updating data...");
         await initTrafficTracking();
         await refreshData();
-        
+
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
             trackAdHop();
             trackAdVisit(); // Fix: Track immediately so visits aren't lost if they bounce quickly or click WhatsApp
@@ -381,7 +381,7 @@ async function loadWishlist() {
         const wishDoc = await getDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'));
         if (wishDoc.exists()) {
             const cloudIds = wishDoc.data().ids || [];
-            
+
             // Merge existing session wishlist (if they favorited items before logging in) with cloud
             // Need to merge arrays of objects/strings properly.
             const merged = [...state.wishlist];
@@ -390,18 +390,18 @@ async function loadWishlist() {
                 const exists = merged.some(x => (typeof x === 'string' ? x : x.id) === idToCheck);
                 if (!exists) merged.push(cloudId);
             });
-            
+
             state.wishlist = merged;
             updateWishlistBadge();
             updateAllWishlistUI();
-            
+
             // Re-sync merged data back to cloud immediately
-            setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e=>console.error);
-            
+            setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e => console.error);
+
         } else {
             // No cloud data. If they favorited items anonymously before logging in, push to new cloud account.
             if (state.wishlist.length > 0) {
-                setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e=>console.error);
+                setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e => console.error);
             }
             updateAllWishlistUI();
         }
@@ -410,7 +410,7 @@ async function loadWishlist() {
 
 function updateAllWishlistUI() {
     const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
-    
+
     // Update all visible product cards
     document.querySelectorAll('.product-card').forEach(card => {
         const id = card.getAttribute('data-id');
@@ -540,41 +540,41 @@ window.renderDesktopMegaMenu = () => {
             const panel = document.createElement('div');
 
             // 1. Panel Container Styles (Simplified, letting CSS handle the heavy lifting)
-            panel.className           = 'mega-dropdown-panel';
-            panel.style.display       = 'none'; // Overridden on hover
-            
+            panel.className = 'mega-dropdown-panel';
+            panel.style.display = 'none'; // Overridden on hover
+
             // RIGID 5-COLUMN GRID (This is the fix)
             // inline styles removed to let CSS govern the 5-column grid cleanly
 
             mappedCats.forEach(c => {
                 const card = document.createElement('div');
-                card.className           = 'mega-cat-card';
+                card.className = 'mega-cat-card';
 
                 const thumb = document.createElement('div');
-                thumb.style.width        = '34px';
-                thumb.style.height       = '34px';
-                thumb.style.flexShrink   = '0';
+                thumb.style.width = '34px';
+                thumb.style.height = '34px';
+                thumb.style.flexShrink = '0';
                 thumb.style.borderRadius = '9px';
-                thumb.style.overflow     = 'hidden';
-                thumb.style.background   = '#f9fafb';
-                thumb.style.border       = '1px solid #eee';
-                
+                thumb.style.overflow = 'hidden';
+                thumb.style.background = '#f9fafb';
+                thumb.style.border = '1px solid #eee';
+
                 const img = document.createElement('img');
                 const _catImgUrl = getOptimizedUrl(c.img, 80);
                 img.src = _catImgUrl || 'https://placehold.co/80x80?text=?';
-                img.style.width       = '100%';
-                img.style.height      = '100%';
-                img.style.objectFit   = 'cover';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
                 if (_catImgUrl) img.onerror = () => { img.src = 'https://placehold.co/80x80?text=?'; };
                 thumb.appendChild(img);
 
                 const label = document.createElement('span');
-                label.className        = 'mega-cat-name';
-                label.textContent      = c.name;
+                label.className = 'mega-cat-name';
+                label.textContent = c.name;
 
                 card.appendChild(thumb);
                 card.appendChild(label);
-                card.addEventListener('click',     () => window.applyFilter(c.id));
+                card.addEventListener('click', () => window.applyFilter(c.id));
                 panel.appendChild(card);
             });
 
@@ -629,7 +629,7 @@ async function refreshData(isNavigationOnly = false) {
             ]);
             DATA.p = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            DATA.m = mSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (a.order || 0) - (b.order || 0));
+            DATA.m = mSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
             DATA.s = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
             // Fetch Announcements (from products collection with ID _announcements_)
@@ -652,7 +652,7 @@ async function refreshData(isNavigationOnly = false) {
             // Extract stats from legacy _ad_stats_ 
             const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
             const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
-            
+
             // Initial legacy/all-time baseline
             DATA.stats = statsDoc ? { ...defaultStats, ...statsDoc } : defaultStats;
 
@@ -675,7 +675,7 @@ async function refreshData(isNavigationOnly = false) {
             renderDesktopMegaMenu();
             // Aggressive Preloading for instant feel
             window.preloadInitialBatch();
-            
+
             console.log("[Ad Tracking] UI Refreshed. Counter is now:", DATA.stats.adVisits);
         }
         const urlParams = new URLSearchParams(window.location.search);
@@ -801,7 +801,7 @@ window.handleLogoClick = () => {
     clicks++; lastClickTime = now;
     if (clicks >= 5) {
         clicks = 0; // Reset
-        
+
         // SECURITY: Only allow real admin to unlock the hidden dashboard button
         const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
         if (!u || u.email !== "laszonaicreation@gmail.com") {
@@ -860,7 +860,7 @@ window.toggleSelectAll = () => {
     const allVisibleSelected = visibleIds.every(id => state.selected.includes(id));
     if (allVisibleSelected) state.selected = state.selected.filter(id => !visibleIds.includes(id));
     else state.selected = Array.from(new Set([...state.selected, ...visibleIds]));
-    
+
     // Flag to prevent the jump when selecting items
     state.skipScroll = true;
     renderHome();
@@ -870,8 +870,8 @@ window.toggleSelectAll = () => {
 function getColumnsCount() {
     const w = window.innerWidth;
     if (w >= 1024) return 5; // lg (max columns in CSS)
-    if (w >= 768)  return 4; // md
-    if (w >= 640)  return 3; // sm
+    if (w >= 768) return 4; // md
+    if (w >= 640) return 3; // sm
     return 2;                // mobile
 }
 
@@ -885,14 +885,14 @@ window.showLessProducts = () => {
     state.isLoadMore = false;
     state.visibleChunks = 1;
     renderHome();
-    
+
     // Scroll back to the collection title
     setTimeout(() => {
         const title = document.getElementById('active-category-title');
         if (title) {
-            const yOffset = -200; 
+            const yOffset = -200;
             const y = title.getBoundingClientRect().top + window.pageYOffset + yOffset;
-            window.scrollTo({top: y, behavior: 'smooth'});
+            window.scrollTo({ top: y, behavior: 'smooth' });
         }
     }, 100);
 };
@@ -924,11 +924,11 @@ function renderHome() {
         const activeCatTitle = appMain.querySelector('#active-category-title');
         const activeCatTitleMob = appMain.querySelector('#active-category-title-mob');
         const categorySelector = appMain.querySelector('#category-selector-container');
-        
+
         // Search elements are now outside appMain in the top layout block
         const discSearch = document.getElementById('customer-search');
         const clearBtn = document.getElementById('clear-search-btn');
-        
+
         const mobileSort = appMain.querySelector('#price-sort-mob');
         const mSearch = document.getElementById('m-search'); // Mobile sidebar search input
 
@@ -1065,12 +1065,12 @@ function renderHome() {
         } catch (e) { console.error("SEO Update failed:", e); }
 
         if (selectAllBtn) {
-            let uAdmin=null;try{uAdmin=state.authUser||window._fbAuth?.currentUser||(typeof getAuth!=='undefined'?getAuth().currentUser:null);}catch(e){}
+            let uAdmin = null; try { uAdmin = state.authUser || window._fbAuth?.currentUser || (typeof getAuth !== 'undefined' ? getAuth().currentUser : null); } catch (e) { }
             const isAdmin = uAdmin && uAdmin.email === "laszonaicreation@gmail.com";
             const visibleIds = filtered.map(p => p.id);
             const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
             selectAllBtn.innerText = allVisibleSelected ? "Deselect Visible" : "Select Visible Items";
-            
+
             if (state.selectionId || !isAdmin) {
                 if (selectAllBtn.parentElement) selectAllBtn.parentElement.style.display = 'none';
             } else {
@@ -1079,7 +1079,7 @@ function renderHome() {
         }
         if (grid) {
             const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
-            let uAdmin=null;try{uAdmin=state.authUser||window._fbAuth?.currentUser||(typeof getAuth!=='undefined'?getAuth().currentUser:null);}catch(e){}
+            let uAdmin = null; try { uAdmin = state.authUser || window._fbAuth?.currentUser || (typeof getAuth !== 'undefined' ? getAuth().currentUser : null); } catch (e) { }
             const isAdmin = uAdmin && uAdmin.email === "laszonaicreation@gmail.com";
 
             // Always show complete rows — never leave an orphan product on the last row
@@ -1115,18 +1115,18 @@ function renderHome() {
                         <div class="flex-1 min-w-0">
                             <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${displayP.name}</h3>
                             ${(() => {
-                                const origPrice = parseFloat(displayP.originalPrice);
-                                const salePrice = parseFloat(displayP.price);
-                                if (displayP.originalPrice && origPrice > salePrice) {
-                                    const disc = Math.round((1 - salePrice / origPrice) * 100);
-                                    return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
-                                        '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + displayP.originalPrice + ' AED</span>' +
-                                        '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + displayP.price + ' AED</span>' +
-                                        '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span>' +
-                                        '</div>';
-                                }
-                                return '<p class="price-tag mt-2 font-bold">' + displayP.price + ' AED</p>';
-                            })()}
+                        const origPrice = parseFloat(displayP.originalPrice);
+                        const salePrice = parseFloat(displayP.price);
+                        if (displayP.originalPrice && origPrice > salePrice) {
+                            const disc = Math.round((1 - salePrice / origPrice) * 100);
+                            return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
+                                '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + displayP.originalPrice + ' AED</span>' +
+                                '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + displayP.price + ' AED</span>' +
+                                '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span>' +
+                                '</div>';
+                        }
+                        return '<p class="price-tag mt-2 font-bold">' + displayP.price + ' AED</p>';
+                    })()}
                         </div>
                         <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="toggleWishlist(event, '${p.id}')">
                             <i class="fa-solid fa-heart"></i>
@@ -1168,7 +1168,7 @@ function renderHome() {
             if (currentHeight > 0) {
                 grid.style.minHeight = `${currentHeight}px`;
             }
-            
+
             grid.innerHTML = gridContent;
 
             // Release height lock after images/DOM have stabilized
@@ -1183,7 +1183,7 @@ function renderHome() {
                 loadMoreContainer.className = 'w-full flex justify-center view-more-container-custom';
                 grid.parentElement.appendChild(loadMoreContainer);
             }
-            
+
             if (hasMore) {
                 loadMoreContainer.innerHTML = `
                     <button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
@@ -1212,7 +1212,7 @@ function renderHome() {
             if (state.search) clearBtn.classList.remove('hidden');
             else clearBtn.classList.add('hidden');
         }
-        
+
         const deskSearch = document.getElementById('desk-search');
         if (deskSearch && deskSearch !== document.activeElement) deskSearch.value = state.search;
         const deskClearBtn = document.getElementById('desk-clear-btn');
@@ -1220,7 +1220,7 @@ function renderHome() {
             if (state.search) deskClearBtn.classList.remove('hidden');
             else deskClearBtn.classList.add('hidden');
         }
-        
+
         if (mobileSort) mobileSort.value = state.sort;
 
         updateSelectionBar();
@@ -1281,7 +1281,7 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
             updateCanonicalURL(`?p=${p.id}`);
         } catch (e) { console.error("SEO Update failed:", e); }
     }
-    
+
     // Hide the top header blocks (Search & Slider) since they aren't in #app
     const outerWrapper = document.getElementById('home-top-elements');
     if (outerWrapper) outerWrapper.classList.add('hidden');
@@ -1318,18 +1318,18 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
                         ${p.badge ? `<span class="detail-badge badge-${p.badge}">${getBadgeLabel(p.badge)}</span>` : ''}
                     </div>
                     ${(() => {
-                        const origP = parseFloat(p.originalPrice);
-                        const saleP = parseFloat(p.price);
-                        if (p.originalPrice && origP > saleP) {
-                            const disc = Math.round((1 - saleP / origP) * 100);
-                            return `<div class="flex items-baseline gap-3 flex-wrap mt-1">
+            const origP = parseFloat(p.originalPrice);
+            const saleP = parseFloat(p.price);
+            if (p.originalPrice && origP > saleP) {
+                const disc = Math.round((1 - saleP / origP) * 100);
+                return `<div class="flex items-baseline gap-3 flex-wrap mt-1">
                                 <span class="detail-price-text text-xl md:text-2xl">${p.price} AED</span>
                                 <span class="text-base line-through text-gray-400 font-normal">${p.originalPrice} AED</span>
                                 <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
                             </div>`;
-                        }
-                        return `<p class="detail-price-text text-xl md:text-2xl">${p.price} AED</p>`;
-                    })()}
+            }
+            return `<p class="detail-price-text text-xl md:text-2xl">${p.price} AED</p>`;
+        })()}
                 </div>
 
                 <div class="space-y-6 pt-4 border-t border-gray-50">
@@ -1632,7 +1632,7 @@ window.deleteCategory = async (id) => { if (!confirm("Delete Category?")) return
 window.saveMegaMenu = async () => {
     const id = document.getElementById('edit-megamenu-id')?.value;
     const btn = document.getElementById('m-save-btn');
-    
+
     // Collect checked subcategories
     const checkboxes = document.querySelectorAll('.mega-cat-checkbox:checked');
     const categoryIds = Array.from(checkboxes).map(cb => cb.value);
@@ -1644,14 +1644,14 @@ window.saveMegaMenu = async () => {
     };
     if (!data.name) return showToast("Name required");
     if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
-    try { 
-        if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mega_menus', id), data); 
-        else await addDoc(megaCol, data); 
-        showToast("Mega Menu Synced"); 
-        resetForm(); 
-        refreshData(); 
+    try {
+        if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mega_menus', id), data);
+        else await addDoc(megaCol, data);
+        showToast("Mega Menu Synced");
+        resetForm();
+        refreshData();
     }
-    catch (e) { console.error("Mega Menu Error:", e); showToast("Mega Menu Error"); } 
+    catch (e) { console.error("Mega Menu Error:", e); showToast("Mega Menu Error"); }
     finally { if (btn) { btn.disabled = false; btn.innerText = "Save Desktop Menu"; } }
 };
 
@@ -2307,7 +2307,7 @@ window.clearCustomerSearch = () => {
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
 window.showAdminPanel = () => {
     const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
-    
+
     // Auto-retry once to give Firebase time to log in
     if (!u && !window._adminAuthAttempted) {
         window._adminAuthAttempted = true;
@@ -2315,7 +2315,7 @@ window.showAdminPanel = () => {
         setTimeout(() => window.showAdminPanel(), 1500);
         return;
     }
-    
+
     // Strict block
     if (!u || u.email !== "laszonaicreation@gmail.com") {
         alert("ACCESS DENIED: You are not authorized to view the control panel.");
@@ -2357,10 +2357,10 @@ window.showAdminPanel = () => {
 
     renderAdminUI();
 };
-window.hideAdminPanel = () => { 
-    document.getElementById('admin-panel').classList.add('hidden'); 
-    document.body.style.overflow = 'auto'; 
-    
+window.hideAdminPanel = () => {
+    document.getElementById('admin-panel').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+
     // URL Persistence: Clear admin params
     const url = new URL(window.location);
     url.searchParams.delete('admin');
@@ -2370,7 +2370,7 @@ window.hideAdminPanel = () => {
 
 window.switchAdminTab = (tab) => {
     state.adminTab = tab;
-    
+
     // URL Persistence: Update active tab
     const url = new URL(window.location);
     if (document.getElementById('admin-panel').classList.contains('hidden') === false) {
@@ -2429,7 +2429,7 @@ window.switchAdminTab = (tab) => {
     document.getElementById('tab-p').className = isProd ? activeClass : inactiveClass;
     document.getElementById('tab-c').className = isCat ? activeClass : inactiveClass;
     const tabM = document.getElementById('tab-m');
-    if(tabM) tabM.className = isMega ? activeClass : inactiveClass;
+    if (tabM) tabM.className = isMega ? activeClass : inactiveClass;
     document.getElementById('tab-s').className = isSlider ? activeClass : inactiveClass;
     document.getElementById('tab-a').className = isAnnounce ? activeClass : inactiveClass;
     document.getElementById('tab-i').className = isInsight ? activeClass : inactiveClass;
@@ -2444,9 +2444,9 @@ window.switchAdminTab = (tab) => {
 
 function populateCatSelect() {
     const selects = [document.getElementById('p-cat-id'), document.getElementById('landing-sec1-cat'), document.getElementById('landing-sec2-cat')];
-    
+
     const optionsHtml = `<option value="">Select Category</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    
+
     selects.forEach(select => {
         if (select) select.innerHTML = optionsHtml;
     });
@@ -2967,7 +2967,7 @@ function getOptimizedUrl(url, width) {
 }
 
 // Fallback: If Cloudinary transform URL fails, retry with original URL
-window.handleImgError = function(img) {
+window.handleImgError = function (img) {
     if (img._retried) return; // Avoid infinite loop
     img._retried = true;
     const src = img.src || '';
@@ -2984,7 +2984,7 @@ async function trackProductView(id) {
     if (!id || typeof id !== 'string') return;
     const today = getTodayStr();
     const sessionKey = `product_view_tracked_${today}_${id}`;
-    
+
     // Strict Synchronous Guard to prevent double/triple counting
     if (sessionStorage.getItem(sessionKey)) return;
     sessionStorage.setItem(sessionKey, 'true');
@@ -2994,11 +2994,11 @@ async function trackProductView(id) {
 
     try {
         const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
-        
+
         // 1. Update Global Stats (Product Journey Pillar)
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
         const globalField = isAd ? 'adProductClicks' : 'normalProductClicks';
-        
+
         // 2. Update Per-Product Stats (Top Items)
         const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
         const prodField = isAd ? 'adViews' : 'views';
@@ -3030,7 +3030,7 @@ function renderInsights(container, rangeData = null) {
     // 1. Auto-fetch Today's detailed stats in background if first open
     if (!rangeData) {
         const today = getTodayStr();
-        window.updateInsightsRange(today, today, true); 
+        window.updateInsightsRange(today, today, true);
     }
 
     // 2. Data Aggregation
@@ -3041,7 +3041,7 @@ function renderInsights(container, rangeData = null) {
 
     // Use current in-memory stats if no range is selected
     const today = getTodayStr();
-    
+
     // Calculate total views for health rate. If range, use range products. If all-time, use all products.
     const totalViews = source.p.reduce((acc, p) => acc + (p.views || 0) + (p.adViews || 0), 0);
     const adVisits = source.stats.adVisits || 0;
@@ -3167,15 +3167,15 @@ function renderInsights(container, rangeData = null) {
                         <p style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;margin-bottom:8px;">Broken Image URLs</p>
                         <div style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;">
                             ${(source.stats.brokenImages || []).map(url => {
-                                // Try to match URL to a product or category name
-                                const matchedProd = DATA.p.find(p => p.img && url.includes(p.img.split('/').pop().split('?')[0]));
-                                const matchedCat = DATA.c.find(c => c.img && url.includes(c.img.split('/').pop().split('?')[0]));
-                                const label = matchedProd ? matchedProd.name : matchedCat ? matchedCat.name + ' (Category)' : url.split('/').pop().split('?')[0].substring(0, 30);
-                                return `<div style="display:flex;align-items:center;gap:8px;background:rgba(239,68,68,0.1);border-radius:8px;padding:6px 8px;">
+        // Try to match URL to a product or category name
+        const matchedProd = DATA.p.find(p => p.img && url.includes(p.img.split('/').pop().split('?')[0]));
+        const matchedCat = DATA.c.find(c => c.img && url.includes(c.img.split('/').pop().split('?')[0]));
+        const label = matchedProd ? matchedProd.name : matchedCat ? matchedCat.name + ' (Category)' : url.split('/').pop().split('?')[0].substring(0, 30);
+        return `<div style="display:flex;align-items:center;gap:8px;background:rgba(239,68,68,0.1);border-radius:8px;padding:6px 8px;">
                                     <i class="fa-solid fa-triangle-exclamation" style="color:#f87171;font-size:9px;flex-shrink:0;"></i>
                                     <span style="font-size:9px;font-weight:600;color:#d1d5db;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${url}">${label}</span>
                                 </div>`;
-                            }).join('')}
+    }).join('')}
                         </div>
                     </div>` : ''}
                 </div>
@@ -3189,7 +3189,7 @@ function renderInsights(container, rangeData = null) {
                 <div class="divide-y divide-gray-50">
                     ${topProducts.map((p, i) => `
                         <div class="flex items-center gap-4 p-4 hover:bg-gray-50/50 transition-colors group">
-                            <div class="text-[11px] font-medium text-gray-300 w-4">${i+1}</div>
+                            <div class="text-[11px] font-medium text-gray-300 w-4">${i + 1}</div>
                             <img src="${getOptimizedUrl(p.img, 100)}" class="w-10 h-10 rounded-xl object-cover shadow-sm">
                             <div class="flex-1">
                                 <p class="text-[13px] font-medium text-gray-800 truncate">${p.name}</p>
@@ -3218,7 +3218,7 @@ function renderInsights(container, rangeData = null) {
     container.innerHTML = html;
 }
 
-window.updateInsightsRange = async function(passedStart = null, passedEnd = null, isSilent = false) {
+window.updateInsightsRange = async function (passedStart = null, passedEnd = null, isSilent = false) {
     if (typeof passedStart !== 'string') passedStart = null;
     if (typeof passedEnd !== 'string') passedEnd = null;
     const start = passedStart || document.getElementById('insights-start')?.value;
@@ -3242,9 +3242,9 @@ window.updateInsightsRange = async function(passedStart = null, passedEnd = null
         // To avoid issues with existing data, we fetch all daily_stats (1 doc/day) and filter locally.
         const globalRef = collection(db, 'artifacts', appId, 'public', 'data', 'daily_stats');
         const globalSnap = await getDocs(globalRef);
-        
+
         const aggregatedStats = {
-            adVisits: 0, normalVisits: 0, adProductClicks: 0, 
+            adVisits: 0, normalVisits: 0, adProductClicks: 0,
             normalProductClicks: 0, adInquiries: 0, imageLoadFail: 0,
             landingAdVisits: 0, brokenImages: []
         };
@@ -3307,17 +3307,17 @@ window.updateInsightsRange = async function(passedStart = null, passedEnd = null
     } catch (e) {
         console.error("[Insights] Range update error:", e);
         if (!isSilent) alert("Failed to fetch range data. Please try again.");
-        
+
         // RECOVERY: Even if it fails, try to show the dashboard with whatever local data we have to clear the spinner.
         const container = document.getElementById('admin-insights-list');
         if (container && container.innerHTML.includes('animate-spin')) {
-             renderInsights(container, {
+            renderInsights(container, {
                 stats: { adVisits: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, adInquiries: 0, imageLoadFail: 0 },
                 p: [],
                 startDate: start,
                 endDate: end,
                 error: true
-             });
+            });
         }
     } finally {
         if (!isSilent && btn) {
@@ -3334,11 +3334,11 @@ window.resetAdTraffic = async () => {
     if (!confirm("Are you sure you want to reset all Ad Traffic, Impressions, and Session data?")) return;
     try {
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_ad_stats_');
-        await setDoc(statsRef, { 
-            adVisits: 0, 
-            adInquiries: 0, 
-            adImpressions: 0, 
-            totalSessionSeconds: 0, 
+        await setDoc(statsRef, {
+            adVisits: 0,
+            adInquiries: 0,
+            adImpressions: 0,
+            totalSessionSeconds: 0,
             adHops: 0,
             normalVisits: 0,
             adProductClicks: 0,
@@ -3503,9 +3503,9 @@ function renderSlider() {
 
     slider.innerHTML = visibleSliders.map((s, i) => {
         const displayImg = isMobile ? s.mobileImg : s.img;
-        
+
         // Exact original mobile overlay vs New premium desktop overlay
-        const overlayHTML = s.title ? (isMobile 
+        const overlayHTML = s.title ? (isMobile
             ? `<div class="absolute bottom-12 left-8 text-white z-20">
                  <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
                </div>`
@@ -3576,7 +3576,7 @@ function initSliderDrag(slider) {
     slider.addEventListener('mouseup', (e) => {
         if (!isDown) return;
         isDown = false;
-        
+
         const endX = e.clientX;
         const diff = endX - startX;
         moveDistance = Math.abs(diff);
@@ -4249,10 +4249,10 @@ window.landingSec2Selected = [];
 window.searchLandingProducts = (sec, query) => {
     const dropdown = document.getElementById(`landing-${sec}-dropdown`);
     if (!dropdown) return;
-    
+
     const selectedList = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
     let matches = DATA.p.filter(p => !p.id.startsWith('_') && !p.id.startsWith('-'));
-    
+
     if (query && query.trim()) {
         matches = matches.filter(p => p.name.toLowerCase().includes(query.trim().toLowerCase()));
     }
@@ -4272,8 +4272,8 @@ window.searchLandingProducts = (sec, query) => {
 
     const catTabsHTML = `
         <div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-bottom:1px solid #f3f4f6;background:#f9fafb;position:sticky;top:0;z-index:10;">
-            <button onclick="landingSetCat('${sec}','all')" style="${activeCat==='all' ? tabActive : tabInactive}">All (${matches.length})</button>
-            ${catIds.map(cid => { const cat = DATA.c.find(c => c.id === cid); const label = cat ? cat.name : cid; return `<button onclick="landingSetCat('${sec}','${cid}')" style="${activeCat===cid ? tabActive : tabInactive}">${label}</button>`; }).join('')}
+            <button onclick="landingSetCat('${sec}','all')" style="${activeCat === 'all' ? tabActive : tabInactive}">All (${matches.length})</button>
+            ${catIds.map(cid => { const cat = DATA.c.find(c => c.id === cid); const label = cat ? cat.name : cid; return `<button onclick="landingSetCat('${sec}','${cid}')" style="${activeCat === cid ? tabActive : tabInactive}">${label}</button>`; }).join('')}
         </div>`;
 
     if (filtered.length === 0) {
@@ -4328,7 +4328,7 @@ window.renderLandingPills = (sec) => {
     const list = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
     const container = document.getElementById(`landing-${sec}-pills`);
     if (!container) return;
-    
+
     if (list.length === 0) {
         container.innerHTML = `<span class="text-[9px] text-gray-400 italic font-bold">No products selected...</span>`;
         return;
@@ -4360,13 +4360,13 @@ window.populateLandingSettingsUI = () => {
         if (document.getElementById('landing-hero-desk')) document.getElementById('landing-hero-desk').value = DATA.landingSettings.heroDesk || "img/";
         if (document.getElementById('landing-sec1-title')) document.getElementById('landing-sec1-title').value = DATA.landingSettings.sec1Title || "";
         if (document.getElementById('landing-sec1-subtitle')) document.getElementById('landing-sec1-subtitle').value = DATA.landingSettings.sec1Subtitle || "";
-        
+
         window.landingSec1Selected = DATA.landingSettings.sec1Products || [];
         renderLandingPills('sec1');
-        
+
         if (document.getElementById('landing-sec2-title')) document.getElementById('landing-sec2-title').value = DATA.landingSettings.sec2Title || "";
         if (document.getElementById('landing-sec2-subtitle')) document.getElementById('landing-sec2-subtitle').value = DATA.landingSettings.sec2Subtitle || "";
-        
+
         window.landingSec2Selected = DATA.landingSettings.sec2Products || [];
         renderLandingPills('sec2');
     }
@@ -4391,11 +4391,11 @@ window.saveLandingSettings = async () => {
 
     try {
         const data = { announcement, heroMob, heroDesk, sec1Title, sec1Subtitle, sec1Products, sec2Title, sec2Subtitle, sec2Products };
-        
+
         // Save using setDoc into the products collection to bypass potential new collection Firebase Rules
         const landRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_landing_settings_');
         await setDoc(landRef, data);
-        
+
         showToast("Landing Page Settings Saved");
         DATA.landingSettings = data;
     } catch (err) {
@@ -4520,7 +4520,7 @@ window.exportLeadsExcel = () => {
 
 window.resetInsightsData = async () => {
     if (!confirm("Are you sure you want to reset all Insights data? This will clear all visit counts, product views, and leads forever.")) return;
-    
+
     if (typeof showToast === 'function') showToast("Resetting insights...", "info");
     const topBtn = document.getElementById('update-range-btn');
     if (topBtn) { topBtn.disabled = true; topBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Resetting...'; }
@@ -4535,7 +4535,7 @@ window.resetInsightsData = async () => {
 
         let batch = writeBatch(db);
         let batchCount = 0;
-        
+
         const commitBatch = async () => {
             if (batchCount > 0) {
                 await batch.commit();
@@ -4570,11 +4570,11 @@ window.resetInsightsData = async () => {
             batchCount++;
             if (batchCount === 400) await commitBatch();
         }
-        
+
         await commitBatch();
 
         if (typeof showToast === 'function') showToast("Insights reset successfully!", "success");
-        
+
         // Local Sync & Refresh
         await refreshData();
         // Recover Insights
@@ -4707,26 +4707,29 @@ function renderSearchResults() {
         const currentHeight = grid.offsetHeight;
         if (currentHeight > 0) grid.style.minHeight = `${currentHeight}px`;
 
+        // Update load-more button (calculate before rAF so values are captured)
+        const hasMore = filtered.length > limit;
+
         // Use requestAnimationFrame to not block the keyboard
+        // IMPORTANT: load-more button update is INSIDE rAF so it stays in sync with grid render
         requestAnimationFrame(() => {
             grid.innerHTML = gridContent;
             setTimeout(() => { grid.style.minHeight = ''; }, 600);
-        });
 
-        // Update load-more button
-        const hasMore = filtered.length > limit;
-        const loadMoreContainer = document.getElementById('load-more-container');
-        if (loadMoreContainer) {
-            if (hasMore) {
-                loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
-                loadMoreContainer.style.display = 'flex';
-            } else if (state.visibleChunks > 1) {
-                loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i></button>`;
-                loadMoreContainer.style.display = 'flex';
-            } else {
-                loadMoreContainer.style.display = 'none';
+            // Update load-more button AFTER grid is rendered
+            const loadMoreContainer = document.getElementById('load-more-container');
+            if (loadMoreContainer) {
+                if (hasMore) {
+                    loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
+                    loadMoreContainer.style.display = 'flex';
+                } else if (state.visibleChunks > 1) {
+                    loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i></button>`;
+                    loadMoreContainer.style.display = 'flex';
+                } else {
+                    loadMoreContainer.style.display = 'none';
+                }
             }
-        }
+        });
 
         // Update slider visibility for search state
         renderSlider();
@@ -4889,7 +4892,7 @@ window.handleAuthSubmit = async (e) => {
     const name = document.getElementById('auth-name').value.trim();
 
     if (!email || !password) return showToast("Please fill all fields");
-    
+
     btn.disabled = true;
     const originalText = btn.innerHTML;
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing...`;
@@ -4967,7 +4970,7 @@ window.handlePasswordResetFlow = async () => {
         try {
             // Verify link validity before showing modal to prevent confusing users with dead links
             await verifyPasswordResetCode(auth, oobCode);
-            
+
             // Link is valid, show Reset Modal
             document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
             const resetModal = document.getElementById('auth-reset-modal');
@@ -4993,7 +4996,7 @@ window.handlePasswordResetFormSubmit = async (e) => {
     const oobCode = document.getElementById('auth-reset-oobCode').value;
 
     if (!newPassword || newPassword.length < 6) return showToast("Password must be at least 6 characters");
-    
+
     btn.disabled = true;
     const originalText = btn.innerHTML;
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
@@ -5001,17 +5004,17 @@ window.handlePasswordResetFormSubmit = async (e) => {
     try {
         await confirmPasswordReset(auth, oobCode, newPassword);
         showToast("Password Reset Successfully! Please login.");
-        
+
         // Clean up URL and UI
         window.history.replaceState({}, document.title, window.location.pathname);
         document.getElementById('auth-reset-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
-        
+
         // Open standard login window automatically
         state.authMode = 'login';
         window.updateAuthUI();
         document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
         document.getElementById('auth-reset-form').reset();
-        
+
     } catch (err) {
         showToast(err.message.replace("Firebase:", "").trim() || "Failed to reset password");
     } finally {
