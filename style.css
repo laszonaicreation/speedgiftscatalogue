@@ -210,7 +210,7 @@ body {
     font-size: 8.5px;
     font-weight: 400;
     text-transform: capitalize;
-    letter-spacing: 0.1em;
+    letter-spacing: normal;
     color: #111111;
     text-align: center;
     max-width: 100%;
@@ -1663,4 +1663,12 @@ img[src=""] {
 #customer-search:focus {
     border-color: #d1d5db !important;
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Mobile Product Card Font Refinement */
+@media (max-width: 767px) {
+    .product-card h3 {
+        font-weight: 400 !important;
+        font-size: 12px !important;
+    }
 }
