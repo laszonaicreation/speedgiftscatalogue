@@ -93,13 +93,15 @@ body {
 /* CUSTOMER VIEW - Home Card Styling */
 .product-card h3 {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 400;
+    font-family: 'Poppins', sans-serif;
 }
 
 .price-tag {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: #111111;
+    font-family: 'Poppins', sans-serif;
 }
 
 .no-scrollbar::-webkit-scrollbar {
