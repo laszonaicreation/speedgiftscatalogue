@@ -819,17 +819,17 @@
             }
 
             .view-more-btn-custom {
-                padding: 0.75rem 2rem !important;
+                padding: 0.75rem 2.5rem !important;
                 font-size: 11px !important;
-                border: 1.5px solid #f3f4f6 !important;
-                /* Off-white/Light gray border */
-                color: #4b5563 !important;
-                /* Softer dark text */
+                border: none !important;
+                background-color: #111111 !important;
+                color: #ffffff !important;
+                border-radius: 99px !important;
             }
 
             @media (max-width: 767px) {
                 .view-more-btn-custom {
-                    padding: 0.4rem 1rem !important;
+                    padding: 0.75rem 1.5rem !important;
                     font-size: 9.5px !important;
                 }
             }
@@ -1003,15 +1003,15 @@
         </div>
 
         <!-- SPACER FOR MOBILE -->
-        <div class="md:hidden w-full" style="height: 2.5rem;"></div>
+        <div class="md:hidden w-full" style="height: 35px;"></div>
 
-        <div class="category-scroll-container md:hidden" style="position:relative; width:100vw; margin-left: calc(-1 * ((100vw - 100%) / 2)); padding-left: calc((100vw - 100%) / 2);">
+        <div class="category-scroll-container md:hidden" style="position:relative; width:100vw; margin-left: calc(-1 * ((100vw - 100%) / 2)); padding-left: calc((100vw - 100%) / 2); margin-bottom: 0px;">
             <div id="category-row"
                 class="no-scrollbar overflow-x-auto pt-3 pb-2 px-2 scroll-smooth"
                 style="display:grid; grid-template-rows: repeat(2, auto); grid-auto-flow: column; gap: 6px 1px;"
                 onscroll="window.handleCategoryRowScroll(this)"></div>
             <!-- Progress bar: immediately below images -->
-            <div style="padding: 15px 14px 10px 14px; display:flex; justify-content:center;">
+            <div style="padding: 13px 14px 0px 14px; display:flex; justify-content:center;">
                 <div style="height:3px; background:#efefef; border-radius:99px; overflow:hidden; width:80px;">
                     <div id="cat-scroll-bar" style="height:100%; width:30%; background:#111111; border-radius:99px; transition:width 0.25s ease;"></div>
                 </div>
@@ -1022,10 +1022,10 @@
         <div class="hidden md:block w-full" style="height: 3.5rem;"></div>
 
         <!-- MODERN CATEGORY HEADER -->
-        <div class="relative w-full flex items-center justify-center mb-8 md:mb-12 mt-0 fade-in min-h-[90px]">
+        <div class="relative w-full flex items-center justify-center mb-6 md:mb-12 mt-0 fade-in min-h-0 md:min-h-[90px]" style="margin-top: 35px !important;">
             <div class="text-center px-4 w-full md:px-48">
                 <h3 id="active-category-title" class="font-black capitalize tracking-wide text-gray-900"
-                    style="font-family: 'Poppins', sans-serif; font-size: clamp(26px, 4vw, 38px); margin-bottom: 0; line-height: 1.1;">
+                    style="font-family: 'Poppins', sans-serif; font-size: clamp(26px, 4vw, 38px); margin-top: 0; margin-bottom: 0; line-height: 1.1;">
                 </h3>
 
 

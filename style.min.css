@@ -271,7 +271,13 @@ img[src=""] {
 /* NEW USABILITY ENHANCEMENTS */
 .category-scroll-container {
     position: relative;
-    margin-bottom: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .category-scroll-container {
+        margin-bottom: 2.5rem;
+    }
 }
 
 

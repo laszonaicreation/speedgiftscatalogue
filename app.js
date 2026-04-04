@@ -1186,14 +1186,14 @@ function renderHome() {
             
             if (hasMore) {
                 loadMoreContainer.innerHTML = `
-                    <button onclick="window.loadMoreProducts()" class="bg-white text-black rounded-full font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
-                        View More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i>
+                    <button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
+                        View More <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i>
                     </button>
                 `;
                 loadMoreContainer.style.display = 'flex';
             } else if (state.visibleChunks > 1) {
                 loadMoreContainer.innerHTML = `
-                    <button onclick="window.showLessProducts()" class="bg-white text-black rounded-full font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
+                    <button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
                         Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i>
                     </button>
                 `;
@@ -4718,10 +4718,10 @@ function renderSearchResults() {
         const loadMoreContainer = document.getElementById('load-more-container');
         if (loadMoreContainer) {
             if (hasMore) {
-                loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-white text-black rounded-full font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More Products <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
+                loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
                 loadMoreContainer.style.display = 'flex';
             } else if (state.visibleChunks > 1) {
-                loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-white text-black rounded-full font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black hover:text-white hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i></button>`;
+                loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i></button>`;
                 loadMoreContainer.style.display = 'flex';
             } else {
                 loadMoreContainer.style.display = 'none';
