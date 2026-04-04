@@ -947,7 +947,7 @@ function renderHome() {
             if (catRow) catRow.classList.remove('hidden');
             if (categorySelector) categorySelector.classList.remove('hidden');
 
-            let cHtml = `<div class="category-item ${state.filter === 'all' ? 'active' : ''}" onclick="applyFilter('all', event)"><div class="category-img-box flex items-center justify-center bg-gray-50 text-[10px] font-black text-gray-300">All</div><p class="category-label">Explore</p></div>`;
+            let cHtml = ``;
             const isAdminVisible = !document.getElementById('admin-entry-btn').classList.contains('hidden');
 
             let categories = [...DATA.c].sort((a, b) => {
@@ -2218,6 +2218,15 @@ window.handleCategoryRowScroll = (el) => {
     const isAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 10;
     if (isAtEnd) container.classList.add('scrolled-end');
     else container.classList.remove('scrolled-end');
+
+    // Update progress bar
+    const bar = document.getElementById('cat-scroll-bar');
+    if (bar && el.scrollWidth > el.clientWidth) {
+        const scrollRatio = el.scrollLeft / (el.scrollWidth - el.clientWidth);
+        // Bar goes from 20% (at start) to 100% (at end)
+        const barWidth = 20 + scrollRatio * 80;
+        bar.style.width = barWidth + '%';
+    }
 };
 
 window.applyFilter = (id, e) => {
