@@ -1114,7 +1114,19 @@ function renderHome() {
                     <div class="px-1 text-left flex justify-between items-start mt-4">
                         <div class="flex-1 min-w-0">
                             <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${displayP.name}</h3>
-                            <p class="price-tag mt-2 font-bold">${displayP.price} AED</p>
+                            ${(() => {
+                                const origPrice = parseFloat(displayP.originalPrice);
+                                const salePrice = parseFloat(displayP.price);
+                                if (displayP.originalPrice && origPrice > salePrice) {
+                                    const disc = Math.round((1 - salePrice / origPrice) * 100);
+                                    return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
+                                        '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + displayP.originalPrice + ' AED</span>' +
+                                        '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + displayP.price + ' AED</span>' +
+                                        '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span>' +
+                                        '</div>';
+                                }
+                                return '<p class="price-tag mt-2 font-bold">' + displayP.price + ' AED</p>';
+                            })()}
                         </div>
                         <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="toggleWishlist(event, '${p.id}')">
                             <i class="fa-solid fa-heart"></i>
@@ -1305,7 +1317,19 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
                         <h2 class="detail-product-name capitalize !mb-0">${p.name}</h2>
                         ${p.badge ? `<span class="detail-badge badge-${p.badge}">${getBadgeLabel(p.badge)}</span>` : ''}
                     </div>
-                    <p class="detail-price-text text-xl md:text-2xl">${p.price} AED</p>
+                    ${(() => {
+                        const origP = parseFloat(p.originalPrice);
+                        const saleP = parseFloat(p.price);
+                        if (p.originalPrice && origP > saleP) {
+                            const disc = Math.round((1 - saleP / origP) * 100);
+                            return `<div class="flex items-baseline gap-3 flex-wrap mt-1">
+                                <span class="detail-price-text text-xl md:text-2xl">${p.price} AED</span>
+                                <span class="text-base line-through text-gray-400 font-normal">${p.originalPrice} AED</span>
+                                <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
+                            </div>`;
+                        }
+                        return `<p class="detail-price-text text-xl md:text-2xl">${p.price} AED</p>`;
+                    })()}
                 </div>
 
                 <div class="space-y-6 pt-4 border-t border-gray-50">
@@ -1565,6 +1589,7 @@ window.saveProduct = async () => {
     const data = {
         name: document.getElementById('p-name')?.value || "",
         price: document.getElementById('p-price')?.value || "",
+        originalPrice: document.getElementById('p-original-price')?.value || "",
         size: document.getElementById('p-size')?.value || "",
         material: document.getElementById('p-material')?.value || "",
         inStock: document.getElementById('p-stock')?.checked ?? true,
@@ -1686,6 +1711,8 @@ window.editProduct = (id) => {
     if (pCatId) pCatId.value = item.catId || "";
     if (pBadge) pBadge.value = item.badge || ""; // Added
     if (pFeatured) pFeatured.value = item.isFeatured ? 'true' : 'false';
+    const pOriginalPrice = document.getElementById('p-original-price');
+    if (pOriginalPrice) pOriginalPrice.value = item.originalPrice || "";
 
     if (pDesc) pDesc.value = item.desc;
     if (pKeywords) pKeywords.value = item.keywords || "";
