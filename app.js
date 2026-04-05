@@ -2371,7 +2371,7 @@ window.showAdminPanel = () => {
     if (typeof populateLandingProductSelects === 'function') populateLandingProductSelects();
     populateLandingSettingsUI();
 
-    renderAdminUI();
+    switchAdminTab(state.adminTab || 'products');
 };
 window.hideAdminPanel = () => {
     document.getElementById('admin-panel').classList.add('hidden');
@@ -2444,8 +2444,8 @@ window.switchAdminTab = (tab) => {
 
     document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
 
-    const activeClass = "flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase transition-all bg-white shadow-xl";
-    const inactiveClass = "flex-1 min-w-[100px] py-4 rounded-xl text-[10px] font-bold uppercase text-gray-400 transition-all hover:bg-white/50";
+    const activeClass = "w-full flex items-center justify-start gap-4 px-5 py-4 rounded-xl text-[11px] font-bold uppercase transition-all bg-black text-white shadow-lg";
+    const inactiveClass = "w-full flex items-center justify-start gap-4 px-5 py-4 rounded-xl text-[11px] font-bold uppercase text-gray-400 hover:bg-gray-50 hover:text-black transition-all";
 
     document.getElementById('tab-p').className = isProd ? activeClass : inactiveClass;
     document.getElementById('tab-c').className = isCat ? activeClass : inactiveClass;
