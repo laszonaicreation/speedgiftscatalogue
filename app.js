@@ -1200,15 +1200,15 @@ function renderHome() {
 
             if (hasMore) {
                 loadMoreContainer.innerHTML = `
-                    <button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
-                        View More <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i>
+                    <button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
+                        View More <i class="fa-solid fa-arrow-down transform md:group-hover:translate-y-1 transition-transform"></i>
                     </button>
                 `;
                 loadMoreContainer.style.display = 'flex';
             } else if (state.visibleChunks > 1) {
                 loadMoreContainer.innerHTML = `
-                    <button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
-                        Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i>
+                    <button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
+                        Show Less <i class="fa-solid fa-arrow-up transform md:group-hover:-translate-y-1 transition-transform"></i>
                     </button>
                 `;
                 loadMoreContainer.style.display = 'flex';
@@ -4646,7 +4646,7 @@ window.renderSpotlightSection = () => {
                     .spotlight-mobile-flex { display: flex !important; }
                 }
                 @media (min-width: 768px) {
-                    .spotlight-desktop-grid { display: flex !important; justify-content: center; flex-wrap: wrap; gap: 20px !important; }
+                    .spotlight-desktop-grid { display: grid !important; }
                     .spotlight-mobile-flex { display: none !important; }
                 }
             </style>
@@ -4684,12 +4684,12 @@ window.renderSpotlightSection = () => {
             </div>
 
             <!-- DESKTOP GRID VIEW -->
-            <div class="spotlight-desktop-grid mt-4 px-0" style="column-gap: 23px; row-gap: 32px;">
+            <div class="spotlight-desktop-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4 justify-center">
                 ${spotlightProducts.map(p => {
         const pImg = [p.img, ...(p.images || []), p.img2, p.img3].find(u => u && u !== 'img/') || 'img/';
         const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
         return `
-                    <div class="product-card group" data-id="${p.id}" style="width: 270px !important; flex: 0 0 270px !important; max-width: 270px !important;"
+                    <div class="product-card group" data-id="${p.id}"
                          onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
                         <div class="img-container mb-4 shadow-sm relative">
                             ${badgeHtml}
@@ -5025,10 +5025,10 @@ function renderSearchResults() {
             const loadMoreContainer = document.getElementById('load-more-container');
             if (loadMoreContainer) {
                 if (hasMore) {
-                    loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More <i class="fa-solid fa-arrow-down transform group-hover:translate-y-1 transition-transform"></i></button>`;
+                    loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More <i class="fa-solid fa-arrow-down transform md:group-hover:translate-y-1 transition-transform"></i></button>`;
                     loadMoreContainer.style.display = 'flex';
                 } else if (state.visibleChunks > 1) {
-                    loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform group-hover:-translate-y-1 transition-transform"></i></button>`;
+                    loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform md:group-hover:-translate-y-1 transition-transform"></i></button>`;
                     loadMoreContainer.style.display = 'flex';
                 } else {
                     loadMoreContainer.style.display = 'none';
