@@ -28,7 +28,7 @@ const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'p
 const landingSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'landingSettings');
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
-let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
+let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, homeSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, selected: [], wishlist: [], cart: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1, authMode: 'login' };
 const PAGE_SIZE = 16;
 let clicks = 0, lastClickTime = 0;
@@ -649,6 +649,14 @@ async function refreshData(isNavigationOnly = false) {
                 DATA.landingSettings = null;
             }
 
+            // Apply Home Settings (from products collection)
+            const homeDoc = DATA.p.find(p => p.id === '_home_settings_');
+            if (homeDoc) {
+                DATA.homeSettings = { ...homeDoc };
+            } else {
+                DATA.homeSettings = null;
+            }
+
             // Extract stats from legacy _ad_stats_ 
             const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
             const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
@@ -669,7 +677,7 @@ async function refreshData(isNavigationOnly = false) {
             }
 
             // Remove internal docs from the products list
-            DATA.p = DATA.p.filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_'].includes(p.id));
+            DATA.p = DATA.p.filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id));
 
             renderAnnouncementBar();
             renderDesktopMegaMenu();
@@ -1181,7 +1189,13 @@ function renderHome() {
                 loadMoreContainer = document.createElement('div');
                 loadMoreContainer.id = 'load-more-container';
                 loadMoreContainer.className = 'w-full flex justify-center view-more-container-custom';
-                grid.parentElement.appendChild(loadMoreContainer);
+
+                const spotlightContainer = grid.parentElement.querySelector('#spotlight-section');
+                if (spotlightContainer) {
+                    grid.parentElement.insertBefore(loadMoreContainer, spotlightContainer);
+                } else {
+                    grid.parentElement.appendChild(loadMoreContainer);
+                }
             }
 
             if (hasMore) {
@@ -1204,6 +1218,7 @@ function renderHome() {
         }
 
         renderSlider();
+        renderSpotlightSection();
         initImpressionTracking();
 
         // 5. Update Search & Sort UI
@@ -2385,6 +2400,7 @@ window.switchAdminTab = (tab) => {
     const isAnnounce = tab === 'announcements';
     const isLeads = tab === 'leads';
     const isLanding = tab === 'landing';
+    const isHomepage = tab === 'homepage';
 
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
     document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isProd);
@@ -2392,9 +2408,13 @@ window.switchAdminTab = (tab) => {
     document.getElementById('admin-megamenu-section')?.classList.toggle('hidden', !isMega);
     document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
     document.getElementById('admin-landing-section').classList.toggle('hidden', !isLanding);
+    document.getElementById('admin-homepage-section')?.classList.toggle('hidden', !isHomepage);
     document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
     document.getElementById('admin-announcements-section').classList.toggle('hidden', !isAnnounce);
     document.getElementById('admin-leads-section').classList.toggle('hidden', !isLeads);
+
+    // Populate homepage admin UI when switching to it
+    if (isHomepage) populateHomeAdminUI();
 
     // Center Insights View Full Width
     document.getElementById('admin-form-container').classList.toggle('hidden', isInsight);
@@ -2435,15 +2455,17 @@ window.switchAdminTab = (tab) => {
     document.getElementById('tab-i').className = isInsight ? activeClass : inactiveClass;
     document.getElementById('tab-landing').className = isLanding ? activeClass : inactiveClass;
     document.getElementById('tab-l').className = isLeads ? activeClass : inactiveClass;
+    const tabHp = document.getElementById('tab-hp');
+    if (tabHp) tabHp.className = isHomepage ? activeClass : inactiveClass;
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : ""))))));
+    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : "")))))));
     renderAdminUI();
 };
 
 /* CATEGORY PICKER LOGIC */
 
 function populateCatSelect() {
-    const selects = [document.getElementById('p-cat-id'), document.getElementById('landing-sec1-cat'), document.getElementById('landing-sec2-cat')];
+    const selects = [document.getElementById('p-cat-id'), document.getElementById('landing-sec1-cat'), document.getElementById('landing-sec2-cat'), document.getElementById('spotlight-cat-id')];
 
     const optionsHtml = `<option value="">Select Category</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
@@ -4415,7 +4437,290 @@ document.addEventListener('mousedown', (e) => {
     if (!e.target.closest('#landing-sec2-search') && !e.target.closest('#landing-sec2-dropdown')) {
         document.getElementById('landing-sec2-dropdown')?.classList.add('hidden');
     }
+    if (!e.target.closest('#spotlight-product-search') && !e.target.closest('#spotlight-dropdown')) {
+        document.getElementById('spotlight-dropdown')?.classList.add('hidden');
+    }
 });
+
+/* ==============================================================================
+   HOME PAGE (SPOTLIGHT) SETTINGS LOGIC
+   ============================================================================== */
+
+window.spotlightSelectedProducts = [];
+
+window.addSpotlightProduct = (id) => {
+    if (!window.spotlightSelectedProducts.includes(id)) {
+        window.spotlightSelectedProducts.push(id);
+    }
+    const searchInput = document.getElementById('spotlight-product-search');
+    if (searchInput) searchInput.value = '';
+    document.getElementById('spotlight-dropdown')?.classList.add('hidden');
+    renderSpotlightPills();
+};
+
+window.removeSpotlightProduct = (id) => {
+    window.spotlightSelectedProducts = window.spotlightSelectedProducts.filter(x => x !== id);
+    renderSpotlightPills();
+};
+
+window.renderSpotlightPills = () => {
+    const container = document.getElementById('spotlight-pills');
+    if (!container) return;
+
+    if (!window.spotlightSelectedProducts || window.spotlightSelectedProducts.length === 0) {
+        container.innerHTML = `<span class="text-[9px] text-gray-400 italic font-bold">No products selected yet...</span>`;
+        return;
+    }
+
+    container.innerHTML = window.spotlightSelectedProducts.map(id => {
+        const p = DATA.p.find(x => x.id === id);
+        if (!p) return '';
+        return `
+            <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm transition-all hover:border-black group">
+                <img src="${getOptimizedUrl(p.img, 50)}" class="w-5 h-5 rounded-lg object-cover shadow-sm bg-gray-50">
+                <span class="text-[9px] font-black uppercase tracking-tight truncate max-w-[140px] text-gray-800">${p.name}</span>
+                <button type="button" onclick="removeSpotlightProduct('${id}')" 
+                    class="w-5 h-5 flex items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-red-500 transition-all ml-1">
+                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+};
+
+window.searchSpotlightProducts = (query) => {
+    const dropdown = document.getElementById('spotlight-dropdown');
+    if (!query || query.trim().length < 1) {
+        dropdown?.classList.add('hidden');
+        return;
+    }
+
+    const q = query.toLowerCase().trim();
+    const matches = DATA.p.filter(p =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.id && p.id.toLowerCase() === q)
+    ).slice(0, 8);
+
+    if (matches.length === 0) {
+        if (dropdown) {
+            dropdown.innerHTML = `<div class="p-4 text-[10px] text-gray-400 font-bold uppercase italic text-center">No products found</div>`;
+            dropdown.classList.remove('hidden');
+        }
+        return;
+    }
+
+    if (dropdown) {
+        dropdown.innerHTML = matches.map(p => `
+            <div onclick="addSpotlightProduct('${p.id}')" 
+                 class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors group">
+                <img src="${getOptimizedUrl(p.img, 100)}" class="w-10 h-10 rounded-xl object-cover bg-gray-50 shadow-sm group-hover:scale-105 transition-transform">
+                <div class="flex-1 min-w-0">
+                    <div class="text-[10px] font-black uppercase text-gray-900 truncate">${p.name}</div>
+                    <div class="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">${p.price} AED</div>
+                </div>
+                <i class="fa-solid fa-plus text-gray-300 group-hover:text-black mr-2 text-[10px]"></i>
+            </div>
+        `).join('');
+        dropdown.classList.remove('hidden');
+    }
+};
+
+window.populateHomeAdminUI = () => {
+
+    if (DATA.homeSettings) {
+        if (document.getElementById('spotlight-enabled')) document.getElementById('spotlight-enabled').checked = DATA.homeSettings.spotlightEnabled || false;
+        if (document.getElementById('spotlight-title')) document.getElementById('spotlight-title').value = DATA.homeSettings.spotlightTitle || "";
+        if (document.getElementById('spotlight-subtitle')) document.getElementById('spotlight-subtitle').value = DATA.homeSettings.spotlightSubtitle || "";
+        if (document.getElementById('spotlight-cat-id')) document.getElementById('spotlight-cat-id').value = DATA.homeSettings.spotlightCatId || "";
+        if (document.getElementById('spotlight-limit')) document.getElementById('spotlight-limit').value = DATA.homeSettings.spotlightLimit || 8;
+
+        window.spotlightSelectedProducts = DATA.homeSettings.spotlightProducts || [];
+        renderSpotlightPills();
+    }
+};
+
+window.saveHomeSettings = async () => {
+    const spotlightEnabled = document.getElementById('spotlight-enabled').checked;
+    const spotlightTitle = document.getElementById('spotlight-title').value;
+    const spotlightSubtitle = document.getElementById('spotlight-subtitle').value;
+    const spotlightCatId = document.getElementById('spotlight-cat-id').value;
+    const spotlightLimit = parseInt(document.getElementById('spotlight-limit').value) || 8;
+    const spotlightProducts = window.spotlightSelectedProducts || [];
+
+    const btn = document.getElementById('homepage-save-btn');
+    if (btn) {
+        btn.innerText = "Saving Configuration...";
+        btn.disabled = true;
+    }
+
+    try {
+        const data = { spotlightEnabled, spotlightTitle, spotlightSubtitle, spotlightCatId, spotlightLimit, spotlightProducts };
+
+        const homeRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_home_settings_');
+        await setDoc(homeRef, data);
+
+        showToast("Home Page Settings Saved", "success");
+        DATA.homeSettings = data;
+
+        // Refresh home render to show changes
+        renderHome();
+
+    } catch (err) {
+        console.error(err);
+        showToast("Error Saving Settings", "error");
+    } finally {
+        if (btn) {
+            btn.innerText = "Save Configuration";
+            btn.disabled = false;
+        }
+    }
+};
+
+window.renderSpotlightSection = () => {
+    const appMain = document.getElementById('app');
+    const container = appMain ? appMain.querySelector('#spotlight-section') : null;
+    if (!container) return;
+
+    // Only show if we are on the main collections page (no filter, no search, no product detail open)
+    const isProductDetail = new URLSearchParams(window.location.search).has('p');
+    if (!DATA.homeSettings || !DATA.homeSettings.spotlightEnabled || state.filter !== 'all' || state.search || state.selectionId || isProductDetail) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+    }
+
+    const { spotlightTitle, spotlightSubtitle, spotlightCatId, spotlightLimit, spotlightProducts: selectedIds } = DATA.homeSettings;
+
+    // Only show if we have either a category or specific products
+    if (!spotlightCatId && (!selectedIds || selectedIds.length === 0)) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    // Get products
+    const stockFilter = (items) => items.filter(p => p.inStock !== false);
+    let spotlightProducts = [];
+
+    // PRIORitize selected products
+    if (selectedIds && selectedIds.length > 0) {
+        spotlightProducts = selectedIds.map(id => DATA.p.find(p => p.id === id)).filter(Boolean);
+    } else if (spotlightCatId) {
+        spotlightProducts = stockFilter(DATA.p.filter(p => p.catId === spotlightCatId));
+        // Limit to configured amount only if we are using the category auto-feed
+        spotlightProducts = spotlightProducts.slice(0, spotlightLimit || 8);
+    }
+
+    const titleText = spotlightTitle || "Featured Spotlight";
+    const subText = spotlightSubtitle || "";
+
+    const html = `
+        <div class="mt-8 pt-8 md:mt-20 md:pt-12 border-t border-gray-50">
+            <!-- MODERN CATEGORY HEADER (Centered) -->
+            <div class="relative w-full flex items-center justify-center mb-6 md:mb-12 mt-0 fade-in min-h-0 md:min-h-[90px]">
+                <div class="text-center px-4 w-full md:px-48">
+                    <h3 class="font-black capitalize tracking-wide text-gray-900"
+                        style="font-family: 'Poppins', sans-serif; font-size: clamp(26px, 4vw, 38px); margin-top: 0; margin-bottom: 0; line-height: 1.1;">
+                        ${titleText}
+                    </h3>
+                    ${subText ? `
+                    <p class="font-normal capitalize text-gray-400"
+                        style="font-family: 'Poppins', sans-serif; font-size: clamp(12px, 2vw, 16px); margin-top: 0.4rem; letter-spacing: 1px;">
+                        ${subText}
+                    </p>` : ''}
+                </div>
+                <!-- Interactive Swipe Indicator (Mobile Only) -->
+                <div class="md:hidden absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-gray-300 pointer-events-none" style="animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
+                    <span class="text-[8px] font-black uppercase tracking-[0.2em]">Swipe</span>
+                    <i class="fa-solid fa-chevron-right text-[9px] translate-y-[0.5px]"></i>
+                </div>
+            </div>
+            
+            <style>
+                /* Prevent horizontal scrollbar purely on mobile */
+                .spotlight-mobile-scroll::-webkit-scrollbar { display: none; }
+                .spotlight-mobile-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+                
+                /* Explicit responsive toggles */
+                @media (max-width: 767px) {
+                    .spotlight-desktop-grid { display: none !important; }
+                    .spotlight-mobile-flex { display: flex !important; }
+                }
+                @media (min-width: 768px) {
+                    .spotlight-desktop-grid { display: grid !important; }
+                    .spotlight-mobile-flex { display: none !important; }
+                }
+            </style>
+            
+            <!-- MOBILE SWIPE VIEW -->
+            <div class="spotlight-mobile-flex related-scroll-wrapper snap-x pb-4 spotlight-mobile-scroll">
+                ${spotlightProducts.map(p => {
+        const pImg = [p.img, ...(p.images || []), p.img2, p.img3].find(u => u && u !== 'img/') || 'img/';
+        const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
+        return `
+                    <div class="product-card group flex-shrink-0 w-[160px] sm:w-[200px] snap-start" data-id="${p.id}" style="margin-right: 12px;"
+                         onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
+                        <div class="img-container mb-4 shadow-sm relative">
+                            ${badgeHtml}
+                            <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
+                        </div>
+                        <div class="px-1 text-left flex justify-between items-start mt-4">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
+                                ${(() => {
+                const origPrice = parseFloat(p.originalPrice); const salePrice = parseFloat(p.price);
+                if (p.originalPrice && origPrice > salePrice) {
+                    const disc = Math.round((1 - salePrice / origPrice) * 100);
+                    return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
+                        '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + p.originalPrice + ' AED</span>' +
+                        '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + p.price + ' AED</span>' +
+                        '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span></div>';
+                }
+                return '<p class="price-tag mt-2 font-bold">' + p.price + ' AED</p>';
+            })()}
+                            </div>
+                        </div>
+                    </div>`;
+    }).join('')}
+            </div>
+
+            <!-- DESKTOP GRID VIEW -->
+            <div class="spotlight-desktop-grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 mt-4 px-0" style="column-gap: 23px; row-gap: 32px;">
+                ${spotlightProducts.map(p => {
+        const pImg = [p.img, ...(p.images || []), p.img2, p.img3].find(u => u && u !== 'img/') || 'img/';
+        const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
+        return `
+                    <div class="product-card group" data-id="${p.id}" 
+                         onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
+                        <div class="img-container mb-4 shadow-sm relative">
+                            ${badgeHtml}
+                            <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
+                        </div>
+                        <div class="px-1 text-left flex justify-between items-start mt-4">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
+                                ${(() => {
+                const origPrice = parseFloat(p.originalPrice); const salePrice = parseFloat(p.price);
+                if (p.originalPrice && origPrice > salePrice) {
+                    const disc = Math.round((1 - salePrice / origPrice) * 100);
+                    return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
+                        '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + p.originalPrice + ' AED</span>' +
+                        '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + p.price + ' AED</span>' +
+                        '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span></div>';
+                }
+                return '<p class="price-tag mt-2 font-bold">' + p.price + ' AED</p>';
+            })()}
+                            </div>
+                        </div>
+                    </div>`;
+    }).join('')}
+            </div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+};
 
 window.renderAdminLeads = async () => {
     const container = document.getElementById('admin-leads-list');
@@ -5024,6 +5329,11 @@ window.handlePasswordResetFormSubmit = async (e) => {
 };
 
 // Check for reset links on boot
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', handlePasswordResetFlow);
+} else {
+    handlePasswordResetFlow();
+}
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', handlePasswordResetFlow);
 } else {
