@@ -2166,9 +2166,9 @@ window.renderAdminUI = () => {
     let pHtml = "";
     Object.keys(grouped).sort().forEach(cat => {
         pHtml += `<div class="col-span-full mt-10 mb-4 flex items-center gap-4">
-    <h5 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 shrink-0">${cat}</h5>
+    <h5 class="text-[15px] font-semibold text-gray-800 tracking-tight text-gray-400 shrink-0">${cat}</h5>
     <div class="h-[1px] bg-gray-100 flex-1"></div>
-    <span class="text-[9px] font-bold text-gray-300 uppercase shrink-0">${grouped[cat].length} Items</span>
+    <span class="text-[13px] font-medium text-gray-500 shrink-0">${grouped[cat].length} Items</span>
 </div>`;
 
         grouped[cat].forEach(p => {
@@ -2207,7 +2207,7 @@ window.renderAdminUI = () => {
         });
     });
 
-    pList.innerHTML = pHtml || `<div class="col-span-full py-40 text-center"><p class="text-[12px] text-gray-300 font-bold uppercase tracking-widest italic">No items found.</p></div>`;
+    pList.innerHTML = pHtml || `<div class="col-span-full py-40 text-center"><p class="text-[13px] text-gray-500 font-medium italic">No items found.</p></div>`;
 
     cList.innerHTML = DATA.c.map(c => `
                         <div class="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 relative">
@@ -2384,8 +2384,49 @@ window.hideAdminPanel = () => {
     window.history.replaceState({}, '', url);
 };
 
+window.toggleSidebarGroup = (groupId) => {
+    const el = document.getElementById('sidebar-' + groupId);
+    const icon = document.getElementById('icon-' + groupId);
+    if (!el || !icon) return;
+
+    if (el.style.maxHeight === '0px' || el.style.maxHeight === '') {
+        el.style.maxHeight = '500px';
+        el.style.opacity = '1';
+        icon.classList.remove('rotate-180');
+    } else {
+        el.style.maxHeight = '0px';
+        el.style.opacity = '0';
+        icon.classList.add('rotate-180');
+    }
+};
+
+window.expandSidebarGroupForTab = (tab) => {
+    let groupId = 'core';
+    if (['products', 'categories'].includes(tab)) groupId = 'core';
+    if (['homepage', 'sliders', 'megamenu', 'announcements'].includes(tab)) groupId = 'design';
+    if (['insights', 'landing', 'leads'].includes(tab)) groupId = 'marketing';
+
+    ['core', 'design', 'marketing'].forEach(id => {
+        const el = document.getElementById('sidebar-' + id);
+        const icon = document.getElementById('icon-' + id);
+        if (el && icon) {
+            el.style.maxHeight = '0px';
+            el.style.opacity = '0';
+            icon.classList.add('rotate-180');
+        }
+    });
+
+    const activeEl = document.getElementById('sidebar-' + groupId);
+    const activeIcon = document.getElementById('icon-' + groupId);
+    if (activeEl && activeIcon) {
+        activeEl.style.maxHeight = '500px';
+        activeEl.style.opacity = '1';
+        activeIcon.classList.remove('rotate-180');
+    }
+};
 window.switchAdminTab = (tab) => {
     state.adminTab = tab;
+    if (window.expandSidebarGroupForTab) window.expandSidebarGroupForTab(tab);
 
     // URL Persistence: Update active tab
     const url = new URL(window.location);
@@ -2444,8 +2485,8 @@ window.switchAdminTab = (tab) => {
 
     document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
 
-    const activeClass = "w-full flex items-center justify-start gap-4 px-5 py-4 rounded-xl text-[11px] font-bold uppercase transition-all bg-black text-white shadow-lg";
-    const inactiveClass = "w-full flex items-center justify-start gap-4 px-5 py-4 rounded-xl text-[11px] font-bold uppercase text-gray-400 hover:bg-gray-50 hover:text-black transition-all";
+    const activeClass = "w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium transition-all bg-black text-white shadow-lg";
+    const inactiveClass = "w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all";
 
     document.getElementById('tab-p').className = isProd ? activeClass : inactiveClass;
     document.getElementById('tab-c').className = isCat ? activeClass : inactiveClass;
