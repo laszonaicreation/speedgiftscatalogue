@@ -1694,6 +1694,7 @@ window.editMegaMenu = (id) => {
     setTimeout(() => {
         document.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
             cb.checked = Array.isArray(item.categoryIds) && item.categoryIds.includes(cb.value);
+            cb.dispatchEvent(new Event('change')); // update custom tick visual
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 50);
@@ -2518,6 +2519,16 @@ window.resetForm = () => {
     if (catSelect) catSelect.value = "";
     const filter = document.getElementById('admin-cat-filter');
     if (filter) filter.value = "all";
+
+    // Reset Mega Menu category checkboxes + custom tick visuals
+    const editMegaId = document.getElementById('edit-megamenu-id');
+    if (editMegaId) editMegaId.value = "";
+    const mTitle = document.getElementById('m-form-title');
+    if (mTitle) mTitle.innerText = "New Main Category";
+    document.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
+        cb.checked = false;
+        cb.dispatchEvent(new Event('change')); // reset custom tick visual
+    });
 };
 
 // MULTI-IMAGE HELPERS
@@ -3930,12 +3941,35 @@ function renderAdminMegaMenus() {
 
     // 1. Render Checklist (all normal categories)
     checklist.innerHTML = DATA.c.map(c => `
-        <label class="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer border border-gray-100 bg-white shadow-sm transition-all hover:border-black">
-            <input type="checkbox" value="${c.id}" class="mega-cat-checkbox w-4 h-4 text-black focus:ring-black border-gray-300 rounded cursor-pointer">
-            <img src="${getOptimizedUrl(c.img, 50)}" class="w-8 h-8 object-cover rounded bg-gray-100" onerror="this.src='https://placehold.co/50x50?text=Icon'">
-            <span class="text-[13px] font-bold text-gray-800 flex-1">${c.name}</span>
+        <label class="flex items-center gap-2 cursor-pointer border border-gray-100 bg-white rounded-xl shadow-sm transition-all hover:border-gray-900 hover:bg-gray-50" style="height:52px; padding: 0 10px; overflow:hidden;">
+            <input type="checkbox" value="${c.id}" class="mega-cat-checkbox sr-only">
+            <div class="flex-shrink-0 w-5 h-5 rounded-md border-2 border-gray-200 bg-white flex items-center justify-center transition-all mega-tick-box" style="min-width:20px;">
+                <svg class="mega-tick-icon hidden" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <img src="${getOptimizedUrl(c.img, 50)}" class="flex-shrink-0 w-7 h-7 object-cover rounded-lg bg-gray-100" onerror="this.src='https://placehold.co/50x50?text=Icon'">
+            <span class="text-[11px] font-semibold text-gray-700 leading-tight truncate">${c.name}</span>
         </label>
     `).join('');
+
+    // Wire up custom tick visuals for each checkbox
+    checklist.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
+        const tickBox = cb.nextElementSibling;
+        const tickIcon = tickBox ? tickBox.querySelector('.mega-tick-icon') : null;
+        const updateTick = () => {
+            if (cb.checked) {
+                tickBox.style.borderColor = '#111';
+                tickBox.style.background = '#111';
+                if (tickIcon) tickIcon.classList.remove('hidden');
+                if (tickIcon) tickIcon.querySelector('path').setAttribute('stroke', '#fff');
+            } else {
+                tickBox.style.borderColor = '';
+                tickBox.style.background = '';
+                if (tickIcon) tickIcon.classList.add('hidden');
+            }
+        };
+        cb.addEventListener('change', updateTick);
+        updateTick(); // apply initial state if pre-checked
+    });
 
     // 2. Render created Mega Menus
     const sorted = [...(DATA.m || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
