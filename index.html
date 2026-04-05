@@ -79,7 +79,7 @@
         gtag('config', 'G-98ZMG3ZF7Z');
     </script>
 
-    <link rel="stylesheet" href="style.min.css?v=2.3">
+    <link rel="stylesheet" href="style.min.css?v=2.4">
     <!-- Responsive Helpers -->
     <style>
         @media (max-width: 767px) {
@@ -1049,7 +1049,7 @@
 
         <!-- PRODUCT GRID -->
         <div id="product-grid"
-            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4">
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4 justify-center">
         </div>
 
         <!-- CATEGORY SPOTLIGHT SECTION (rendered by JS) -->
@@ -1428,34 +1428,44 @@
                     <div id="admin-homepage-section" class="hidden fade-in">
                         <div class="bg-gray-50 p-6 md:p-10 rounded-[2.5rem] border border-gray-100 space-y-8 shadow-sm">
                             <div class="space-y-1">
-                                <h3 class="text-[12px] font-black uppercase tracking-[0.2em] text-gray-900">Home Page Settings</h3>
-                                <p class="text-[10px] text-gray-400 font-medium">Manage the Category Spotlight section shown on the main homepage.</p>
+                                <h3 class="text-[12px] font-black uppercase tracking-[0.2em] text-gray-900">Home Page
+                                    Settings</h3>
+                                <p class="text-[10px] text-gray-400 font-medium">Manage the Category Spotlight section
+                                    shown on the main homepage.</p>
                             </div>
 
                             <div class="space-y-6">
                                 <!-- Enable Toggle -->
-                                <div class="flex items-center justify-between bg-white border border-gray-50 rounded-[1.5rem] px-6 py-5 shadow-sm">
+                                <div
+                                    class="flex items-center justify-between bg-white border border-gray-50 rounded-[1.5rem] px-6 py-5 shadow-sm">
                                     <div class="space-y-0.5">
-                                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-800">Spotlight Section</p>
-                                        <p class="text-[9px] text-gray-400 font-medium">Enable/Disable the category product strip on homepage</p>
+                                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-800">
+                                            Spotlight Section</p>
+                                        <p class="text-[9px] text-gray-400 font-medium">Enable/Disable the category
+                                            product strip on homepage</p>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer group">
                                         <input type="checkbox" id="spotlight-enabled" class="sr-only">
-                                        <div class="toggle-bg w-12 h-6 bg-gray-200 rounded-full transition-all duration-300 relative">
+                                        <div
+                                            class="toggle-bg w-12 h-6 bg-gray-200 rounded-full transition-all duration-300 relative">
                                             <!-- Physical Knob -->
-                                            <div class="toggle-knob absolute top-[2px] left-[2px] bg-white rounded-full h-5 w-5 transition-all duration-300 flex items-center justify-center shadow-sm">
-                                                <i class="fa-solid fa-check text-[9px] text-black spotlight-tick opacity-0 transition-opacity duration-300"></i>
+                                            <div
+                                                class="toggle-knob absolute top-[2px] left-[2px] bg-white rounded-full h-5 w-5 transition-all duration-300 flex items-center justify-center shadow-sm">
+                                                <i
+                                                    class="fa-solid fa-check text-[9px] text-black spotlight-tick opacity-0 transition-opacity duration-300"></i>
                                             </div>
                                         </div>
                                         <style>
                                             /* ROBUST TOGGLE LOGIC */
-                                            #spotlight-enabled:checked + .toggle-bg {
+                                            #spotlight-enabled:checked+.toggle-bg {
                                                 background-color: #000;
                                             }
-                                            #spotlight-enabled:checked + .toggle-bg .toggle-knob {
+
+                                            #spotlight-enabled:checked+.toggle-bg .toggle-knob {
                                                 transform: translateX(24px);
                                             }
-                                            #spotlight-enabled:checked + .toggle-bg .spotlight-tick {
+
+                                            #spotlight-enabled:checked+.toggle-bg .spotlight-tick {
                                                 opacity: 1;
                                             }
                                         </style>
@@ -1465,28 +1475,43 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <!-- Title -->
                                     <div class="space-y-2">
-                                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section Title</label>
-                                        <input type="text" id="spotlight-title" class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm" placeholder="e.g. Gifting Essentials">
+                                        <label
+                                            class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section
+                                            Title</label>
+                                        <input type="text" id="spotlight-title"
+                                            class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm"
+                                            placeholder="e.g. Gifting Essentials">
                                     </div>
                                     <!-- Subtitle -->
                                     <div class="space-y-2">
-                                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section Subtitle</label>
-                                        <input type="text" id="spotlight-subtitle" class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm" placeholder="e.g. Curated picks from our collection">
+                                        <label
+                                            class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section
+                                            Subtitle</label>
+                                        <input type="text" id="spotlight-subtitle"
+                                            class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm"
+                                            placeholder="e.g. Curated picks from our collection">
                                     </div>
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <!-- Category -->
                                     <div class="space-y-2">
-                                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Spotlight Category</label>
-                                        <select id="spotlight-cat-id" class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black cursor-pointer shadow-sm">
+                                        <label
+                                            class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Spotlight
+                                            Category</label>
+                                        <select id="spotlight-cat-id"
+                                            class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black cursor-pointer shadow-sm">
                                             <option value="">Choose a category...</option>
                                         </select>
                                     </div>
                                     <!-- Limit -->
                                     <div class="space-y-2">
-                                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Max Products</label>
-                                        <input type="number" id="spotlight-limit" class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm" min="2" max="24" placeholder="8">
+                                        <label
+                                            class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Max
+                                            Products</label>
+                                        <input type="number" id="spotlight-limit"
+                                            class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm"
+                                            min="2" max="24" placeholder="8">
                                     </div>
                                 </div>
 
@@ -1494,13 +1519,18 @@
                                 <div class="space-y-5 pt-2 border-t border-gray-100 mt-2">
                                     <div>
                                         <div class="flex items-center justify-between mb-3">
-                                            <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Select Specific Products</label>
-                                            <span class="text-[8px] font-bold text-gray-300 uppercase tracking-widest">Optional</span>
+                                            <label
+                                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Select
+                                                Specific Products</label>
+                                            <span
+                                                class="text-[8px] font-bold text-gray-300 uppercase tracking-widest">Optional</span>
                                         </div>
-                                        
+
                                         <!-- Pills Container -->
-                                        <div id="spotlight-pills" class="flex flex-wrap gap-2 mb-4 min-h-[50px] p-3 bg-white/50 border border-dashed border-gray-200 rounded-2xl items-center shadow-inner">
-                                            <span class="text-[9px] text-gray-400 italic font-bold">No products selected yet...</span>
+                                        <div id="spotlight-pills"
+                                            class="flex flex-wrap gap-2 mb-4 min-h-[50px] p-3 bg-white/50 border border-dashed border-gray-200 rounded-2xl items-center shadow-inner">
+                                            <span class="text-[9px] text-gray-400 italic font-bold">No products selected
+                                                yet...</span>
                                         </div>
 
                                         <!-- Search Input with Dropdown -->
@@ -1508,16 +1538,20 @@
                                             <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300">
                                                 <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
                                             </div>
-                                            <input type="text" id="spotlight-product-search" 
-                                                   oninput="window.searchSpotlightProducts(this.value)"
-                                                   class="admin-input !bg-white pl-10 border-gray-100 hover:border-black focus:border-black shadow-sm" 
-                                                   placeholder="Search products by name to add to spotlight...">
-                                            
+                                            <input type="text" id="spotlight-product-search"
+                                                oninput="window.searchSpotlightProducts(this.value)"
+                                                class="admin-input !bg-white pl-10 border-gray-100 hover:border-black focus:border-black shadow-sm"
+                                                placeholder="Search products by name to add to spotlight...">
+
                                             <!-- Results Dropdown -->
-                                            <div id="spotlight-dropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[70] max-h-64 overflow-y-auto overflow-x-hidden divide-y divide-gray-50 border-t-0 p-1">
+                                            <div id="spotlight-dropdown"
+                                                class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[70] max-h-64 overflow-y-auto overflow-x-hidden divide-y divide-gray-50 border-t-0 p-1">
                                             </div>
                                         </div>
-                                        <p class="text-[8px] text-gray-300 font-bold uppercase tracking-widest mt-3 ml-4">If empty, we'll automatically show best sellers from your selected category.</p>
+                                        <p
+                                            class="text-[8px] text-gray-300 font-bold uppercase tracking-widest mt-3 ml-4">
+                                            If empty, we'll automatically show best sellers from your selected category.
+                                        </p>
                                     </div>
                                 </div>
 
@@ -2237,7 +2271,7 @@
     </button>
 
     <!-- Intl-Tel-Input JS -->
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=2.4"></script>
 </body>
 
 </html>

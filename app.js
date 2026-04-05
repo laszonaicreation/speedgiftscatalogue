@@ -4646,7 +4646,7 @@ window.renderSpotlightSection = () => {
                     .spotlight-mobile-flex { display: flex !important; }
                 }
                 @media (min-width: 768px) {
-                    .spotlight-desktop-grid { display: grid !important; }
+                    .spotlight-desktop-grid { display: flex !important; justify-content: center; flex-wrap: wrap; gap: 20px !important; }
                     .spotlight-mobile-flex { display: none !important; }
                 }
             </style>
@@ -4684,12 +4684,12 @@ window.renderSpotlightSection = () => {
             </div>
 
             <!-- DESKTOP GRID VIEW -->
-            <div class="spotlight-desktop-grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 mt-4 px-0" style="column-gap: 23px; row-gap: 32px;">
+            <div class="spotlight-desktop-grid mt-4 px-0" style="column-gap: 23px; row-gap: 32px;">
                 ${spotlightProducts.map(p => {
         const pImg = [p.img, ...(p.images || []), p.img2, p.img3].find(u => u && u !== 'img/') || 'img/';
         const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
         return `
-                    <div class="product-card group" data-id="${p.id}" 
+                    <div class="product-card group" data-id="${p.id}" style="width: 270px !important; flex: 0 0 270px !important; max-width: 270px !important;"
                          onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
                         <div class="img-container mb-4 shadow-sm relative">
                             ${badgeHtml}
