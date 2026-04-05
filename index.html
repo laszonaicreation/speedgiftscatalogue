@@ -761,11 +761,13 @@
                     max-width: 380px !important;
                     gap: 0.5rem !important;
                 }
+
                 .desktop-badge-icon {
                     width: 1.7rem !important;
                     height: 1.7rem !important;
                     margin-bottom: 0.4rem !important;
                 }
+
                 .desktop-badge-text {
                     font-size: 9.5px !important;
                     line-height: 1.25 !important;
@@ -1269,11 +1271,12 @@
                             <div class="mt-4 border-t border-gray-100 pt-4">
                                 <p class="text-[9px] font-black uppercase text-gray-400 mb-3">Select Categories to
                                     include:</p>
-                <div id="m-categories-checkboxes"
-                    class="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto w-full pr-1">
-                    <p class="text-[10px] text-gray-400 italic col-span-3">No categories available yet. Please add
-                        normal categories first.</p>
-                </div>
+                                <div id="m-categories-checkboxes"
+                                    class="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto w-full pr-1">
+                                    <p class="text-[10px] text-gray-400 italic col-span-3">No categories available yet.
+                                        Please add
+                                        normal categories first.</p>
+                                </div>
                             </div>
                             <div class="flex gap-4 mt-4">
                                 <button onclick="resetForm()"
@@ -1834,7 +1837,8 @@
             }
 
             /* 5 columns on screens 1024-1280px */
-            #product-grid, .spotlight-desktop-grid {
+            #product-grid,
+            .spotlight-desktop-grid {
                 grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
                 row-gap: 48px !important;
                 column-gap: 24px !important;
@@ -1847,7 +1851,8 @@
             }
 
             /* Cap at 5 columns on large screens - consistent with user request */
-            #product-grid, .spotlight-desktop-grid {
+            #product-grid,
+            .spotlight-desktop-grid {
                 grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
             }
         }
