@@ -2183,9 +2183,6 @@ window.renderAdminUI = () => {
                                 <img src="${getOptimizedUrl(p.img, 400)}" alt="${p.name}">
                                 ${pinIcon}
                                 ${badgeHtml}
-                                <div class="absolute bottom-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-[8px] font-bold text-gray-500 shadow-sm flex items-center gap-1">
-                                    <i class="fa-solid fa-eye text-[9px]"></i> ${viewCount}
-                                </div>
                                 <div class="admin-card-actions">
                                     <button onclick="editProduct('${p.id}')" class="admin-action-btn" title="Edit Item">
                                         <i class="fa-solid fa-pen-to-square text-[11px]"></i>
@@ -2207,21 +2204,27 @@ window.renderAdminUI = () => {
         });
     });
 
+    const prodCountEl = document.getElementById('admin-prod-count');
+    if (prodCountEl) {
+        prodCountEl.innerText = `${products.length} Products`;
+        prodCountEl.classList.toggle('hidden', !isProd);
+    }
+
     pList.innerHTML = pHtml || `<div class="col-span-full py-40 text-center"><p class="text-[13px] text-gray-500 font-medium italic">No items found.</p></div>`;
 
     cList.innerHTML = DATA.c.map(c => `
-                        <div class="flex items-center gap-5 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 relative">
+                        <div class="flex items-center gap-4 p-4 bg-white rounded-[1.5rem] border border-gray-100 relative group transition-all hover:border-black hover:shadow-xl hover:-translate-y-1">
                             <div class="relative shrink-0">
-                                <img src="${getOptimizedUrl(c.img, 100) || 'https://placehold.co/100x100?text=Icon'}" class="w-14 h-14 rounded-full object-cover border-4 border-white shadow-sm" ${getOptimizedUrl(c.img, 100) ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
-                                    ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-lg"><i class="fa-solid fa-thumbtack text-[8px]"></i></div>' : ''}
+                                <img src="${getOptimizedUrl(c.img, 100) || 'https://placehold.co/100x100?text=Icon'}" class="w-12 h-12 rounded-xl object-cover" ${getOptimizedUrl(c.img, 100) ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
+                                ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-lg"><i class="fa-solid fa-thumbtack text-[7px]"></i></div>' : ''}
                             </div>
-                            <div class="flex-1 font-bold text-[13px] uppercase">${c.name}</div>
+                            <div class="flex-1 font-bold text-[12px] uppercase tracking-tight truncate">${c.name}</div>
                             <div class="flex gap-2">
-                                <button onclick="editCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-lg text-gray-400 hover:text-black transition-all">
-                                    <i class="fa-solid fa-pen text-[10px]"></i>
+                                <button onclick="editCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-100 hover:text-black transition-all hover:scale-110 hover:shadow-lg active:scale-95">
+                                    <i class="fa-solid fa-pen text-[11px]"></i>
                                 </button>
-                                <button onclick="deleteCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-red-50 rounded-full text-red-200 hover:text-red-500 transition-all">
-                                    <i class="fa-solid fa-trash text-[10px]"></i>
+                                <button onclick="deleteCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 hover:text-black transition-all hover:scale-110 hover:shadow-lg active:scale-95">
+                                    <i class="fa-solid fa-trash text-[11px]"></i>
                                 </button>
                             </div>
                         </div>
@@ -2500,7 +2503,7 @@ window.switchAdminTab = (tab) => {
     const tabHp = document.getElementById('tab-hp');
     if (tabHp) tabHp.className = isHomepage ? activeClass : inactiveClass;
 
-    document.getElementById('list-title').innerText = isProd ? "Live Inventory" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : "")))))));
+    document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : "")))))));
     renderAdminUI();
 };
 

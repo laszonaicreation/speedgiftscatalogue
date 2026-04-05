@@ -590,20 +590,34 @@ img[src=""] {
     border-radius: inherit;
 }
 
+
+
+
 /* NEW ADMIN LIST STYLING */
 #admin-product-list-container {
-    max-height: 600px;
+    max-height: calc(100vh - 200px);
     overflow-y: auto;
-    padding-right: 8px;
+    padding-right: 12px;
+    padding-bottom: 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: #808080 transparent;
 }
 
 #admin-product-list-container::-webkit-scrollbar {
-    width: 4px;
+    width: 5px;
+}
+
+#admin-product-list-container::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 #admin-product-list-container::-webkit-scrollbar-thumb {
-    background: #ddd;
+    background: #808080;
     border-radius: 10px;
+}
+
+#admin-product-list-container::-webkit-scrollbar-thumb:hover {
+    background: #666;
 }
 
 /* DESC TRUNCATION CUSTOM LINE CLAMP (Standard CSS fallback) */
@@ -729,13 +743,13 @@ img[src=""] {
 }
 
 .stock-badge {
-    font-size: 8px;
+    font-size: 7px;
     font-weight: 900;
     text-transform: uppercase;
-    padding: 3px 8px;
+    padding: 2px 6px;
     border-radius: 4px;
-    margin-top: 4px;
     display: inline-block;
+    letter-spacing: 0.05em;
 }
 
 .stock-badge.in {
@@ -831,88 +845,15 @@ img[src=""] {
     outline: none;
 }
 
-/* NEW LARGE ADMIN PRODUCT GRID */
-#admin-product-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+/* NEW LARGE ADMIN PRODUCT LIST ROW HINTS (Tailwind used in app.js primarily) */
+.admin-list-row {
+    transform: translateZ(0); 
+    will-change: transform, box-shadow, border-color;
 }
 
-@media (min-width: 1024px) {
-    #admin-product-list {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-.admin-product-card {
-
-    border: 1px solid #eee;
-    border-radius: 20px;
-    overflow: hidden;
-    transition: 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-    position: relative;
-}
-
-.admin-product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-    border-color: #000;
-}
-
-.admin-product-img-box {
-    aspect-ratio: 1/1;
-    position: relative;
-    background: #fdfdfd;
-}
-
-.admin-product-img-box img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.admin-product-info {
-    padding: 1rem;
-}
-
-.admin-card-actions {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    opacity: 0;
-    transition: 0.3s;
-    z-index: 10;
-}
-
-.admin-product-card:hover .admin-card-actions {
-    opacity: 1;
-}
-
-.admin-action-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(5px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    color: #666;
-    transition: 0.2s;
-}
-
-.admin-action-btn:hover {
-    background: #000;
-    color: #fff;
-    transform: scale(1.1);
-}
-
-.admin-action-btn.delete:hover {
-    background: #ff4757;
+/* Show action buttons on card hover */
+.group:hover .card-actions {
+    opacity: 1 !important;
 }
 
 /* SIDEBAR STATE CLASSES */
@@ -1672,3 +1613,89 @@ img[src=""] {
         font-size: 12px !important;
     }
 }
+
+/* NEW ADMIN LIST STYLING (GRID CARDS) */
+.admin-product-card {
+    background: white;
+    border: 1px solid #f1f5f9;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: none !important;
+}
+
+.admin-product-card:hover {
+    transform: translateY(-4px);
+    border-color: #e2e8f0;
+    box-shadow: none !important;
+}
+
+.admin-product-img-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #f8fafc;
+    border-radius: 20px;
+}
+
+.admin-product-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+}
+
+.admin-product-card:hover .admin-product-img-box img {
+    transform: scale(1.08);
+}
+
+.admin-card-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 30;
+}
+
+.admin-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #3b82f6 !important; /* Force Blue */
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.admin-action-btn.delete {
+    background: #ef4444 !important; /* Force Red */
+}
+
+.admin-action-btn:hover {
+    transform: scale(1.1);
+    background: #000 !important;
+}
+
+.admin-product-info {
+    padding: 10px;
+}
+
+.stock-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.stock-badge.in { background: #f0fdf4; color: #16a34a; }
+.stock-badge.out { background: #fef2f2; color: #dc2626; }

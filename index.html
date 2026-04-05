@@ -1808,22 +1808,24 @@
                     <!-- RIGHT COLUMN: LISTS -->
                     <div id="admin-right-column" class="lg:col-span-8 xl:col-span-7 transition-all duration-500">
                         <div id="admin-list-controls" class="mb-6 space-y-4">
-                            <h4 id="list-title"
-                                class="text-[11px] font-bold uppercase tracking-widest text-gray-300 italic">Live
-                                Inventory
-                            </h4>
+                            <div class="flex items-center justify-between">
+                                <h4 id="list-title"
+                                    class="text-[11px] font-bold uppercase tracking-widest text-gray-300 italic">
+                                </h4>
+                            </div>
                             <div id="product-admin-filters" class="flex flex-col md:flex-row gap-3">
                                 <select id="admin-cat-filter" onchange="renderAdminUI()"
-                                    class="admin-input py-3 !bg-gray-50 border border-gray-100 md:w-48 text-xs font-bold uppercase">
-                                    <option value="all">All Categories</option>
+                                    style="background-color: #E6E6E6 !important; color: #000 !important; border: none !important; padding-right: 32px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px auto; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: none !important;"
+                                    class="admin-input py-3 px-4 transition-all md:w-60 text-[10px] font-black uppercase tracking-widest cursor-pointer outline-none">
+                                    <option value="all" style="background-color: #fff; color: #000;">All Categories</option>
                                 </select>
                             </div>
                         </div>
 
                         <div id="admin-product-list-container">
-                            <div id="admin-product-list" class="space-y-4 fade-in"></div>
+                            <div id="admin-product-list" class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 fade-in"></div>
                         </div>
-                        <div id="admin-category-list" class="hidden space-y-4 fade-in"></div>
+                        <div id="admin-category-list" class="hidden grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 fade-in overflow-y-auto max-h-[calc(100vh-250px)] pr-2 scrollbar-thin scrollbar-thumb-gray-300"></div>
                         <div id="admin-megamenu-list" class="hidden space-y-4 fade-in"></div>
                         <div id="admin-slider-list" class="hidden space-y-4 fade-in pb-20"></div>
                         <div id="admin-announcements-list" class="hidden"></div>
