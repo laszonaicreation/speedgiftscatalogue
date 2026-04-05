@@ -1698,4 +1698,9 @@ img[src=""] {
 }
 
 .stock-badge.in { background: #f0fdf4; color: #16a34a; }
-.stock-badge.out { background: #fef2f2; color: #dc2626; }
+.stock-badge.out { background: #fef2f2; color: #dc2626; }
+
+/* Fix missing Tailwind rotation utility for Admin Panel dropdown icons */
+.rotate-180 {
+    transform: rotate(180deg);
+}

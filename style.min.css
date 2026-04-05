@@ -1681,3 +1681,8 @@ img[src=""] {
         font-size: 12px !important;
     }
 }
+
+/* Fix missing Tailwind rotation utility for Admin Panel dropdown icons */
+.rotate-180 {
+    transform: rotate(180deg);
+}
