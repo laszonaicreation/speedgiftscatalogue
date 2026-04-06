@@ -2092,6 +2092,33 @@ img[src=""] {
     font-weight: 300 !important;
 }
 
+/* --------------------------------------------------------------------------
+   Inline-input style like Product section:
+   Hide top labels when a direct admin input follows
+   -------------------------------------------------------------------------- */
+#admin-panel #admin-slider-section label:has(+ input.admin-input),
+#admin-panel #admin-slider-section label:has(+ select.admin-input),
+#admin-panel #admin-slider-section label:has(+ textarea.admin-input),
+#admin-panel #admin-slider-section label:has(+ div .admin-input),
+#admin-panel #admin-homepage-section label:has(+ input.admin-input),
+#admin-panel #admin-homepage-section label:has(+ select.admin-input),
+#admin-panel #admin-homepage-section label:has(+ textarea.admin-input),
+#admin-panel #admin-homepage-section label:has(+ div .admin-input),
+#admin-panel #admin-landing-section label:has(+ input.admin-input),
+#admin-panel #admin-landing-section label:has(+ select.admin-input),
+#admin-panel #admin-landing-section label:has(+ textarea.admin-input),
+#admin-panel #admin-landing-section label:has(+ div .admin-input),
+#admin-panel #admin-leads-section label:has(+ input.admin-input),
+#admin-panel #admin-leads-section label:has(+ select.admin-input),
+#admin-panel #admin-leads-section label:has(+ textarea.admin-input),
+#admin-panel #admin-leads-section label:has(+ div .admin-input),
+#admin-panel #admin-announcements-section label:has(+ input.admin-input),
+#admin-panel #admin-announcements-section label:has(+ select.admin-input),
+#admin-panel #admin-announcements-section label:has(+ textarea.admin-input),
+#admin-panel #admin-announcements-section label:has(+ div .admin-input) {
+    display: none !important;
+}
+
 /* Keep Font Awesome icons intact inside insights */
 #admin-panel #admin-insights-section i[class*="fa-"],
 #admin-panel #admin-insights-list i[class*="fa-"] {
@@ -2233,4 +2260,77 @@ img[src=""] {
         width: 100%;
         white-space: normal;
     }
+}
+
+/* Home page section inputs should match common light-grey fields */
+#admin-panel #admin-homepage-section .admin-input {
+    background-color: #f3f4f6 !important;
+}
+
+/* Strong override for Tailwind !bg-white utilities in Home Page section */
+#admin-panel #admin-homepage-section .\!bg-white,
+#admin-panel #admin-homepage-section input.admin-input,
+#admin-panel #admin-homepage-section select.admin-input,
+#admin-panel #admin-homepage-section textarea.admin-input,
+#admin-panel #admin-homepage-section #spotlight-product-search,
+#admin-panel #admin-homepage-section #spotlight-title,
+#admin-panel #admin-homepage-section #spotlight-subtitle,
+#admin-panel #admin-homepage-section #spotlight-limit,
+#admin-panel #admin-homepage-section #spotlight-cat-id {
+    background-color: #f3f4f6 !important;
+}
+
+/* Home page section icon spacing/alignment polish */
+#admin-panel #admin-homepage-section i[class*="fa-"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+}
+
+/* Toggle icon/knob alignment */
+#admin-panel #admin-homepage-section .toggle-bg {
+    padding: 2px !important;
+}
+
+#admin-panel #admin-homepage-section .toggle-knob {
+    top: 1px !important;
+    left: 1px !important;
+}
+
+#admin-panel #admin-homepage-section .spotlight-tick {
+    font-size: 9px !important;
+    line-height: 1 !important;
+}
+
+/* Search icon + input alignment */
+#admin-panel #admin-homepage-section #spotlight-product-search {
+    padding-left: 40px !important;
+}
+
+#admin-panel #admin-homepage-section #spotlight-product-search + #spotlight-dropdown,
+#admin-panel #admin-homepage-section .relative > .absolute.left-4 {
+    left: 12px !important;
+}
+
+#admin-panel #admin-homepage-section .relative > .absolute.left-4 i {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+/* Save button icon/text gap consistency in section */
+#admin-panel #admin-homepage-section button i[class*="fa-"] {
+    margin-right: 6px;
+}
+
+/* Sidebar main group titles: semibold */
+#admin-panel button[onclick^="toggleSidebarGroup"] > p {
+    font-weight: 600 !important;
+}
+
+/* Sidebar brand heading: WORKSPACE in full caps */
+#admin-panel h2[style*="Poppins"] {
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
 }

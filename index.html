@@ -1100,7 +1100,7 @@
                     <!-- CORE OPERATIONS -->
                     <button onclick="toggleSidebarGroup('core')"
                         class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
-                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
                             Store Management</p>
                         <i id="icon-core"
                             class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300"></i>
@@ -1121,7 +1121,7 @@
                     <!-- STOREFRONT DESIGN -->
                     <button onclick="toggleSidebarGroup('design')"
                         class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
-                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
                             Storefront Design</p>
                         <i id="icon-design"
                             class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300 rotate-180"></i>
@@ -1150,7 +1150,7 @@
                     <!-- MARKETING -->
                     <button onclick="toggleSidebarGroup('marketing')"
                         class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
-                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
                             Marketing & Analytics</p>
                         <i id="icon-marketing"
                             class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300 rotate-180"></i>
@@ -1196,7 +1196,7 @@
                                 <input type="text" id="p-name" class="admin-input" placeholder="Item Name">
                                 <input type="text" id="p-price" class="admin-input" placeholder="Sale Price (AED 99)">
                                 <input type="text" id="p-original-price" class="admin-input"
-                                    placeholder="Original Price Before Offer (AED 150) — Leave blank if no offer">
+                                    placeholder="Original Price (AED 150, optional)">
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     <select id="p-cat-id" class="admin-input cursor-pointer">
                                         <option value="">Select Category</option>
@@ -1279,8 +1279,8 @@
                                             Images</button>
                                     </div>
                                 </div>
-                                <input type="text" id="p-keywords" class="admin-input mt-4 !bg-white"
-                                    placeholder="Search Keywords (Secret - Hidden from customers)">
+                                    <input type="text" id="p-keywords" class="admin-input mt-4 !bg-white"
+                                    placeholder="Search Keywords (Hidden)">
                                 <textarea id="p-desc" class="admin-input h-32 py-4 resize-none"
                                     placeholder="Product Description"></textarea>
                                 <div class="flex gap-4 mt-4">
@@ -1342,8 +1342,7 @@
                                         class="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto w-full pr-1">
                                         <p class="text-[10px] text-gray-400 italic col-span-3">No categories available
                                             yet.
-                                            Please add
-                                            normal categories first.</p>
+                                            Add categories first.</p>
                                     </div>
                                 </div>
                                 <div class="flex gap-4 mt-4">
@@ -1420,9 +1419,8 @@
                                                     class="fa-solid fa-desktop text-2xl text-gray-200 group-hover:text-black transition-all"></i>
                                                 <span
                                                     class="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-black text-center px-4">Drop
-                                                    Desktop Photos Here<br><span
-                                                        class="opacity-50 font-bold lowercase">or
-                                                        click to browse</span></span>
+                                                    Desktop Photos<br><span
+                                                        class="opacity-50 font-bold lowercase">or click to browse</span></span>
                                             </div>
                                         </div>
 
@@ -1438,9 +1436,8 @@
                                                     class="fa-solid fa-mobile-screen-button text-2xl text-gray-200 group-hover:text-black transition-all"></i>
                                                 <span
                                                     class="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-black text-center px-4">Drop
-                                                    Mobile Photos Here<br><span
-                                                        class="opacity-50 font-bold lowercase">or
-                                                        click to browse</span></span>
+                                                    Mobile Photos<br><span
+                                                        class="opacity-50 font-bold lowercase">or click to browse</span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -1488,7 +1485,7 @@
 
                                     <div class="pt-4 border-t border-gray-100/50">
                                         <h4 class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">
-                                            Success State (Post-Submit)</h4>
+                                            Success Message</h4>
                                         <input type="text" id="popup-success-title" class="admin-input mb-4"
                                             placeholder="Success Title (e.g. Congratulations!)">
                                         <textarea id="popup-success-msg" class="admin-input h-20 py-3 resize-none"
@@ -1526,9 +1523,7 @@
                                     <h3 class="text-[12px] font-black uppercase tracking-[0.2em] text-gray-900">Home
                                         Page
                                         Settings</h3>
-                                    <p class="text-[10px] text-gray-400 font-medium">Manage the Category Spotlight
-                                        section
-                                        shown on the main homepage.</p>
+                                    <p class="text-[10px] text-gray-400 font-medium">Manage spotlight settings for the home page.</p>
                                 </div>
 
                                 <div class="space-y-6">
@@ -1538,8 +1533,7 @@
                                         <div class="space-y-0.5">
                                             <p class="text-[10px] font-black uppercase tracking-widest text-gray-800">
                                                 Spotlight Section</p>
-                                            <p class="text-[9px] text-gray-400 font-medium">Enable/Disable the category
-                                                product strip on homepage</p>
+                                            <p class="text-[9px] text-gray-400 font-medium">Show or hide this section on the home page.</p>
                                         </div>
                                         <label class="relative inline-flex items-center cursor-pointer group">
                                             <input type="checkbox" id="spotlight-enabled" class="sr-only">
@@ -1576,7 +1570,7 @@
                                                 class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section
                                                 Title</label>
                                             <input type="text" id="spotlight-title"
-                                                class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm"
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 shadow-none"
                                                 placeholder="e.g. Gifting Essentials">
                                         </div>
                                         <!-- Subtitle -->
@@ -1585,7 +1579,7 @@
                                                 class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section
                                                 Subtitle</label>
                                             <input type="text" id="spotlight-subtitle"
-                                                class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm"
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 shadow-none"
                                                 placeholder="e.g. Curated picks from our collection">
                                         </div>
                                     </div>
@@ -1597,7 +1591,7 @@
                                                 class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Spotlight
                                                 Category</label>
                                             <select id="spotlight-cat-id"
-                                                class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black cursor-pointer shadow-sm">
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 cursor-pointer shadow-none">
                                                 <option value="">Choose a category...</option>
                                             </select>
                                         </div>
@@ -1607,7 +1601,7 @@
                                                 class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Max
                                                 Products</label>
                                             <input type="number" id="spotlight-limit"
-                                                class="admin-input !bg-white border-gray-100 hover:border-black focus:border-black shadow-sm"
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 shadow-none"
                                                 min="2" max="24" placeholder="8">
                                         </div>
                                     </div>
@@ -1638,8 +1632,8 @@
                                                 </div>
                                                 <input type="text" id="spotlight-product-search"
                                                     oninput="window.searchSpotlightProducts(this.value)"
-                                                    class="admin-input !bg-white pl-10 border-gray-100 hover:border-black focus:border-black shadow-sm"
-                                                    placeholder="Search products by name to add to spotlight...">
+                                                    class="admin-input bg-gray-100 pl-10 border-0 hover:border-0 focus:border-0 shadow-none"
+                                                    placeholder="Search products to add...">
 
                                                 <!-- Results Dropdown -->
                                                 <div id="spotlight-dropdown"
@@ -1648,8 +1642,7 @@
                                             </div>
                                             <p
                                                 class="text-[8px] text-gray-300 font-bold uppercase tracking-widest mt-3 ml-4">
-                                                If empty, we'll automatically show best sellers from your selected
-                                                category.
+                                                If empty, best sellers from this category are shown.
                                             </p>
                                         </div>
                                     </div>
@@ -1668,8 +1661,7 @@
                         <div id="admin-landing-section" class="hidden fade-in">
                             <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-6 shadow-sm">
                                 <h3 class="text-[11px] font-black uppercase tracking-widest">Landing Page Settings</h3>
-                                <p class="text-[10px] text-gray-400 -mt-4">Design the standalone Google Ads landing
-                                    page.
+                                <p class="text-[10px] text-gray-400 -mt-4">Manage the Google Ads landing page.
                                 </p>
 
                                 <div class="space-y-4">
@@ -1729,7 +1721,7 @@
                                                     selected...</span>
                                             </div>
                                             <input type="text" id="landing-sec1-search" class="admin-input"
-                                                placeholder="Search product to add..."
+                                                placeholder="Search products..."
                                                 onkeyup="searchLandingProducts('sec1', this.value)"
                                                 onfocus="searchLandingProducts('sec1', this.value)">
                                             <div id="landing-sec1-dropdown"
@@ -1759,7 +1751,7 @@
                                                     selected...</span>
                                             </div>
                                             <input type="text" id="landing-sec2-search" class="admin-input"
-                                                placeholder="Search product to add..."
+                                                placeholder="Search products..."
                                                 onkeyup="searchLandingProducts('sec2', this.value)"
                                                 onfocus="searchLandingProducts('sec2', this.value)">
                                             <div id="landing-sec2-dropdown"
