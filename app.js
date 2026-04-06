@@ -2408,8 +2408,9 @@ window.expandSidebarGroupForTab = (tab) => {
     if (['products', 'categories'].includes(tab)) groupId = 'core';
     if (['homepage', 'sliders', 'megamenu', 'announcements'].includes(tab)) groupId = 'design';
     if (['insights', 'landing', 'leads'].includes(tab)) groupId = 'marketing';
+    if (['migration'].includes(tab)) groupId = 'tools';
 
-    ['core', 'design', 'marketing'].forEach(id => {
+    ['core', 'design', 'marketing', 'tools'].forEach(id => {
         const el = document.getElementById('sidebar-' + id);
         const icon = document.getElementById('icon-' + id);
         if (el && icon) {
@@ -2446,9 +2447,10 @@ window.switchAdminTab = (tab) => {
     const isLeads = tab === 'leads';
     const isLanding = tab === 'landing';
     const isHomepage = tab === 'homepage';
+    const isMigration = tab === 'migration';
 
     document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
-    document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isProd);
+    document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isMigration);
     document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
     document.getElementById('admin-megamenu-section')?.classList.toggle('hidden', !isMega);
     document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
@@ -2462,7 +2464,8 @@ window.switchAdminTab = (tab) => {
     if (isHomepage) populateHomeAdminUI();
 
     // Center Insights View Full Width
-    document.getElementById('admin-form-container').classList.toggle('hidden', isInsight);
+    const formContainer = document.getElementById('admin-form-container');
+    formContainer.classList.toggle('hidden', isInsight);
     const rightCol = document.getElementById('admin-right-column');
     if (isInsight) {
         rightCol.className = "transition-all duration-500";
@@ -2477,6 +2480,12 @@ window.switchAdminTab = (tab) => {
         rightCol.style.margin = "";
         rightCol.style.width = "";
     }
+
+    // Migration opens as a standalone tools view
+    rightCol.classList.toggle('hidden', isMigration);
+    formContainer.style.gridColumn = isMigration ? "1 / -1" : "";
+    formContainer.style.maxWidth = isMigration ? "1000px" : "";
+    formContainer.style.margin = isMigration ? "0 auto" : "";
 
     document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
     document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
@@ -2502,8 +2511,10 @@ window.switchAdminTab = (tab) => {
     document.getElementById('tab-l').className = isLeads ? activeClass : inactiveClass;
     const tabHp = document.getElementById('tab-hp');
     if (tabHp) tabHp.className = isHomepage ? activeClass : inactiveClass;
+    const tabMig = document.getElementById('tab-mig');
+    if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
 
-    document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : "")))))));
+    document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : (isMigration ? "Migration & Cloud Tools" : ""))))))));
     renderAdminUI();
 };
 

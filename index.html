@@ -1171,6 +1171,23 @@
                                 class="fa-solid fa-users opacity-70" style="width: 20px; text-align: center;"></i>
                             <span>Leads & Popup</span></button>
                     </div>
+
+                    <!-- TOOLS -->
+                    <button onclick="toggleSidebarGroup('tools')"
+                        class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
+                            Tools</p>
+                        <i id="icon-tools"
+                            class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300 rotate-180"></i>
+                    </button>
+                    <div id="sidebar-tools"
+                        class="flex flex-col gap-2 w-full overflow-hidden transition-all duration-300"
+                        style="max-height: 0px; opacity: 0;">
+                        <button onclick="switchAdminTab('migration')" id="tab-mig"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-database opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Migration & Cloud Tools</span></button>
+                    </div>
                 </div>
             </div>
 
