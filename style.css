@@ -1665,8 +1665,9 @@ img[src=""] {
     width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: #3b82f6 !important; /* Force Blue */
-    color: white !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    border: none !important;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     display: flex;
     align-items: center;
@@ -1677,12 +1678,15 @@ img[src=""] {
 }
 
 .admin-action-btn.delete {
-    background: #ef4444 !important; /* Force Red */
+    background: #ffffff !important;
+    color: #111111 !important;
+    border: none !important;
 }
 
 .admin-action-btn:hover {
-    transform: scale(1.1);
-    background: #000 !important;
+    transform: scale(1.06);
+    background: #111111 !important;
+    color: #ffffff !important;
 }
 
 .admin-product-info {
@@ -1703,4 +1707,548 @@ img[src=""] {
 /* Fix missing Tailwind rotation utility for Admin Panel dropdown icons */
 .rotate-180 {
     transform: rotate(180deg);
-}
+}
+
+/* ==========================================================================
+   ADMIN TYPOGRAPHY SYSTEM (CONSISTENT ACROSS ALL SECTIONS)
+   ========================================================================== */
+#admin-panel {
+    --admin-font-family: 'Poppins', 'Inter', sans-serif;
+    --admin-text-body: 12px;
+    --admin-text-small: 11px;
+    --admin-text-label: 10px;
+    --admin-text-h3: 14px;
+    --admin-text-h2: 16px;
+    --admin-text-h1: 20px;
+    font-family: var(--admin-font-family);
+}
+
+#admin-panel h1,
+#admin-panel h2,
+#admin-panel h3,
+#admin-panel h4,
+#admin-panel h5,
+#admin-panel h6 {
+    font-family: var(--admin-font-family) !important;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+}
+
+#admin-panel h1 { font-size: var(--admin-text-h1) !important; font-weight: 700 !important; }
+#admin-panel h2 { font-size: var(--admin-text-h2) !important; font-weight: 700 !important; }
+#admin-panel h3,
+#admin-panel h4,
+#admin-panel h5,
+#admin-panel h6 { font-size: var(--admin-text-h3) !important; font-weight: 600 !important; }
+
+#admin-panel p,
+#admin-panel span,
+#admin-panel label,
+#admin-panel li,
+#admin-panel a,
+#admin-panel td,
+#admin-panel th {
+    font-family: var(--admin-font-family) !important;
+    font-size: var(--admin-text-body) !important;
+    line-height: 1.45;
+}
+
+#admin-panel .text-xs,
+#admin-panel .text-\[10px\],
+#admin-panel .text-\[11px\],
+#admin-panel .text-\[12px\] {
+    font-size: var(--admin-text-small) !important;
+}
+
+#admin-panel .text-sm,
+#admin-panel .text-\[13px\],
+#admin-panel .text-\[14px\] {
+    font-size: var(--admin-text-body) !important;
+}
+
+#admin-panel input,
+#admin-panel textarea,
+#admin-panel select,
+#admin-panel button {
+    font-family: var(--admin-font-family) !important;
+    font-size: var(--admin-text-body) !important;
+    line-height: 1.35 !important;
+}
+
+#admin-panel .admin-input {
+    font-size: var(--admin-text-body) !important;
+    font-weight: 500;
+}
+
+#admin-panel .admin-list-category-header {
+    font-family: var(--admin-font-family) !important;
+}
+
+/* ==========================================================================
+   ADMIN STRUCTURE & HIERARCHY POLISH
+   ========================================================================== */
+#admin-panel {
+    --admin-card-radius: 22px;
+    --admin-card-padding: 28px;
+    --admin-title-color: #111827;
+    --admin-muted-color: #6b7280;
+}
+
+/* Consistent section card surface */
+#admin-product-section > div,
+#admin-category-section > div,
+#admin-megamenu-section > div,
+#admin-slider-section > div,
+#admin-announcements-section > div,
+#admin-leads-section > div,
+#admin-homepage-section > div,
+#admin-landing-section > div,
+#admin-migration-section {
+    border-radius: var(--admin-card-radius) !important;
+    padding: var(--admin-card-padding) !important;
+    border: 1px solid #eef2f7 !important;
+}
+
+/* Section title hierarchy */
+#admin-panel [id$="-section"] h3 {
+    font-size: var(--admin-text-h3) !important;
+    font-weight: 700 !important;
+    text-transform: capitalize !important;
+    letter-spacing: 0.12em !important;
+    color: var(--admin-title-color) !important;
+}
+
+#admin-panel [id$="-section"] h4 {
+    font-size: var(--admin-text-label) !important;
+    font-weight: 700 !important;
+    text-transform: capitalize !important;
+    letter-spacing: 0.12em !important;
+    color: var(--admin-muted-color) !important;
+}
+
+/* Field labels and helper text */
+#admin-panel [id$="-section"] label {
+    font-size: var(--admin-text-label) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: capitalize !important;
+    color: #6b7280 !important;
+}
+
+#admin-panel [id$="-section"] p {
+    color: #4b5563;
+}
+
+/* Save/sync buttons: primary action consistency */
+#admin-panel [id$="-save-btn"],
+#admin-panel #homepage-save-btn,
+#admin-panel #popup-save-btn {
+    font-size: var(--admin-text-small) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: capitalize !important;
+    border-radius: 16px !important;
+}
+
+/* Sidebar structure polish */
+#admin-panel [id^="tab-"] {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+}
+
+#admin-panel [id^="tab-"] span {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+/* List panel heading consistency */
+#admin-panel #list-title {
+    font-size: var(--admin-text-label) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: capitalize !important;
+    color: #9ca3af !important;
+}
+
+/* ==========================================================================
+   ADMIN SPACING GRID (8 / 12 / 16 / 24 SCALE)
+   ========================================================================== */
+#admin-panel {
+    --admin-space-1: 8px;
+    --admin-space-2: 12px;
+    --admin-space-3: 16px;
+    --admin-space-4: 24px;
+}
+
+/* Normalize section rhythm */
+#admin-panel [id$="-section"] .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: var(--admin-space-1) !important;
+}
+
+#admin-panel [id$="-section"] .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: var(--admin-space-2) !important;
+}
+
+#admin-panel [id$="-section"] .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: var(--admin-space-2) !important;
+}
+
+#admin-panel [id$="-section"] .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: var(--admin-space-3) !important;
+}
+
+#admin-panel [id$="-section"] .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: var(--admin-space-3) !important;
+}
+
+#admin-panel [id$="-section"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: var(--admin-space-4) !important;
+}
+
+/* Consistent grid gaps inside admin sections */
+#admin-panel [id$="-section"] .gap-2 { gap: var(--admin-space-1) !important; }
+#admin-panel [id$="-section"] .gap-3 { gap: var(--admin-space-2) !important; }
+#admin-panel [id$="-section"] .gap-4 { gap: var(--admin-space-3) !important; }
+#admin-panel [id$="-section"] .gap-6 { gap: var(--admin-space-4) !important; }
+
+/* Inputs/buttons share same control height rhythm */
+#admin-panel .admin-input {
+    min-height: 44px;
+    border-radius: 12px !important;
+}
+
+#admin-panel textarea.admin-input {
+    min-height: 96px;
+}
+
+#admin-panel [id$="-section"] button {
+    min-height: 44px;
+}
+
+/* Keep action rows aligned */
+#admin-panel [id$="-section"] .flex.gap-4 {
+    gap: var(--admin-space-3) !important;
+    align-items: center;
+}
+
+/* Better edge alignment for labels and helper texts */
+#admin-panel [id$="-section"] label.ml-4,
+#admin-panel [id$="-section"] p.ml-4 {
+    margin-left: 0 !important;
+}
+
+/* List area alignment and breathing */
+#admin-panel #admin-list-controls {
+    margin-bottom: var(--admin-space-4) !important;
+}
+
+#admin-panel #admin-product-list,
+#admin-panel #admin-category-list,
+#admin-panel #admin-megamenu-list,
+#admin-panel #admin-slider-list,
+#admin-panel #admin-announcements-list,
+#admin-panel #admin-insights-list,
+#admin-panel #admin-leads-list {
+    margin-top: var(--admin-space-2);
+}
+
+/* ==========================================================================
+   ADMIN TEXT CASE NORMALIZATION
+   Requirement: Use Capitalize, avoid ALL CAPS
+   ========================================================================== */
+#admin-panel h1,
+#admin-panel h2,
+#admin-panel h3,
+#admin-panel h4,
+#admin-panel h5,
+#admin-panel h6,
+#admin-panel p,
+#admin-panel span,
+#admin-panel label,
+#admin-panel li,
+#admin-panel a,
+#admin-panel button,
+#admin-panel input,
+#admin-panel textarea,
+#admin-panel select,
+#admin-panel option,
+#admin-panel th,
+#admin-panel td,
+#admin-panel .admin-input,
+#admin-panel #list-title,
+#admin-panel [id^="tab-"] {
+    text-transform: capitalize !important;
+    letter-spacing: normal !important;
+}
+
+#admin-panel input::placeholder,
+#admin-panel textarea::placeholder {
+    text-transform: capitalize !important;
+    letter-spacing: normal !important;
+}
+
+/* Force normal letter spacing for all admin text */
+#admin-panel,
+#admin-panel * ,
+#admin-panel *::before,
+#admin-panel *::after {
+    letter-spacing: normal !important;
+}
+
+/* Neutralize Tailwind tracking utility classes inside admin */
+#admin-panel .tracking-tighter,
+#admin-panel .tracking-tight,
+#admin-panel .tracking-normal,
+#admin-panel .tracking-wide,
+#admin-panel .tracking-wider,
+#admin-panel .tracking-widest,
+#admin-panel [class*="tracking-"] {
+    letter-spacing: normal !important;
+}
+
+/* ==========================================================================
+   FINAL ADMIN TYPOGRAPHY TUNING (per latest feedback)
+   - Headings: clean, no extra spacing
+   - Non-headings: thin weight, no bold
+   - Slightly larger overall text size
+   ========================================================================== */
+#admin-panel h1,
+#admin-panel h2,
+#admin-panel h3,
+#admin-panel h4,
+#admin-panel h5,
+#admin-panel h6 {
+    letter-spacing: normal !important;
+    text-transform: capitalize !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+}
+
+#admin-panel h1 { font-size: 22px !important; }
+#admin-panel h2 { font-size: 19px !important; }
+#admin-panel h3 { font-size: 17px !important; }
+#admin-panel h4,
+#admin-panel h5,
+#admin-panel h6 { font-size: 15px !important; }
+
+/* Make all non-heading text thin and slightly bigger */
+#admin-panel :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(i):not(svg):not(path):not(fa-icon) {
+    font-size: 13px !important;
+    font-weight: 300 !important;
+    letter-spacing: normal !important;
+    text-transform: capitalize !important;
+    line-height: 1.5 !important;
+}
+
+/* Neutralize bold utility classes on non-headings */
+#admin-panel :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6).font-black,
+#admin-panel :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6).font-bold,
+#admin-panel :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6).font-semibold {
+    font-weight: 300 !important;
+}
+
+/* Hard fix: specific admin titles that were still showing extra spacing */
+#admin-panel #p-form-title,
+#admin-panel #c-form-title,
+#admin-panel #m-form-title,
+#admin-panel #slider-form-title,
+#admin-panel #list-title,
+#admin-panel [id$="-form-title"] {
+    letter-spacing: 0 !important;
+    word-spacing: 0 !important;
+    text-transform: capitalize !important;
+    font-weight: 600 !important;
+    font-kerning: normal !important;
+    font-feature-settings: "kern" 1 !important;
+}
+
+/* Exact sections reported by user */
+#admin-panel #admin-homepage-section h1,
+#admin-panel #admin-homepage-section h2,
+#admin-panel #admin-homepage-section h3,
+#admin-panel #admin-homepage-section h4,
+#admin-panel #admin-homepage-section h5,
+#admin-panel #admin-homepage-section h6,
+#admin-panel #admin-landing-section h1,
+#admin-panel #admin-landing-section h2,
+#admin-panel #admin-landing-section h3,
+#admin-panel #admin-landing-section h4,
+#admin-panel #admin-landing-section h5,
+#admin-panel #admin-landing-section h6,
+#admin-panel #admin-leads-section h1,
+#admin-panel #admin-leads-section h2,
+#admin-panel #admin-leads-section h3,
+#admin-panel #admin-leads-section h4,
+#admin-panel #admin-leads-section h5,
+#admin-panel #admin-leads-section h6,
+#admin-panel #admin-announcements-section h1,
+#admin-panel #admin-announcements-section h2,
+#admin-panel #admin-announcements-section h3,
+#admin-panel #admin-announcements-section h4,
+#admin-panel #admin-announcements-section h5,
+#admin-panel #admin-announcements-section h6 {
+    letter-spacing: 0 !important;
+    word-spacing: 0 !important;
+    text-transform: capitalize !important;
+    font-kerning: normal !important;
+    font-feature-settings: "kern" 1 !important;
+}
+
+/* Insights: make small/body text non-bold */
+#admin-panel #admin-insights-section :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+#admin-panel #admin-insights-list :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+    font-weight: 300 !important;
+}
+
+#admin-panel #admin-insights-section .font-black,
+#admin-panel #admin-insights-section .font-bold,
+#admin-panel #admin-insights-section .font-semibold,
+#admin-panel #admin-insights-list .font-black,
+#admin-panel #admin-insights-list .font-bold,
+#admin-panel #admin-insights-list .font-semibold {
+    font-weight: 300 !important;
+}
+
+/* Keep Font Awesome icons intact inside insights */
+#admin-panel #admin-insights-section i[class*="fa-"],
+#admin-panel #admin-insights-list i[class*="fa-"] {
+    font-weight: 900 !important;
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+/* ==========================================================================
+   ADMIN COLOR SYSTEM (CONSISTENT PALETTE)
+   ========================================================================== */
+#admin-panel {
+    --admin-bg: #f5f7fb;
+    --admin-surface: #ffffff;
+    --admin-surface-soft: #f9fafb;
+    --admin-border: #e5e7eb;
+    --admin-border-soft: #eef2f7;
+    --admin-text: #111827;
+    --admin-text-muted: #6b7280;
+    --admin-primary: #111111;
+    --admin-primary-hover: #1f2937;
+    --admin-danger: #dc2626;
+    --admin-success: #16a34a;
+}
+
+#admin-panel {
+    background: var(--admin-bg) !important;
+    color: var(--admin-text) !important;
+}
+
+#admin-panel .bg-gray-50,
+#admin-panel .bg-gray-50\/50 {
+    background-color: var(--admin-surface-soft) !important;
+}
+
+#admin-panel .bg-white,
+#admin-panel [id$="-section"] > div,
+#admin-panel #admin-migration-section {
+    background-color: var(--admin-surface) !important;
+}
+
+#admin-panel .border,
+#admin-panel .border-gray-100,
+#admin-panel .border-gray-200,
+#admin-panel .border-gray-50 {
+    border-color: var(--admin-border) !important;
+}
+
+#admin-panel .text-gray-900,
+#admin-panel .text-black {
+    color: var(--admin-text) !important;
+}
+
+#admin-panel .text-gray-500,
+#admin-panel .text-gray-400,
+#admin-panel .text-gray-300 {
+    color: var(--admin-text-muted) !important;
+}
+
+/* Primary action consistency */
+#admin-panel .bg-black {
+    background-color: var(--admin-primary) !important;
+    color: #fff !important;
+}
+
+#admin-panel .bg-black:hover {
+    background-color: var(--admin-primary-hover) !important;
+}
+
+/* Secondary neutral buttons */
+#admin-panel .bg-gray-100 {
+    background-color: #f3f4f6 !important;
+    color: #374151 !important;
+}
+
+#admin-panel .bg-gray-100:hover {
+    background-color: #e5e7eb !important;
+    color: #111827 !important;
+}
+
+/* Danger / success accents in admin controls */
+#admin-panel .text-red-500,
+#admin-panel .text-red-600,
+#admin-panel .text-blue-500,
+#admin-panel .text-blue-600,
+#admin-panel .text-green-500,
+#admin-panel .text-green-600 {
+    color: #111111 !important;
+}
+
+/* Admin buttons in monochrome only (white/black) */
+#admin-panel button.bg-blue-500,
+#admin-panel button.bg-blue-600,
+#admin-panel button.bg-red-500,
+#admin-panel button.bg-red-600,
+#admin-panel a.bg-blue-50,
+#admin-panel a.bg-blue-100,
+#admin-panel a.bg-red-50,
+#admin-panel a.bg-red-100,
+#admin-panel .admin-action-btn,
+#admin-panel .admin-action-btn.delete {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border: none !important;
+}
+
+#admin-panel button.bg-blue-500:hover,
+#admin-panel button.bg-blue-600:hover,
+#admin-panel button.bg-red-500:hover,
+#admin-panel button.bg-red-600:hover,
+#admin-panel a.bg-blue-50:hover,
+#admin-panel a.bg-blue-100:hover,
+#admin-panel a.bg-red-50:hover,
+#admin-panel a.bg-red-100:hover,
+#admin-panel .admin-action-btn:hover,
+#admin-panel .admin-action-btn.delete:hover {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+
+/* Landing settings action buttons: padding/alignment fix */
+#admin-panel #admin-landing-section #landing-save-btn,
+#admin-panel #admin-landing-section a[href="landing.html"] {
+    min-height: 52px !important;
+    padding: 14px 20px !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    #admin-panel #admin-landing-section #landing-save-btn,
+    #admin-panel #admin-landing-section a[href="landing.html"] {
+        width: 100%;
+        white-space: normal;
+    }
+}
