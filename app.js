@@ -1092,10 +1092,11 @@ function renderHome() {
 
             // Always show complete rows — never leave an orphan product on the last row
             const cols = getColumnsCount();
-            // Start with exactly 2 rows. Each load more click adds 2 rows.
-            const limit = state.visibleChunks * (cols * 2);
+            // When a specific category is selected, show ALL products in that category
+            // Only paginate on the home 'all' view where View More button exists
+            const limit = state.filter !== 'all' ? filtered.length : state.visibleChunks * (cols * 2);
             const visibleProducts = filtered.slice(0, limit);
-            const hasMore = filtered.length > limit;
+            const hasMore = state.filter === 'all' && filtered.length > limit;
 
             let gridContent = visibleProducts.map((p, idx) => {
                 let displayP = { ...p };
@@ -1198,7 +1199,10 @@ function renderHome() {
                 }
             }
 
-            if (hasMore) {
+            // Hide View More when a specific category is selected — show all products in that category
+            if (state.filter !== 'all') {
+                loadMoreContainer.style.display = 'none';
+            } else if (hasMore) {
                 loadMoreContainer.innerHTML = `
                     <button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
                         View More <i class="fa-solid fa-arrow-down transform md:group-hover:translate-y-1 transition-transform"></i>
