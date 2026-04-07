@@ -993,17 +993,7 @@ function renderHome() {
                         }
                     }
 
-                    // 2. Add hint animation on first load if on mobile and scrollable
-                    const isScrollable = catRow.scrollWidth > catRow.clientWidth;
-                    if (isScrollable && !window.sessionStorage.getItem('cat_hint_done') && window.innerWidth < 768) {
-                        setTimeout(() => {
-                            catRow.scrollTo({ left: 100, behavior: 'smooth' });
-                            setTimeout(() => {
-                                catRow.scrollTo({ left: 0, behavior: 'smooth' });
-                                window.sessionStorage.setItem('cat_hint_done', 'true');
-                            }, 700);
-                        }, 1000);
-                    }
+
                 }, 100);
             }
         }
