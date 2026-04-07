@@ -9,7 +9,11 @@
       "**/.*",
       "**/node_modules/**",
       ".git/**",
-      ".agent/**"
+      ".agent/**",
+      "app.js",
+      "app-admin.js",
+      "deploy.bat",
+      "style.css"
     ],
     "headers": [
       {
