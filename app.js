@@ -702,6 +702,29 @@ async function refreshData(isNavigationOnly = false) {
         state.filter = rawCatId;
         state.search = query || '';
 
+        // Sync search UI state for popstate (browser back button)
+        if (state.search) {
+            if (typeof enterSearchMode === 'function') enterSearchMode();
+            const discSearch = document.getElementById('customer-search');
+            const deskSearch = document.getElementById('desk-search');
+            if (discSearch) discSearch.value = state.search;
+            if (deskSearch) deskSearch.value = state.search;
+            const clearBtn = document.getElementById('clear-search-btn');
+            const deskClearBtn = document.getElementById('desk-clear-btn');
+            if (clearBtn) clearBtn.classList.remove('hidden');
+            if (deskClearBtn) deskClearBtn.classList.remove('hidden');
+        } else {
+            if (typeof exitSearchMode === 'function') exitSearchMode();
+            const discSearch = document.getElementById('customer-search');
+            const deskSearch = document.getElementById('desk-search');
+            if (discSearch) discSearch.value = '';
+            if (deskSearch) deskSearch.value = '';
+            const clearBtn = document.getElementById('clear-search-btn');
+            const deskClearBtn = document.getElementById('desk-clear-btn');
+            if (clearBtn) clearBtn.classList.add('hidden');
+            if (deskClearBtn) deskClearBtn.classList.add('hidden');
+        }
+
         // SMART CATEGORY MATCHING: If state.filter is not 'all', check if it's a Name instead of an ID
         if (state.filter !== 'all') {
             const foundById = DATA.c.find(c => c.id === state.filter);
@@ -852,6 +875,17 @@ window.goBackToHome = (forceReset = false) => {
         state.scrollPos = 0;
         state.visibleChunks = 1; // Reset pagination
         safePushState({ s: null, p: null, c: null, q: null });
+        // Clear search mode UI (body class, hidden elements) — critical after search→detail→back→home flow
+        if (typeof exitSearchMode === 'function') exitSearchMode();
+        // Clear search input fields
+        const searchInput = document.getElementById('customer-search');
+        const deskInput = document.getElementById('desk-search');
+        if (searchInput) searchInput.value = '';
+        if (deskInput) deskInput.value = '';
+        const clearBtn = document.getElementById('clear-search-btn');
+        const deskClearBtn = document.getElementById('desk-clear-btn');
+        if (clearBtn) clearBtn.classList.add('hidden');
+        if (deskClearBtn) deskClearBtn.classList.add('hidden');
     } else {
         safePushState({ p: null });
     }
