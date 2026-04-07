@@ -2957,7 +2957,8 @@ body.search-mode #search-result-count {
     }
 }
 
-.desktop-badge-icon-first>svg {
+.desktop-badge-icon-first>svg,
+.desktop-badge-icon-first>img {
     transform: scale(1.6) !important;
     transform-origin: center !important;
     overflow: visible !important;
