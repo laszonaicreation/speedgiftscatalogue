@@ -1,4 +1,4 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, arrayUnion, query, where, documentId } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile, verifyPasswordResetCode, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
@@ -691,7 +691,7 @@ async function refreshData(isNavigationOnly = false) {
         const prodId = urlParams.get('p');
         const catId = urlParams.get('c');
         const query = urlParams.get('q');
-        const isAdminOpen = !document.getElementById('admin-panel').classList.contains('hidden');
+        const isAdminOpen = document.getElementById('admin-panel')?.classList.contains('hidden') === false;
 
         // Sync state from URL
         let rawCatId = catId || 'all';
@@ -2328,7 +2328,7 @@ window.clearCustomerSearch = () => {
     renderHome();
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
-window.showAdminPanel = () => {
+window.showAdminPanel = async () => {
     const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
 
     // Auto-retry once to give Firebase time to log in
@@ -2339,10 +2339,9 @@ window.showAdminPanel = () => {
         return;
     }
 
-    // Strict block
+    // Strict auth block — do NOT load any admin HTML for unauthorized users
     if (!u || u.email !== "laszonaicreation@gmail.com") {
         alert("ACCESS DENIED: You are not authorized to view the control panel.");
-        window.hideAdminPanel();
         const url = new URL(window.location);
         url.searchParams.delete('admin');
         window.history.replaceState({}, '', url);
@@ -2353,6 +2352,37 @@ window.showAdminPanel = () => {
         alert("The Admin Panel is only accessible on Desktop devices. Please switch to a computer.");
         return;
     }
+
+    // ── LAZY HTML LOAD ──────────────────────────────────────────────
+    // Fetch admin-panel.html only once (first open). Normal users never trigger this.
+    if (!window._adminHtmlLoaded) {
+        try {
+            showToast("Loading Admin Panel...");
+            const res = await fetch('./admin-panel.html');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const html = await res.text();
+            const mount = document.getElementById('admin-panel-mount');
+            if (mount) {
+                mount.outerHTML = html; // Replace mount placeholder with real HTML
+            }
+            window._adminHtmlLoaded = true;
+
+            // Wait one frame for browser to finalize the DOM after outerHTML swap
+            await new Promise(r => requestAnimationFrame(r));
+
+            // Re-populate category dropdowns — they were empty during initial refreshData
+            // because admin HTML wasn't in the DOM yet
+            populateCatSelect();
+            populateAdminCatFilter();
+            if (typeof populateHomeAdminUI === 'function') populateHomeAdminUI();
+        } catch (e) {
+            console.error('[Admin] Failed to load admin-panel.html:', e);
+            showToast('Admin panel failed to load. Please refresh.');
+            return;
+        }
+    }
+    // ────────────────────────────────────────────────────────────────
+
     document.getElementById('admin-panel').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
@@ -2381,7 +2411,7 @@ window.showAdminPanel = () => {
     switchAdminTab(state.adminTab || 'products');
 };
 window.hideAdminPanel = () => {
-    document.getElementById('admin-panel').classList.add('hidden');
+    document.getElementById('admin-panel')?.classList.add('hidden');
     document.body.style.overflow = 'auto';
 
     // URL Persistence: Clear admin params
@@ -2438,7 +2468,7 @@ window.switchAdminTab = (tab) => {
 
     // URL Persistence: Update active tab
     const url = new URL(window.location);
-    if (document.getElementById('admin-panel').classList.contains('hidden') === false) {
+    if (document.getElementById('admin-panel')?.classList.contains('hidden') === false) {
         url.searchParams.set('atab', tab);
         window.history.replaceState({}, '', url);
     }

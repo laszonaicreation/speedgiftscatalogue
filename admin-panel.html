@@ -1,0 +1,748 @@
+﻿    <!-- Admin Panel -->
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="hidden fixed inset-0 z-[60] bg-gray-50 overflow-hidden flex" style="z-index: 99999;">
+        <!-- SIDEBAR -->
+        <div class="bg-white border-r border-gray-100 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
+            style="width: 260px; flex-shrink: 0;">
+            <div class="flex-1 overflow-y-auto overflow-x-hidden py-8 px-6">
+                <div class="mb-12 text-center">
+                    <h2 class="text-[24px] font-bold text-gray-900 tracking-tight"
+                        style="font-family: 'Poppins', sans-serif;">Workspace</h2>
+                </div>
+
+                <div class="flex flex-col w-full relative pb-4">
+                    <!-- CORE OPERATIONS -->
+                    <button onclick="toggleSidebarGroup('core')"
+                        class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
+                            Store Management</p>
+                        <i id="icon-core"
+                            class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300"></i>
+                    </button>
+                    <div id="sidebar-core"
+                        class="flex flex-col gap-2 w-full mb-4 overflow-hidden transition-all duration-300"
+                        style="max-height: 0px; opacity: 0;">
+                        <button onclick="switchAdminTab('products')" id="tab-p"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium transition-all bg-black text-white shadow-lg"><i
+                                class="fa-solid fa-box opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Products</span></button>
+                        <button onclick="switchAdminTab('categories')" id="tab-c"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-tags opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Categories</span></button>
+                    </div>
+
+                    <!-- STOREFRONT DESIGN -->
+                    <button onclick="toggleSidebarGroup('design')"
+                        class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
+                            Storefront Design</p>
+                        <i id="icon-design"
+                            class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300 rotate-180"></i>
+                    </button>
+                    <div id="sidebar-design"
+                        class="flex flex-col gap-2 w-full mb-4 overflow-hidden transition-all duration-300"
+                        style="max-height: 0px; opacity: 0;">
+                        <button onclick="switchAdminTab('homepage')" id="tab-hp"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-house opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Home Page</span></button>
+                        <button onclick="switchAdminTab('sliders')" id="tab-s"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-regular fa-images opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Sliders</span></button>
+                        <button onclick="switchAdminTab('megamenu')" id="tab-m"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-bars opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Menus</span></button>
+                        <button onclick="switchAdminTab('announcements')" id="tab-a"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-bullhorn opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Notices</span></button>
+                    </div>
+
+                    <!-- MARKETING -->
+                    <button onclick="toggleSidebarGroup('marketing')"
+                        class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
+                            Marketing & Analytics</p>
+                        <i id="icon-marketing"
+                            class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300 rotate-180"></i>
+                    </button>
+                    <div id="sidebar-marketing"
+                        class="flex flex-col gap-2 w-full overflow-hidden transition-all duration-300"
+                        style="max-height: 0px; opacity: 0;">
+                        <button onclick="switchAdminTab('insights')" id="tab-i"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-chart-line opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Insights</span></button>
+                        <button onclick="switchAdminTab('landing')" id="tab-landing"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-rocket opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Landing Page</span></button>
+                        <button onclick="switchAdminTab('leads')" id="tab-l"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-users opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Leads & Popup</span></button>
+                    </div>
+
+                    <!-- TOOLS -->
+                    <button onclick="toggleSidebarGroup('tools')"
+                        class="w-full flex justify-between items-center px-4 mt-2 mb-2 group appearance-none cursor-pointer">
+                        <p class="text-[14px] font-semibold text-gray-500 group-hover:text-black transition-colors" style="font-weight:600 !important;">
+                            Tools</p>
+                        <i id="icon-tools"
+                            class="fa-solid fa-chevron-up text-[10px] text-gray-400 transition-transform duration-300 rotate-180"></i>
+                    </button>
+                    <div id="sidebar-tools"
+                        class="flex flex-col gap-2 w-full overflow-hidden transition-all duration-300"
+                        style="max-height: 0px; opacity: 0;">
+                        <button onclick="switchAdminTab('migration')" id="tab-mig"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-database opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Migration & Cloud Tools</span></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full p-6 bg-white border-t border-gray-100 shrink-0">
+                <button onclick="hideAdminPanel()"
+                    class="w-full py-4 text-center rounded-xl bg-black text-white hover:bg-red-600 shadow-xl transition-all text-[13px] font-semibold"><i
+                        class="fa-solid fa-power-off md:mr-2"></i> <span class="hidden md:inline">Exit</span></button>
+            </div>
+        </div>
+
+        <!-- MAIN WORKSPACE -->
+        <div class="flex-1 h-full overflow-y-auto bg-gray-50 p-8 lg:p-12 custom-scrollbar">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+                    <!-- LEFT COLUMN: FORMS -->
+                    <div class="lg:col-span-5" id="admin-form-container">
+                        <!-- Product Section -->
+                        <div id="admin-product-section" class="fade-in">
+                            <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                                <h3 id="p-form-title" class="text-[11px] font-black uppercase tracking-widest">Product
+                                    Details</h3>
+                                <input type="hidden" id="edit-id">
+                                <input type="text" id="p-name" class="admin-input" placeholder="Item Name">
+                                <input type="text" id="p-price" class="admin-input" placeholder="Sale Price (AED 99)">
+                                <input type="text" id="p-original-price" class="admin-input"
+                                    placeholder="Original Price (AED 150, optional)">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <select id="p-cat-id" class="admin-input cursor-pointer">
+                                        <option value="">Select Category</option>
+                                    </select>
+                                    <select id="p-badge" class="admin-input cursor-pointer">
+                                        <option value="">No Badge</option>
+                                        <option value="new">New Arrival</option>
+                                        <option value="best">Best Seller</option>
+                                        <option value="limited">Limited Stock</option>
+                                        <option value="sale">On Sale</option>
+                                        <option value="trending">Trending</option>
+                                    </select>
+                                    <select id="p-featured" class="admin-input cursor-pointer text-[#9C6521]">
+                                        <option value="false">Hide On Home</option>
+                                        <option value="true">Feature On Home</option>
+                                    </select>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <input type="text" id="p-size" class="admin-input"
+                                        placeholder="Static Size (Optional)">
+                                    <input type="text" id="p-material" class="admin-input" placeholder="Material">
+                                </div>
+
+                                <div id="variations-container" class="space-y-3 mt-4">
+                                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Size
+                                        Variations
+                                        (Dynamic Price/Photo)</p>
+                                    <!-- Variation rows will be injected here -->
+                                    <div id="variation-rows" class="space-y-3"></div>
+                                    <button type="button" onclick="window.addVariationRow()"
+                                        class="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-[9px] font-black uppercase text-gray-400 hover:border-black hover:text-black transition-all flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-plus"></i> Add Size Variation
+                                    </button>
+                                </div>
+
+                                <div id="color-variations-container" class="space-y-3 mt-4">
+                                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Color
+                                        Variations (Dynamic Price/Photo)</p>
+                                    <!-- Color Variation rows will be injected here -->
+                                    <div id="color-variation-rows" class="space-y-3"></div>
+                                    <button type="button" onclick="window.addColorVariationRow()"
+                                        class="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-[9px] font-black uppercase text-gray-400 hover:border-black hover:text-black transition-all flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-palette"></i> Add Color Variation
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <label
+                                        class="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 cursor-pointer">
+                                        <input type="checkbox" id="p-stock" class="w-4 h-4 accent-black" checked>
+                                        <span
+                                            class="text-[11px] font-bold uppercase tracking-widest text-gray-500">Available
+                                            in
+                                            Stock</span>
+                                    </label>
+                                    <label
+                                        class="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 cursor-pointer">
+                                        <input type="checkbox" id="p-pinned" class="w-4 h-4 accent-black">
+                                        <span class="text-[11px] font-bold uppercase tracking-widest text-gray-500">Pin
+                                            to
+                                            Top
+                                            (Always First)</span>
+                                    </label>
+                                </div>
+                                <div class="space-y-3">
+                                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">Product
+                                        Images
+                                        (First one is Primary)</p>
+                                    <div id="p-image-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <!-- Dynamic thumbnails here -->
+                                    </div>
+                                    <div class="drop-zone p-6 rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-3 hover:border-black transition-all group"
+                                        ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                                        ondrop="handleMultiDrop(event, 'p-image-grid')">
+                                        <i
+                                            class="fa-solid fa-cloud-arrow-up text-xl text-gray-200 group-hover:text-black transition-all"></i>
+                                        <button type="button" onclick="window.cloudinaryMultiUpload('p-image-grid')"
+                                            class="text-[10px] font-black uppercase bg-gray-100 px-6 py-3 rounded-xl hover:bg-black hover:text-white transition-all">Upload
+                                            Images</button>
+                                    </div>
+                                </div>
+                                    <input type="text" id="p-keywords" class="admin-input mt-4 !bg-white"
+                                    placeholder="Search Keywords (Hidden)">
+                                <textarea id="p-desc" class="admin-input h-32 py-4 resize-none"
+                                    placeholder="Product Description"></textarea>
+                                <div class="flex gap-4 mt-4">
+                                    <button onclick="resetForm()"
+                                        class="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-gray-200">Clear
+                                        Form</button>
+                                    <button onclick="saveProduct()" id="p-save-btn"
+                                        class="flex-[2] bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-2">Sync
+                                        Product</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Category Section -->
+                        <div id="admin-category-section" class="hidden fade-in">
+                            <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                                <h3 id="c-form-title" class="text-[11px] font-black uppercase tracking-widest">New
+                                    Category
+                                </h3>
+                                <input type="hidden" id="edit-cat-id">
+                                <input type="text" id="c-name" class="admin-input" placeholder="Category Title">
+                                <div class="drop-zone flex gap-2 items-center p-1 rounded-xl"
+                                    ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                                    ondrop="handleDrop(event, 'c-img')">
+                                    <input type="text" id="c-img" class="admin-input flex-1" value="img/"
+                                        placeholder="Icon Path">
+                                    <button onclick="cloudinaryUpload('c-img')"
+                                        class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
+                                </div>
+                                <!-- CATEGORY PINNING OPTION -->
+                                <label
+                                    class="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 cursor-pointer">
+                                    <input type="checkbox" id="c-pinned" class="w-4 h-4 accent-black">
+                                    <span class="text-[11px] font-bold uppercase tracking-widest text-gray-500">Pin
+                                        Category
+                                        (Show First)</span>
+                                </label>
+                                <div class="flex gap-4 mt-4">
+                                    <button onclick="resetForm()"
+                                        class="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-gray-200">Clear
+                                        Form</button>
+                                    <button onclick="saveCategory()" id="c-save-btn"
+                                        class="flex-[2] bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-2">Sync
+                                        Category</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Mega Menu Section -->
+                        <div id="admin-megamenu-section" class="hidden fade-in">
+                            <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                                <h3 id="m-form-title" class="text-[11px] font-black uppercase tracking-widest">New Main
+                                    Category</h3>
+                                <input type="hidden" id="edit-megamenu-id">
+                                <input type="text" id="m-name" class="admin-input"
+                                    placeholder="Display Name (e.g. Personalized Gifts)">
+                                <div class="mt-4 border-t border-gray-100 pt-4">
+                                    <p class="text-[9px] font-black uppercase text-gray-400 mb-3">Select Categories to
+                                        include:</p>
+                                    <div id="m-categories-checkboxes"
+                                        class="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto w-full pr-1">
+                                        <p class="text-[10px] text-gray-400 italic col-span-3">No categories available
+                                            yet.
+                                            Add categories first.</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-4 mt-4">
+                                    <button onclick="resetForm()"
+                                        class="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all hover:bg-gray-200">Clear
+                                        Form</button>
+                                    <button onclick="saveMegaMenu()" id="m-save-btn"
+                                        class="flex-[2] bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all">Save
+                                        Desktop Menu</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Slider Section -->
+                        <div id="admin-slider-section" class="hidden fade-in">
+                            <div class="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100">
+                                <div class="flex items-center justify-between mb-8">
+                                    <h3 id="slider-form-title" class="text-lg font-black uppercase tracking-widest">New
+                                        Slider Image</h3>
+                                    <button onclick="resetForm()"
+                                        class="px-4 py-2 bg-white text-gray-400 rounded-full text-[10px] font-black uppercase border border-gray-100 hover:text-black transition-all">Clear
+                                        Form</button>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="space-y-4">
+                                        <input type="hidden" id="edit-slider-id">
+                                        <div class="space-y-1">
+                                            <label class="text-[9px] font-black uppercase text-gray-400 ml-4">Desktop
+                                                Image
+                                                URL</label>
+                                            <input type="text" id="s-img" class="admin-input" placeholder="img/..."
+                                                value="img/">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[9px] font-black uppercase text-gray-400 ml-4">Mobile
+                                                Image
+                                                URL</label>
+                                            <input type="text" id="s-mobileImg" class="admin-input"
+                                                placeholder="img/..." value="img/">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[9px] font-black uppercase text-gray-400 ml-4">Title
+                                                (Optional)</label>
+                                            <input type="text" id="s-title" class="admin-input"
+                                                placeholder="Summer Collection">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[9px] font-black uppercase text-gray-400 ml-4">Link
+                                                (Optional)</label>
+                                            <input type="text" id="s-link" class="admin-input"
+                                                placeholder="https://...">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[9px] font-black uppercase text-gray-400 ml-4">Display
+                                                Order</label>
+                                            <input type="number" id="s-order" class="admin-input" placeholder="0"
+                                                value="0">
+                                        </div>
+                                        <button id="s-save-btn" onclick="saveSlider()"
+                                            class="w-full h-[60px] bg-black text-white rounded-[1.5rem] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-black/10 mt-4">Sync
+                                            Slider</button>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        <div class="p-6 bg-white rounded-[2rem] border border-gray-100 space-y-4">
+                                            <h4 class="text-[11px] font-black uppercase tracking-widest text-center">
+                                                Bulk
+                                                Desktop Upload</h4>
+                                            <div class="drop-zone h-32 flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border-2 border-dashed border-gray-100 group hover:border-black transition-all cursor-pointer"
+                                                onclick="window.cloudinaryBulkSliderUpload('desktop')"
+                                                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                                                ondrop="handleSliderBulkDrop(event, 'desktop')">
+                                                <i
+                                                    class="fa-solid fa-desktop text-2xl text-gray-200 group-hover:text-black transition-all"></i>
+                                                <span
+                                                    class="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-black text-center px-4">Drop
+                                                    Desktop Photos<br><span
+                                                        class="opacity-50 font-bold lowercase">or click to browse</span></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="p-6 bg-white rounded-[2rem] border border-gray-100 space-y-4">
+                                            <h4 class="text-[11px] font-black uppercase tracking-widest text-center">
+                                                Bulk
+                                                Mobile Upload</h4>
+                                            <div class="drop-zone h-32 flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border-2 border-dashed border-gray-100 group hover:border-black transition-all cursor-pointer"
+                                                onclick="window.cloudinaryBulkSliderUpload('mobile')"
+                                                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                                                ondrop="handleSliderBulkDrop(event, 'mobile')">
+                                                <i
+                                                    class="fa-solid fa-mobile-screen-button text-2xl text-gray-200 group-hover:text-black transition-all"></i>
+                                                <span
+                                                    class="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-black text-center px-4">Drop
+                                                    Mobile Photos<br><span
+                                                        class="opacity-50 font-bold lowercase">or click to browse</span></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Insights Section -->
+                        <div id="admin-insights-section" class="hidden fade-in">
+                        </div>
+
+                        <!-- Announcements Section -->
+                        <div id="admin-announcements-section" class="hidden fade-in">
+                            <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                                <h3 class="text-[11px] font-black uppercase tracking-widest">Announcement Bar</h3>
+                                <p class="text-[10px] text-gray-400">Add messages that will rotate at the top of your
+                                    website.</p>
+
+                                <div id="announcement-rows" class="space-y-3">
+                                    <!-- Announcement rows injected here -->
+                                </div>
+
+                                <button onclick="addAnnouncementRow()"
+                                    class="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-[10px] font-black uppercase text-gray-400 hover:border-black hover:text-black transition-all flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-plus"></i> Add Message
+                                </button>
+
+                                <div class="pt-6">
+                                    <button onclick="saveAnnouncements()" id="a-save-btn"
+                                        class="w-full bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl">Save
+                                        Announcements</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leads & Popup Section -->
+                        <div id="admin-leads-section" class="hidden fade-in">
+                            <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-6 shadow-sm">
+                                <h3 class="text-[11px] font-black uppercase tracking-widest">Popup Settings</h3>
+                                <div class="space-y-4">
+                                    <input type="text" id="popup-title" class="admin-input"
+                                        placeholder="Popup Title (e.g. Free Gift!)">
+                                    <textarea id="popup-msg" class="admin-input h-20 py-3 resize-none"
+                                        placeholder="Popup Main Message"></textarea>
+
+                                    <div class="pt-4 border-t border-gray-100/50">
+                                        <h4 class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">
+                                            Success Message</h4>
+                                        <input type="text" id="popup-success-title" class="admin-input mb-4"
+                                            placeholder="Success Title (e.g. Congratulations!)">
+                                        <textarea id="popup-success-msg" class="admin-input h-20 py-3 resize-none"
+                                            placeholder="Success Description"></textarea>
+                                    </div>
+
+                                    <div class="flex gap-2 items-center p-1 rounded-xl">
+                                        <input type="text" id="popup-img" class="admin-input flex-1" value="img/"
+                                            placeholder="Product Image URL">
+                                        <button onclick="cloudinaryUpload('popup-img')"
+                                            class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
+                                    </div>
+                                    <button onclick="savePopupSettings()" id="popup-save-btn"
+                                        class="w-full bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl">Update
+                                        Popup</button>
+                                </div>
+
+                                <div class="pt-8 border-t border-gray-100">
+                                    <h3 class="text-[11px] font-black uppercase tracking-widest mb-4">Lead Management
+                                    </h3>
+                                    <button onclick="exportLeadsExcel()"
+                                        class="w-full bg-blue-500 text-white py-4 rounded-xl font-bold text-[9px] uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2 mb-4">
+                                        <i class="fa-solid fa-file-excel"></i> Export All Leads (CSV)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Landing Page Section -->
+                        <!-- HOME PAGE SETTINGS SECTION -->
+                        <div id="admin-homepage-section" class="hidden fade-in">
+                            <div
+                                class="bg-gray-50 p-6 md:p-10 rounded-[2.5rem] border border-gray-100 space-y-8 shadow-sm">
+                                <div class="space-y-1">
+                                    <h3 class="text-[12px] font-black uppercase tracking-[0.2em] text-gray-900">Home
+                                        Page
+                                        Settings</h3>
+                                    <p class="text-[10px] text-gray-400 font-medium">Manage spotlight settings for the home page.</p>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <!-- Enable Toggle -->
+                                    <div
+                                        class="flex items-center justify-between bg-white border border-gray-50 rounded-[1.5rem] px-6 py-5 shadow-sm">
+                                        <div class="space-y-0.5">
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-gray-800">
+                                                Spotlight Section</p>
+                                            <p class="text-[9px] text-gray-400 font-medium">Show or hide this section on the home page.</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer group">
+                                            <input type="checkbox" id="spotlight-enabled" class="sr-only">
+                                            <div
+                                                class="toggle-bg w-12 h-6 bg-gray-200 rounded-full transition-all duration-300 relative">
+                                                <!-- Physical Knob -->
+                                                <div
+                                                    class="toggle-knob absolute top-[2px] left-[2px] bg-white rounded-full h-5 w-5 transition-all duration-300 flex items-center justify-center shadow-sm">
+                                                    <i
+                                                        class="fa-solid fa-check text-[9px] text-black spotlight-tick opacity-0 transition-opacity duration-300"></i>
+                                                </div>
+                                            </div>
+                                            <!-- Toggle styles moved to style.css -->
+                                        </label>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <!-- Title -->
+                                        <div class="space-y-2">
+                                            <label
+                                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section
+                                                Title</label>
+                                            <input type="text" id="spotlight-title"
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 shadow-none"
+                                                placeholder="e.g. Gifting Essentials">
+                                        </div>
+                                        <!-- Subtitle -->
+                                        <div class="space-y-2">
+                                            <label
+                                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Section
+                                                Subtitle</label>
+                                            <input type="text" id="spotlight-subtitle"
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 shadow-none"
+                                                placeholder="e.g. Curated picks from our collection">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <!-- Category -->
+                                        <div class="space-y-2">
+                                            <label
+                                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Spotlight
+                                                Category</label>
+                                            <select id="spotlight-cat-id"
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 cursor-pointer shadow-none">
+                                                <option value="">Choose a category...</option>
+                                            </select>
+                                        </div>
+                                        <!-- Limit -->
+                                        <div class="space-y-2">
+                                            <label
+                                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Max
+                                                Products</label>
+                                            <input type="number" id="spotlight-limit"
+                                                class="admin-input bg-gray-100 border-0 hover:border-0 focus:border-0 shadow-none"
+                                                min="2" max="24" placeholder="8">
+                                        </div>
+                                    </div>
+
+                                    <!-- SPECIFIC PRODUCT SELECTION -->
+                                    <div class="space-y-5 pt-2 border-t border-gray-100 mt-2">
+                                        <div>
+                                            <div class="flex items-center justify-between mb-3">
+                                                <label
+                                                    class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Select
+                                                    Specific Products</label>
+                                                <span
+                                                    class="text-[8px] font-bold text-gray-300 uppercase tracking-widest">Optional</span>
+                                            </div>
+
+                                            <!-- Pills Container -->
+                                            <div id="spotlight-pills"
+                                                class="flex flex-wrap gap-2 mb-4 min-h-[50px] p-3 bg-white/50 border border-dashed border-gray-200 rounded-2xl items-center shadow-inner">
+                                                <span class="text-[9px] text-gray-400 italic font-bold">No products
+                                                    selected
+                                                    yet...</span>
+                                            </div>
+
+                                            <!-- Search Input with Dropdown -->
+                                            <div class="relative">
+                                                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300">
+                                                    <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
+                                                </div>
+                                                <input type="text" id="spotlight-product-search"
+                                                    oninput="window.searchSpotlightProducts(this.value)"
+                                                    class="admin-input bg-gray-100 pl-10 border-0 hover:border-0 focus:border-0 shadow-none"
+                                                    placeholder="Search products to add...">
+
+                                                <!-- Results Dropdown -->
+                                                <div id="spotlight-dropdown"
+                                                    class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[70] max-h-64 overflow-y-auto overflow-x-hidden divide-y divide-gray-50 border-t-0 p-1">
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-[8px] text-gray-300 font-bold uppercase tracking-widest mt-3 ml-4">
+                                                If empty, best sellers from this category are shown.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Save Button -->
+                                    <div class="pt-4">
+                                        <button onclick="saveHomeSettings()" id="homepage-save-btn"
+                                            class="w-full bg-black text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl hover:bg-gray-900 transform active:scale-95 transition-all">
+                                            Save Configuration
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="admin-landing-section" class="hidden fade-in">
+                            <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-6 shadow-sm">
+                                <h3 class="text-[11px] font-black uppercase tracking-widest">Landing Page Settings</h3>
+                                <p class="text-[10px] text-gray-400 -mt-4">Manage the Google Ads landing page.
+                                </p>
+
+                                <div class="space-y-4">
+                                    <!-- Top Bar Announcement -->
+                                    <div>
+                                        <label class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Top
+                                            Announcement Bar</label>
+                                        <input type="text" id="landing-announcement" class="admin-input"
+                                            placeholder="e.g. 🔥 Fast Delivery in UAE | Order Now">
+                                    </div>
+
+                                    <hr class="border-gray-50 my-6">
+
+                                    <!-- Hero Image (Desktop & Mobile) -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label
+                                                class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Mobile
+                                                Hero Image URL</label>
+                                            <div class="flex gap-2 items-center p-1 rounded-xl">
+                                                <input type="text" id="landing-hero-mob" class="admin-input flex-1"
+                                                    value="img/" placeholder="Mobile Image URL">
+                                                <button onclick="cloudinaryUpload('landing-hero-mob')"
+                                                    class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="text-[9px] font-black uppercase text-gray-400 ml-4 mb-2 block">Desktop
+                                                Hero Image URL</label>
+                                            <div class="flex gap-2 items-center p-1 rounded-xl">
+                                                <input type="text" id="landing-hero-desk" class="admin-input flex-1"
+                                                    value="img/" placeholder="Desktop Image URL">
+                                                <button onclick="cloudinaryUpload('landing-hero-desk')"
+                                                    class="text-[8px] font-black uppercase px-4 py-4 bg-gray-100 rounded-xl hover:bg-black hover:text-white transition-all">Upload</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="border-gray-50 my-6">
+
+                                    <!-- Section 1 -->
+                                    <div>
+                                        <h4 class="text-[10px] font-black uppercase tracking-widest mb-3">Section 1</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <input type="text" id="landing-sec1-title" class="admin-input"
+                                                placeholder="Main Title (e.g. Premium Collections)">
+                                            <input type="text" id="landing-sec1-subtitle" class="admin-input"
+                                                placeholder="Subtitle (e.g. Personalized Awards)">
+                                        </div>
+                                        <p class="text-[9px] font-black uppercase text-gray-400 mt-3 mb-2 block">Select
+                                            Specific Products</p>
+                                        <div class="relative">
+                                            <div id="landing-sec1-pills"
+                                                class="flex flex-wrap gap-2 mb-2 min-h-[44px] p-2 bg-white border border-gray-100 rounded-xl items-center shadow-inner">
+                                                <span class="text-[9px] text-gray-400 italic font-bold">No products
+                                                    selected...</span>
+                                            </div>
+                                            <input type="text" id="landing-sec1-search" class="admin-input"
+                                                placeholder="Search products..."
+                                                onkeyup="searchLandingProducts('sec1', this.value)"
+                                                onfocus="searchLandingProducts('sec1', this.value)">
+                                            <div id="landing-sec1-dropdown"
+                                                class="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-1 shadow-2xl max-h-[250px] overflow-y-auto hidden">
+                                                <!-- JS injected items -->
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="border-gray-50 my-6">
+
+                                    <!-- Section 2 -->
+                                    <div>
+                                        <h4 class="text-[10px] font-black uppercase tracking-widest mb-3">Section 2</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <input type="text" id="landing-sec2-title" class="admin-input"
+                                                placeholder="Main Title (e.g. Best Sellers)">
+                                            <input type="text" id="landing-sec2-subtitle" class="admin-input"
+                                                placeholder="Subtitle (e.g. Most Loved Items)">
+                                        </div>
+                                        <p class="text-[9px] font-black uppercase text-gray-400 mt-3 mb-2 block">Select
+                                            Specific Products</p>
+                                        <div class="relative">
+                                            <div id="landing-sec2-pills"
+                                                class="flex flex-wrap gap-2 mb-2 min-h-[44px] p-2 bg-white border border-gray-100 rounded-xl items-center shadow-inner">
+                                                <span class="text-[9px] text-gray-400 italic font-bold">No products
+                                                    selected...</span>
+                                            </div>
+                                            <input type="text" id="landing-sec2-search" class="admin-input"
+                                                placeholder="Search products..."
+                                                onkeyup="searchLandingProducts('sec2', this.value)"
+                                                onfocus="searchLandingProducts('sec2', this.value)">
+                                            <div id="landing-sec2-dropdown"
+                                                class="absolute z-50 w-full bg-white border border-gray-100 rounded-xl mt-1 shadow-2xl max-h-[250px] overflow-y-auto hidden">
+                                                <!-- JS injected items -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row gap-4 mt-6">
+                                        <button onclick="saveLandingSettings()" id="landing-save-btn"
+                                            class="flex-1 bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-xl hover:bg-gray-800 transition-colors">Save
+                                            Landing Page</button>
+                                        <a href="landing.html" target="_blank"
+                                            class="flex-1 bg-blue-50 text-blue-600 border border-blue-100 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Landing Page
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MIGRATION & CLOUD TOOLS -->
+                        <div id="admin-migration-section"
+                            class="mt-10 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 space-y-4">
+                            <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">Migration &
+                                Cloud Tools</h3>
+                            <div class="grid grid-cols-1 gap-2">
+                                <button onclick="exportExcel()"
+                                    class="text-[9px] font-black uppercase bg-black text-white py-4 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2">Export
+                                    Excel</button>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="exportData()"
+                                        class="text-[9px] font-bold uppercase bg-white border border-gray-200 py-3 rounded-xl hover:bg-black hover:text-white transition-all">Backup
+                                        JSON</button>
+                                    <label
+                                        class="text-[9px] font-bold uppercase bg-white border border-gray-200 py-3 rounded-xl hover:bg-black hover:text-white transition-all text-center cursor-pointer">
+                                        Restore Data
+                                        <input type="file" id="import-input" class="hidden" accept=".json"
+                                            onchange="importData(event)">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: LISTS -->
+                    <div id="admin-right-column" class="lg:col-span-8 xl:col-span-7 transition-all duration-500">
+                        <div id="admin-list-controls" class="mb-6 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h4 id="list-title"
+                                    class="text-[11px] font-bold uppercase tracking-widest text-gray-300 italic">
+                                </h4>
+                            </div>
+                            <div id="product-admin-filters" class="flex flex-col md:flex-row gap-3">
+                                <select id="admin-cat-filter" onchange="renderAdminUI()"
+                                    style="background-color: #E6E6E6 !important; color: #000 !important; border: none !important; padding-right: 32px !important; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px auto; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: none !important;"
+                                    class="admin-input py-3 px-4 transition-all md:w-60 text-[10px] font-black uppercase tracking-widest cursor-pointer outline-none">
+                                    <option value="all" style="background-color: #fff; color: #000;">All Categories</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="admin-product-list-container">
+                            <div id="admin-product-list" class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 fade-in"></div>
+                        </div>
+                        <div id="admin-category-list" class="hidden grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 fade-in overflow-y-auto max-h-[calc(100vh-250px)] pr-2 scrollbar-thin scrollbar-thumb-gray-300"></div>
+                        <div id="admin-megamenu-list" class="hidden space-y-4 fade-in"></div>
+                        <div id="admin-slider-list" class="hidden space-y-4 fade-in pb-20"></div>
+                        <div id="admin-announcements-list" class="hidden"></div>
+                        <div id="admin-insights-list" class="hidden space-y-4 fade-in"></div>
+                        <div id="admin-leads-list" class="hidden space-y-4 fade-in"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
