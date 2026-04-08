@@ -3679,8 +3679,9 @@ function renderSearchResults() {
         });
 
         const cols = getColumnsCount();
-        const limit = state.visibleChunks * (cols * 2);
-        const visibleProducts = filtered.slice(0, limit);
+        // In search mode — show ALL results (no pagination limit)
+        const limit = filtered.length;
+        const visibleProducts = filtered;
         const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
 
         let gridContent = '';
@@ -3750,18 +3751,10 @@ function renderSearchResults() {
             setTimeout(() => ensureGridImagesVisible(grid), 0);
             setTimeout(() => { grid.style.minHeight = ''; }, 600);
 
-            // Update load-more button AFTER grid is rendered
+            // In search mode — always hide the View More button
             const loadMoreContainer = document.getElementById('load-more-container');
             if (loadMoreContainer) {
-                if (hasMore) {
-                    loadMoreContainer.innerHTML = `<button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">View More <i class="fa-solid fa-arrow-down transform md:group-hover:translate-y-1 transition-transform"></i></button>`;
-                    loadMoreContainer.style.display = 'flex';
-                } else if (state.visibleChunks > 1) {
-                    loadMoreContainer.innerHTML = `<button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">Show Less <i class="fa-solid fa-arrow-up transform md:group-hover:-translate-y-1 transition-transform"></i></button>`;
-                    loadMoreContainer.style.display = 'flex';
-                } else {
-                    loadMoreContainer.style.display = 'none';
-                }
+                loadMoreContainer.style.display = 'none';
             }
         });
 
