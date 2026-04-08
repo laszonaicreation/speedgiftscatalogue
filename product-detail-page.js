@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { renderProductDetailView } from "./product-detail-renderer.js";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
 import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
@@ -17,6 +18,7 @@ const app = initializeApp(firebaseConfig);
 const db = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
 });
+const auth = getAuth(app);
 const appId = firebaseConfig.projectId;
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
@@ -24,8 +26,104 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 const DATA = { p: [], c: [] };
 const state = { wishlist: [], currentVar: null };
 const WISHLIST_KEY = 'speedgifts_detail_wishlist';
+const trackedProductViews = new Set();
 
 registerProductDetailInteractions({ getOptimizedUrl, state });
+
+const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+async function waitForAuth() {
+    if (auth.currentUser) return auth.currentUser;
+    return new Promise(resolve => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                unsubscribe();
+                resolve(user);
+            }
+        });
+        setTimeout(() => { unsubscribe(); resolve(null); }, 6000);
+    });
+}
+
+async function initTrafficTracking() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
+    const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
+
+    if (urlParams.has('gclid') ||
+        urlParams.has('gbraid') ||
+        urlParams.has('wbraid') ||
+        urlParams.has('gad_source') ||
+        utmSrc === 'google' ||
+        utmSrc === 'google_ads' ||
+        utmSrc === 'googleads' ||
+        utmMed === 'cpc' ||
+        utmMed === 'ppc' ||
+        utmMed === 'google_ads') {
+        sessionStorage.setItem('traffic_source', 'Google Ads');
+    } else if (urlParams.has('utm_source')) {
+        sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+    } else if (!sessionStorage.getItem('traffic_source')) {
+        sessionStorage.setItem('traffic_source', 'Normal');
+    }
+}
+
+async function trackAdVisit() {
+    const today = getTodayStr();
+    const sessionKey = `ad_visit_tracked_${today}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
+    await waitForAuth();
+    const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+    await setDoc(statsRef, { adVisits: increment(1) }, { merge: true });
+}
+
+async function trackNormalVisit() {
+    const today = getTodayStr();
+    const sessionKey = `normal_visit_tracked_${today}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
+    await waitForAuth();
+    const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+    await setDoc(statsRef, { normalVisits: increment(1) }, { merge: true });
+}
+
+async function trackProductView(id) {
+    if (!id || trackedProductViews.has(id)) return;
+    trackedProductViews.add(id);
+    await waitForAuth();
+    const today = getTodayStr();
+    const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
+    const globalField = isAd ? 'adProductClicks' : 'normalProductClicks';
+
+    const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+    await setDoc(statsRef, { [globalField]: increment(1) }, { merge: true });
+
+    const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
+    const prodField = isAd ? 'adViews' : 'views';
+    await setDoc(dailyProdRef, { [prodField]: increment(1), productId: id, date: today }, { merge: true });
+}
+
+window.trackWhatsAppInquiry = async (ids) => {
+    const idList = Array.isArray(ids) ? ids : [ids];
+    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
+    await waitForAuth();
+    const today = getTodayStr();
+    const dailyStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+    await setDoc(dailyStatsRef, { adInquiries: increment(1) }, { merge: true });
+    for (const id of idList) {
+        if (id !== 'bulk_inquiry') {
+            const dailyProdRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_product_stats', `${today}_${id}`);
+            await setDoc(dailyProdRef, { adInquiries: increment(1), productId: id, date: today }, { merge: true });
+        }
+    }
+};
 
 function getOptimizedUrl(url, width) {
     if (!url || typeof url !== 'string') return url;
@@ -111,6 +209,7 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
     if (!selectedSize && !selectedColor && p.size) details += `\n*Size:* ${p.size}`;
     const pUrl = getProductDetailUrl(id);
     const msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${price} AED${details}\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
+    window.trackWhatsAppInquiry(id);
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
@@ -128,9 +227,23 @@ async function renderById(id) {
     }
     document.title = `${product.name} | Speed Gifts`;
     renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel });
+    trackProductView(id).catch(() => { /* no-op */ });
 }
 
 async function bootstrap() {
+    onAuthStateChanged(auth, async (u) => {
+        if (!u) {
+            await signInAnonymously(auth).catch(() => { /* no-op */ });
+            return;
+        }
+        await initTrafficTracking();
+        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+            await trackAdVisit().catch(() => { /* no-op */ });
+        } else {
+            await trackNormalVisit().catch(() => { /* no-op */ });
+        }
+    });
+
     loadWishlist();
     const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
     DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
