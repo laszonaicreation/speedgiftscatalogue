@@ -27,6 +27,7 @@ const DATA = { p: [], c: [] };
 const state = { wishlist: [], currentVar: null };
 const WISHLIST_KEY = 'speedgifts_detail_wishlist';
 const DETAIL_CACHE_KEY = 'speedgifts_detail_cache';
+const HOME_SNAPSHOT_KEY = 'speedgifts_home_snapshot';
 const trackedProductViews = new Set();
 
 registerProductDetailInteractions({ getOptimizedUrl, state });
@@ -291,6 +292,19 @@ window.addEventListener('popstate', () => {
 const backBtn = document.getElementById('detail-back-btn');
 if (backBtn) {
     backBtn.addEventListener('click', () => {
+        try {
+            const raw = sessionStorage.getItem(HOME_SNAPSHOT_KEY);
+            if (raw) {
+                const snapshot = JSON.parse(raw);
+                const isFresh = snapshot?.ts && (Date.now() - snapshot.ts) < 10 * 60 * 1000;
+                if (isFresh && snapshot?.url) {
+                    window.location.href = snapshot.url;
+                    return;
+                }
+            }
+        } catch {
+            // ignore and fallback
+        }
         if (window.history.length > 1) {
             window.history.back();
         } else {

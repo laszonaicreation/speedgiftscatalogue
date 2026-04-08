@@ -32,6 +32,10 @@ const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, homeSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, selected: [], wishlist: [], cart: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1, authMode: 'login' };
 const PAGE_SIZE = 16;
+const HOME_SNAPSHOT_KEY = 'speedgifts_home_snapshot';
+const INITIAL_EAGER_IMAGES = 4;
+const INITIAL_PRELOAD_PRODUCTS = 4;
+const INITIAL_PRELOAD_SLIDERS = 2;
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
 
@@ -682,8 +686,12 @@ async function refreshData(isNavigationOnly = false) {
 
             renderAnnouncementBar();
             renderDesktopMegaMenu();
-            // Aggressive Preloading for instant feel
-            window.preloadInitialBatch();
+            // Defer non-critical preloading until the first paint is done.
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(() => window.preloadInitialBatch(), { timeout: 1200 });
+            } else {
+                setTimeout(() => window.preloadInitialBatch(), 300);
+            }
 
             console.log("[Ad Tracking] UI Refreshed. Counter is now:", DATA.stats.adVisits);
         }
@@ -758,11 +766,14 @@ async function refreshData(isNavigationOnly = false) {
                     }
                 } catch (e) { console.error("Selection sync failed"); }
                 renderHome();
+                applyHomeSnapshotIfAny();
             } else {
                 renderHome();
+                applyHomeSnapshotIfAny();
             }
         } else {
             renderHome();
+            applyHomeSnapshotIfAny();
         }
 
         populateCatSelect();
@@ -1133,13 +1144,13 @@ function renderHome() {
                 <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" 
                      onmouseenter="window.preloadProductImage('${p.id}')"
                      onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
-                    <div class="img-container mb-4 shadow-sm relative">
+                    <div class="img-container mb-4 relative">
                         ${badgeHtml}
                         <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
                         ${(!state.selectionId && isAdmin) ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
                         <img src="${getOptimizedUrl(displayP.img, 600)}" 
                              class="${idx < 4 ? 'no-animation' : ''}"
-                             ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
+                             ${idx < INITIAL_EAGER_IMAGES ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                              decoding="async"
                              onload="this.classList.add('loaded')"
                              onerror="window.handleImgError(this)"
@@ -1204,6 +1215,7 @@ function renderHome() {
             }
 
             grid.innerHTML = gridContent;
+            setTimeout(() => ensureGridImagesVisible(grid), 0);
 
             // Release height lock after images/DOM have stabilized
             setTimeout(() => {
@@ -1322,9 +1334,48 @@ function cacheDetailPayload(id) {
     }
 }
 
+function cacheHomeSnapshot() {
+    try {
+        const snapshot = {
+            ts: Date.now(),
+            url: window.location.pathname + window.location.search,
+            scrollY: window.scrollY || state.scrollPos || 0,
+            visibleChunks: state.visibleChunks || 1
+        };
+        sessionStorage.setItem(HOME_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    } catch (e) {
+        // non-blocking snapshot path
+    }
+}
+
+function applyHomeSnapshotIfAny() {
+    try {
+        const raw = sessionStorage.getItem(HOME_SNAPSHOT_KEY);
+        if (!raw) return;
+        const snapshot = JSON.parse(raw);
+        const isFresh = snapshot?.ts && (Date.now() - snapshot.ts) < 10 * 60 * 1000;
+        const currentUrl = window.location.pathname + window.location.search;
+        if (!isFresh || !snapshot?.url || snapshot.url !== currentUrl) return;
+        if (Number.isFinite(snapshot.visibleChunks) && snapshot.visibleChunks > 1) {
+            state.visibleChunks = snapshot.visibleChunks;
+        }
+        if (Number.isFinite(snapshot.scrollY) && snapshot.scrollY > 0) {
+            state.scrollPos = snapshot.scrollY;
+            state.skipScroll = true;
+            setTimeout(() => {
+                window.scrollTo({ top: snapshot.scrollY, behavior: 'auto' });
+            }, 0);
+        }
+        sessionStorage.removeItem(HOME_SNAPSHOT_KEY);
+    } catch (e) {
+        sessionStorage.removeItem(HOME_SNAPSHOT_KEY);
+    }
+}
+
 window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = false) => {
     if (!id) return;
     if (!isStandaloneDetailPage()) {
+        cacheHomeSnapshot();
         cacheDetailPayload(id);
         window.preloadProductImage(id, 'high');
         window.location.href = getProductDetailUrl(id);
@@ -2305,19 +2356,19 @@ window.preloadProductImage = (id, priority = 'low') => {
 // Aggressively preload first 8 products for "instant" feel
 // Aggressively preload sliders and first 8 products for "instant" feel
 window.preloadInitialBatch = () => {
-    // 1. Preload Sliders (High Priority)
+    // 1. Preload only first few sliders to reduce startup pressure.
     if (DATA.s && DATA.s.length) {
-        DATA.s.forEach(s => {
+        DATA.s.slice(0, INITIAL_PRELOAD_SLIDERS).forEach(s => {
             const isMobile = window.innerWidth < 768;
             const imgUrl = getOptimizedUrl(isMobile ? s.mobileImg : s.img, isMobile ? 1200 : 1920);
             const img = new Image();
-            img.fetchPriority = 'high';
+            img.fetchPriority = 'low';
             img.src = imgUrl;
         });
     }
-    // 2. Preload Product Detail Images (High Priority)
+    // 2. Preload only top likely-click products.
     if (DATA.p && DATA.p.length) {
-        DATA.p.slice(0, 8).forEach(p => window.preloadProductImage(p.id, 'high'));
+        DATA.p.slice(0, INITIAL_PRELOAD_PRODUCTS).forEach(p => window.preloadProductImage(p.id, 'low'));
     }
 };
 
@@ -2345,13 +2396,31 @@ window.handleImgError = function (img) {
     if (img._retried) return; // Avoid infinite loop
     img._retried = true;
     const src = img.src || '';
-    if (!src.includes('cloudinary.com')) return;
+    if (!src.includes('cloudinary.com')) {
+        img.classList.add('loaded');
+        if (!img.src || img.src.endsWith('/img/') || img.src === 'img/' || img.src === window.location.href) {
+            img.src = 'https://placehold.co/800x800?text=Image';
+        }
+        return;
+    }
     // Strip all transforms and load the raw original URL
     const originalUrl = src.replace(/\/upload\/[^/]+\//, '/upload/');
     if (originalUrl !== src) {
         img.src = originalUrl;
+    } else {
+        img.classList.add('loaded');
     }
 };
+
+function ensureGridImagesVisible(gridEl) {
+    if (!gridEl) return;
+    const imgs = gridEl.querySelectorAll('img');
+    imgs.forEach((img) => {
+        if (img.complete && img.naturalWidth > 0) {
+            img.classList.add('loaded');
+        }
+    });
+}
 
 
 async function trackProductView(id) {
@@ -3415,7 +3484,7 @@ window.renderSpotlightSection = () => {
         return `
                     <div class="product-card group flex-shrink-0 w-[160px] sm:w-[200px] snap-start" data-id="${p.id}" style="margin-right: 12px;"
                          onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
-                        <div class="img-container mb-4 shadow-sm relative">
+                        <div class="img-container mb-4 relative">
                             ${badgeHtml}
                             <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
                         </div>
@@ -3447,7 +3516,7 @@ window.renderSpotlightSection = () => {
         return `
                     <div class="product-card group" data-id="${p.id}"
                          onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
-                        <div class="img-container mb-4 shadow-sm relative">
+                        <div class="img-container mb-4 relative">
                             ${badgeHtml}
                             <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
                         </div>
@@ -3634,13 +3703,13 @@ function renderSearchResults() {
                 <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}"
                      onmouseenter="window.preloadProductImage('${p.id}')"
                      onclick="viewDetail('${p.id}', false, null)">
-                    <div class="img-container mb-4 shadow-sm relative">
+                    <div class="img-container mb-4 relative">
                         ${badgeHtml}
                         <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
                         <div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>
                         <img src="${getOptimizedUrl(p.img, 600)}"
                              class="${idx < 4 ? 'no-animation' : ''}"
-                             ${idx < 8 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
+                            ${idx < INITIAL_EAGER_IMAGES ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                              decoding="async"
                              onload="this.classList.add('loaded')"
                              alt="${p.name}">
@@ -3678,6 +3747,7 @@ function renderSearchResults() {
         // IMPORTANT: load-more button update is INSIDE rAF so it stays in sync with grid render
         requestAnimationFrame(() => {
             grid.innerHTML = gridContent;
+            setTimeout(() => ensureGridImagesVisible(grid), 0);
             setTimeout(() => { grid.style.minHeight = ''; }, 600);
 
             // Update load-more button AFTER grid is rendered
