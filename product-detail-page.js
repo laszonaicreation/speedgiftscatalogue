@@ -26,6 +26,7 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 const DATA = { p: [], c: [] };
 const state = { wishlist: [], currentVar: null };
 const WISHLIST_KEY = 'speedgifts_detail_wishlist';
+const DETAIL_CACHE_KEY = 'speedgifts_detail_cache';
 const trackedProductViews = new Set();
 
 registerProductDetailInteractions({ getOptimizedUrl, state });
@@ -230,6 +231,20 @@ async function renderById(id) {
     trackProductView(id).catch(() => { /* no-op */ });
 }
 
+function readDetailCache(id) {
+    try {
+        const raw = sessionStorage.getItem(DETAIL_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        // keep cache short-lived to avoid stale detail render
+        const isFresh = parsed?.ts && (Date.now() - parsed.ts) < 5 * 60 * 1000;
+        if (!isFresh || parsed?.id !== id || !parsed?.product) return null;
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+
 async function bootstrap() {
     onAuthStateChanged(auth, async (u) => {
         if (!u) {
@@ -244,17 +259,27 @@ async function bootstrap() {
         }
     });
 
-    loadWishlist();
-    const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
-    DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id));
-    DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
     const id = getProductIdFromSearch();
     if (!id) {
         window.location.replace('index.html');
         return;
     }
+
+    loadWishlist();
+
+    // Fast-path: render from session cache immediately (if available),
+    // then sync with Firestore in background.
+    const cached = readDetailCache(id);
+    if (cached) {
+        DATA.p = [cached.product];
+        DATA.c = Array.isArray(cached.categories) ? cached.categories : [];
+        await renderById(id);
+    }
+
+    const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
+    DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id));
+    DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     await renderById(id);
 }
 

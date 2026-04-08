@@ -12,9 +12,8 @@ export function initAdmin(ctx) {
         doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs,
         collection, increment, writeBatch, arrayUnion,
         query, where, documentId,
-        showToast, refreshData, renderHome, getAuth,
-        getBadgeLabel, getOptimizedUrl, getColumnsCount,
-        renderSlider, renderInsights
+        refreshData, renderHome, getAuth,
+        getColumnsCount
     } = ctx;
 window.saveProduct = async () => {
     const id = document.getElementById('edit-id')?.value;
@@ -588,12 +587,18 @@ window.renderAdminUI = () => {
     const pList = document.getElementById('admin-product-list');
     const cList = document.getElementById('admin-category-list');
     const iList = document.getElementById('admin-insights-list');
-    if (!pList || !cList || !iList) return;
+    if (!iList) return;
 
     if (state.adminTab === 'insights') {
-        renderInsights(iList);
+        try {
+            renderInsights(iList);
+        } catch (err) {
+            console.error('[Admin] renderInsights failed:', err);
+            iList.innerHTML = `<div class="p-10 text-center bg-red-50 rounded-[2rem] border border-red-100"><p class="text-red-500 font-bold text-[11px] uppercase tracking-widest">Insights failed to render</p><p class="text-red-300 text-[9px] mt-2">Please refresh and try again.</p></div>`;
+        }
         return;
     }
+    if (!pList || !cList) return;
     if (state.adminTab === 'leads') {
         renderAdminLeads();
         return;
@@ -656,6 +661,7 @@ window.renderAdminUI = () => {
 
     const prodCountEl = document.getElementById('admin-prod-count');
     if (prodCountEl) {
+        const isProd = state.adminTab === 'products';
         prodCountEl.innerText = `${products.length} Products`;
         prodCountEl.classList.toggle('hidden', !isProd);
     }
@@ -681,7 +687,7 @@ window.renderAdminUI = () => {
                         `).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
 };
 
-window.handleCategoryRowScroll = (el) => {
+window.handleCategoryRowScroll = window.handleCategoryRowScroll || ((el) => {
     const container = el.parentElement;
     if (!container) return;
     const isAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 10;
@@ -696,9 +702,9 @@ window.handleCategoryRowScroll = (el) => {
         const barWidth = 20 + scrollRatio * 80;
         bar.style.width = barWidth + '%';
     }
-};
+});
 
-window.applyFilter = (id, e) => {
+window.applyFilter = window.applyFilter || ((id, e) => {
     if (e) e.stopPropagation();
     state.filter = id;
     state.search = '';
@@ -711,8 +717,8 @@ window.applyFilter = (id, e) => {
     }
 
     renderHome();
-};
-window.showSearchSuggestions = (show) => {
+});
+window.showSearchSuggestions = window.showSearchSuggestions || ((show) => {
     // Both desktop and mobile search tags are scoped by IDs globally now
     // the desktop search tags might have a different ID, but mobile is 'search-tags'
     const tags = document.getElementById('search-tags');
@@ -723,9 +729,9 @@ window.showSearchSuggestions = (show) => {
             if (currentTags) currentTags.classList.add('hidden');
         }, 200);
     }
-};
+});
 let searchTimeout;
-window.applyCustomerSearch = (val) => {
+window.applyCustomerSearch = window.applyCustomerSearch || ((val) => {
     state.search = val;
     if (val && !state.selectionId) {
         state.filter = 'all';
@@ -756,8 +762,8 @@ window.applyCustomerSearch = (val) => {
         if (val) deskClearBtn.classList.remove('hidden');
         else deskClearBtn.classList.add('hidden');
     }
-};
-window.clearCustomerSearch = () => {
+});
+window.clearCustomerSearch = window.clearCustomerSearch || (() => {
     state.search = '';
     exitSearchMode();
     const input = document.getElementById('customer-search');
@@ -772,9 +778,9 @@ window.clearCustomerSearch = () => {
     // Clear URL search param
     safePushState({ q: null, c: null, p: null });
     renderHome();
-};
-window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
-window.showAdminPanel = () => {
+});
+window.applyPriceSort = window.applyPriceSort || ((sort) => { state.sort = sort; renderHome(); });
+window.showAdminPanel = async () => {
     const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
 
     // Auto-retry once to give Firebase time to log in
@@ -799,7 +805,33 @@ window.showAdminPanel = () => {
         alert("The Admin Panel is only accessible on Desktop devices. Please switch to a computer.");
         return;
     }
-    document.getElementById('admin-panel').classList.remove('hidden');
+    // Lazy-load admin HTML if not present in DOM yet
+    let adminPanelEl = document.getElementById('admin-panel');
+    if (!adminPanelEl) {
+        try {
+            showToast("Loading Admin Panel...");
+            const res = await fetch('./admin-panel.html');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const html = await res.text();
+            const mount = document.getElementById('admin-panel-mount');
+            if (mount) {
+                mount.outerHTML = html;
+            } else {
+                document.body.insertAdjacentHTML('beforeend', html);
+            }
+            await new Promise(r => requestAnimationFrame(r));
+            populateCatSelect();
+            populateAdminCatFilter();
+            if (typeof window.populateHomeAdminUI === 'function') window.populateHomeAdminUI();
+            adminPanelEl = document.getElementById('admin-panel');
+        } catch (e) {
+            console.error('[Admin] Failed to load admin-panel.html:', e);
+            showToast('Admin panel failed to load. Please refresh.');
+            return;
+        }
+    }
+    if (!adminPanelEl) return;
+    adminPanelEl.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
     // URL Persistence
@@ -821,10 +853,10 @@ window.showAdminPanel = () => {
             document.getElementById('popup-success-msg').value = DATA.popupSettings.successMsg || "";
     }
 
-    if (typeof populateLandingProductSelects === 'function') populateLandingProductSelects();
-    populateLandingSettingsUI();
+    if (typeof window.populateLandingProductSelects === 'function') window.populateLandingProductSelects();
+    if (typeof window.populateLandingSettingsUI === 'function') window.populateLandingSettingsUI();
 
-    switchAdminTab(state.adminTab || 'products');
+    window.switchAdminTab(state.adminTab || 'products');
 };
 window.hideAdminPanel = () => {
     document.getElementById('admin-panel').classList.add('hidden');
@@ -1358,7 +1390,7 @@ window.closeFavoritesSidebar = () => {
     }
 };
 
-window.openCategoriesSidebar = () => {
+window.openCategoriesSidebar = window.openCategoriesSidebar || (() => {
     const sidebar = document.getElementById('categories-sidebar');
     const overlay = document.getElementById('categories-sidebar-overlay');
     if (sidebar && overlay) {
@@ -1367,9 +1399,9 @@ window.openCategoriesSidebar = () => {
         overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
     }
-};
+});
 
-window.closeCategoriesSidebar = () => {
+window.closeCategoriesSidebar = window.closeCategoriesSidebar || (() => {
     const sidebar = document.getElementById('categories-sidebar');
     const overlay = document.getElementById('categories-sidebar-overlay');
     if (sidebar && overlay) {
@@ -1377,9 +1409,9 @@ window.closeCategoriesSidebar = () => {
         overlay.classList.remove('open');
         document.body.style.overflow = 'auto';
     }
-};
+});
 
-window.renderCategoriesSidebar = () => {
+window.renderCategoriesSidebar = window.renderCategoriesSidebar || (() => {
     const container = document.getElementById('sidebar-categories-list');
     if (!container) return;
 
@@ -1400,7 +1432,7 @@ window.renderCategoriesSidebar = () => {
             </div>
         `;
     }).join('');
-};
+});
 
 // End of sidebar functions (cleaned duplicates)
 
@@ -1563,6 +1595,13 @@ function getBadgeLabel(badge) {
     };
     return labels[badge] || badge;
 }
+
+function getTodayStr() {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+}
+
+const _errorTrackedUrls = new Set();
 
 function renderInsights(container, rangeData = null) {
     // 1. Auto-fetch Today's detailed stats in background if first open
@@ -1755,6 +1794,7 @@ function renderInsights(container, rangeData = null) {
 
     container.innerHTML = html;
 }
+window.renderInsights = renderInsights;
 
 window.updateInsightsRange = async function (passedStart = null, passedEnd = null, isSilent = false) {
     if (typeof passedStart !== 'string') passedStart = null;
@@ -2425,6 +2465,262 @@ window.saveAnnouncements = async () => {
     } finally {
         if (btn) { btn.disabled = false; btn.innerText = "Save Announcements"; }
     }
+};
+
+window.savePopupSettings = async () => {
+    const title = document.getElementById('popup-title')?.value || "";
+    const msg = document.getElementById('popup-msg')?.value || "";
+    const img = document.getElementById('popup-img')?.value || "img/";
+    const successTitle = document.getElementById('popup-success-title')?.value || "";
+    const successMsg = document.getElementById('popup-success-msg')?.value || "";
+    const btn = document.getElementById('popup-save-btn');
+    if (!title) return showToast("Title is required");
+    if (btn) { btn.innerText = "Saving..."; btn.disabled = true; }
+    try {
+        const snap = await getDocs(popupSettingsCol);
+        const data = { title, msg, img, successTitle, successMsg };
+        if (snap.empty) await addDoc(popupSettingsCol, data);
+        else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'popupSettings', snap.docs[0].id), data);
+        DATA.popupSettings = data;
+        showToast("Popup Settings Updated");
+    } catch (err) {
+        console.error(err);
+        showToast("Save Error");
+    } finally {
+        if (btn) { btn.innerText = "Update Popup"; btn.disabled = false; }
+    }
+};
+
+window.landingSec1Selected = window.landingSec1Selected || [];
+window.landingSec2Selected = window.landingSec2Selected || [];
+window.spotlightSelectedProducts = window.spotlightSelectedProducts || [];
+
+window.renderLandingPills = (sec) => {
+    const list = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
+    const container = document.getElementById(`landing-${sec}-pills`);
+    if (!container) return;
+    if (!list.length) {
+        container.innerHTML = `<span class="text-[9px] text-gray-400 italic font-bold">No products selected...</span>`;
+        return;
+    }
+    container.innerHTML = list.map(id => {
+        const p = DATA.p.find(x => x.id === id);
+        if (!p) return '';
+        return `<div class="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+            <img src="${getOptimizedUrl(p.img, 50)}" class="w-4 h-4 rounded-full object-cover">
+            <span class="text-[9px] font-bold uppercase truncate max-w-[120px]">${p.name}</span>
+            <button type="button" onclick="removeLandingProduct('${sec}', '${id}')" class="text-gray-400 hover:text-red-500 ml-1"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+        </div>`;
+    }).join('');
+};
+
+window.searchLandingProducts = (sec, query) => {
+    const dropdown = document.getElementById(`landing-${sec}-dropdown`);
+    if (!dropdown) return;
+    const selectedList = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
+    let matches = DATA.p.filter(p => p && !p.id.startsWith('_') && !p.id.startsWith('-'));
+    if (query && query.trim()) {
+        const q = query.trim().toLowerCase();
+        matches = matches.filter(p => (p.name || '').toLowerCase().includes(q));
+    }
+    const activeCat = dropdown.dataset.activeCat || 'all';
+    if (activeCat !== 'all') matches = matches.filter(p => p.catId === activeCat);
+    if (!matches.length) {
+        dropdown.innerHTML = `<div class="p-4 text-[10px] text-gray-400 font-bold uppercase italic text-center">No products found</div>`;
+        dropdown.classList.remove('hidden');
+        return;
+    }
+    dropdown.innerHTML = matches.slice(0, 40).map(p => {
+        const selected = selectedList.includes(p.id);
+        return `<div onclick="${selected ? `removeLandingProduct('${sec}','${p.id}')` : `addLandingProduct('${sec}','${p.id}')`}" class="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 ${selected ? 'bg-gray-100' : ''}">
+            <img src="${getOptimizedUrl(p.img, 80)}" class="w-8 h-8 rounded-lg object-cover">
+            <span class="text-[9px] font-bold uppercase truncate flex-1">${p.name}</span>
+            ${selected ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}
+        </div>`;
+    }).join('');
+    dropdown.classList.remove('hidden');
+};
+
+window.addLandingProduct = (sec, id) => {
+    const list = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
+    if (!list.includes(id)) list.push(id);
+    window.renderLandingPills(sec);
+};
+window.removeLandingProduct = (sec, id) => {
+    if (sec === 'sec1') window.landingSec1Selected = window.landingSec1Selected.filter(x => x !== id);
+    else window.landingSec2Selected = window.landingSec2Selected.filter(x => x !== id);
+    window.renderLandingPills(sec);
+};
+window.landingSetCat = (sec, cat) => {
+    const dropdown = document.getElementById(`landing-${sec}-dropdown`);
+    if (dropdown) dropdown.dataset.activeCat = cat;
+    const query = document.getElementById(`landing-${sec}-search`)?.value || '';
+    window.searchLandingProducts(sec, query);
+};
+window.populateLandingProductSelects = () => { };
+window.populateLandingSettingsUI = () => {
+    if (!DATA.landingSettings) return;
+    const s = DATA.landingSettings;
+    if (document.getElementById('landing-announcement')) document.getElementById('landing-announcement').value = s.announcement || "";
+    if (document.getElementById('landing-hero-mob')) document.getElementById('landing-hero-mob').value = s.heroMob || "img/";
+    if (document.getElementById('landing-hero-desk')) document.getElementById('landing-hero-desk').value = s.heroDesk || "img/";
+    if (document.getElementById('landing-sec1-title')) document.getElementById('landing-sec1-title').value = s.sec1Title || "";
+    if (document.getElementById('landing-sec1-subtitle')) document.getElementById('landing-sec1-subtitle').value = s.sec1Subtitle || "";
+    if (document.getElementById('landing-sec2-title')) document.getElementById('landing-sec2-title').value = s.sec2Title || "";
+    if (document.getElementById('landing-sec2-subtitle')) document.getElementById('landing-sec2-subtitle').value = s.sec2Subtitle || "";
+    window.landingSec1Selected = s.sec1Products || [];
+    window.landingSec2Selected = s.sec2Products || [];
+    window.renderLandingPills('sec1');
+    window.renderLandingPills('sec2');
+};
+window.saveLandingSettings = async () => {
+    const btn = document.getElementById('landing-save-btn');
+    if (btn) { btn.innerText = "Saving..."; btn.disabled = true; }
+    try {
+        const data = {
+            announcement: document.getElementById('landing-announcement')?.value || "",
+            heroMob: document.getElementById('landing-hero-mob')?.value || "img/",
+            heroDesk: document.getElementById('landing-hero-desk')?.value || "img/",
+            sec1Title: document.getElementById('landing-sec1-title')?.value || "",
+            sec1Subtitle: document.getElementById('landing-sec1-subtitle')?.value || "",
+            sec1Products: window.landingSec1Selected || [],
+            sec2Title: document.getElementById('landing-sec2-title')?.value || "",
+            sec2Subtitle: document.getElementById('landing-sec2-subtitle')?.value || "",
+            sec2Products: window.landingSec2Selected || []
+        };
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', '_landing_settings_'), data);
+        DATA.landingSettings = data;
+        showToast("Landing Page Settings Saved");
+    } catch (err) {
+        console.error(err);
+        showToast("Save Error");
+    } finally {
+        if (btn) { btn.innerText = "Save Landing Page"; btn.disabled = false; }
+    }
+};
+
+window.renderSpotlightPills = () => {
+    const container = document.getElementById('spotlight-pills');
+    if (!container) return;
+    if (!window.spotlightSelectedProducts.length) {
+        container.innerHTML = `<span class="text-[9px] text-gray-400 italic font-bold">No products selected yet...</span>`;
+        return;
+    }
+    container.innerHTML = window.spotlightSelectedProducts.map(id => {
+        const p = DATA.p.find(x => x.id === id);
+        if (!p) return '';
+        return `<div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-100">
+            <img src="${getOptimizedUrl(p.img, 50)}" class="w-5 h-5 rounded-lg object-cover">
+            <span class="text-[9px] font-black uppercase truncate max-w-[140px]">${p.name}</span>
+            <button type="button" onclick="removeSpotlightProduct('${id}')" class="w-5 h-5 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+        </div>`;
+    }).join('');
+};
+window.addSpotlightProduct = (id) => {
+    if (!window.spotlightSelectedProducts.includes(id)) window.spotlightSelectedProducts.push(id);
+    const searchInput = document.getElementById('spotlight-product-search');
+    if (searchInput) searchInput.value = '';
+    document.getElementById('spotlight-dropdown')?.classList.add('hidden');
+    window.renderSpotlightPills();
+};
+window.removeSpotlightProduct = (id) => {
+    window.spotlightSelectedProducts = window.spotlightSelectedProducts.filter(x => x !== id);
+    window.renderSpotlightPills();
+};
+window.searchSpotlightProducts = (query) => {
+    const dropdown = document.getElementById('spotlight-dropdown');
+    if (!dropdown) return;
+    if (!query || query.trim().length < 1) {
+        dropdown.classList.add('hidden');
+        return;
+    }
+    const q = query.toLowerCase().trim();
+    const matches = DATA.p.filter(p => (p.name && p.name.toLowerCase().includes(q)) || (p.id && p.id.toLowerCase() === q)).slice(0, 8);
+    if (!matches.length) {
+        dropdown.innerHTML = `<div class="p-4 text-[10px] text-gray-400 font-bold uppercase italic text-center">No products found</div>`;
+    } else {
+        dropdown.innerHTML = matches.map(p => `<div onclick="addSpotlightProduct('${p.id}')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer">
+            <img src="${getOptimizedUrl(p.img, 100)}" class="w-10 h-10 rounded-xl object-cover bg-gray-50">
+            <div class="flex-1 min-w-0"><div class="text-[10px] font-black uppercase text-gray-900 truncate">${p.name}</div><div class="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">${p.price} AED</div></div>
+        </div>`).join('');
+    }
+    dropdown.classList.remove('hidden');
+};
+window.populateHomeAdminUI = () => {
+    if (!DATA.homeSettings) return;
+    const h = DATA.homeSettings;
+    if (document.getElementById('spotlight-enabled')) document.getElementById('spotlight-enabled').checked = h.spotlightEnabled || false;
+    if (document.getElementById('spotlight-title')) document.getElementById('spotlight-title').value = h.spotlightTitle || "";
+    if (document.getElementById('spotlight-subtitle')) document.getElementById('spotlight-subtitle').value = h.spotlightSubtitle || "";
+    if (document.getElementById('spotlight-cat-id')) document.getElementById('spotlight-cat-id').value = h.spotlightCatId || "";
+    if (document.getElementById('spotlight-limit')) document.getElementById('spotlight-limit').value = h.spotlightLimit || 8;
+    window.spotlightSelectedProducts = h.spotlightProducts || [];
+    window.renderSpotlightPills();
+};
+window.saveHomeSettings = async () => {
+    const btn = document.getElementById('homepage-save-btn');
+    if (btn) { btn.innerText = "Saving Configuration..."; btn.disabled = true; }
+    try {
+        const data = {
+            spotlightEnabled: document.getElementById('spotlight-enabled')?.checked || false,
+            spotlightTitle: document.getElementById('spotlight-title')?.value || "",
+            spotlightSubtitle: document.getElementById('spotlight-subtitle')?.value || "",
+            spotlightCatId: document.getElementById('spotlight-cat-id')?.value || "",
+            spotlightLimit: parseInt(document.getElementById('spotlight-limit')?.value, 10) || 8,
+            spotlightProducts: window.spotlightSelectedProducts || []
+        };
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', '_home_settings_'), data);
+        DATA.homeSettings = data;
+        showToast("Home Page Settings Saved");
+        renderHome();
+    } catch (err) {
+        console.error(err);
+        showToast("Error Saving Settings");
+    } finally {
+        if (btn) { btn.innerText = "Save Configuration"; btn.disabled = false; }
+    }
+};
+
+window.renderAdminLeads = async () => {
+    const container = document.getElementById('admin-leads-list');
+    if (!container) return;
+    container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-300 animate-pulse"><i class="fa-solid fa-cloud-arrow-down text-3xl mb-4"></i><p class="text-[10px] font-bold uppercase tracking-widest">Fetching live leads...</p></div>';
+    try {
+        const snap = await getDocs(leadsCol);
+        DATA.leads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        DATA.leads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        if (!DATA.leads.length) {
+            container.innerHTML = `<div class="col-span-full text-center py-40 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-100"><h3 class="text-gray-900 font-bold text-[12px] uppercase tracking-widest mb-2">No Leads Collected</h3></div>`;
+            return;
+        }
+        container.innerHTML = DATA.leads.map(lead => `<div class="lead-row fade-in">
+            <div class="lead-info"><h4>${lead.name || 'Anonymous User'}</h4><p class="flex items-center gap-2"><span class="text-black font-bold">${lead.whatsapp || 'No Number'}</span></p></div>
+            <div class="flex gap-2"><a href="https://wa.me/${(lead.whatsapp || '').replace(/\D/g, '')}" target="_blank" class="w-12 h-12 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center"><i class="fa-brands fa-whatsapp text-lg"></i></a><button onclick="deleteLead('${lead.id}')" class="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center"><i class="fa-solid fa-trash-can text-sm"></i></button></div>
+        </div>`).join('');
+    } catch (err) {
+        console.error("[Admin] Lead Load Error:", err);
+        container.innerHTML = `<div class="p-10 text-center bg-red-50 rounded-[2rem] border border-red-100"><p class="text-red-500 font-bold text-[11px] uppercase tracking-widest">Connection Error</p></div>`;
+    }
+};
+window.deleteLead = async (id) => {
+    if (!confirm("Delete this lead?")) return;
+    try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leads', id));
+        showToast("Lead Deleted");
+        window.renderAdminLeads();
+    } catch (err) { showToast("Delete Error"); }
+};
+window.exportLeadsExcel = () => {
+    if (!DATA.leads || DATA.leads.length === 0) return showToast("No leads to export");
+    let csv = "Name,WhatsApp,Age,Created At\n";
+    DATA.leads.forEach(l => { csv += `"${l.name || ''}","${l.whatsapp || ''}",${l.age || ''},"${l.createdAt || ''}"\n`; });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 };
 
 function renderAdminAnnouncements() {

@@ -1305,9 +1305,28 @@ window.updateSelectionBar = () => {
     }
 };
 
+function cacheDetailPayload(id) {
+    try {
+        const product = DATA.p.find(x => x.id === id);
+        if (!product) return;
+        const payload = {
+            id,
+            ts: Date.now(),
+            product,
+            // keep this lightweight: only categories needed for labels/related rendering
+            categories: Array.isArray(DATA.c) ? DATA.c : []
+        };
+        sessionStorage.setItem('speedgifts_detail_cache', JSON.stringify(payload));
+    } catch (e) {
+        // non-blocking cache path
+    }
+}
+
 window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = false) => {
     if (!id) return;
     if (!isStandaloneDetailPage()) {
+        cacheDetailPayload(id);
+        window.preloadProductImage(id, 'high');
         window.location.href = getProductDetailUrl(id);
     }
 };
@@ -1386,139 +1405,23 @@ window.addVariationRow = (size = '', price = '', images = []) => {
     }
 };
 
-window.saveProduct = async () => {
-    const id = document.getElementById('edit-id')?.value;
-    const btn = document.getElementById('p-save-btn');
-
-    // Collect images
-    const images = collectImagesFromGrid('p-image-grid');
-    const primaryImg = images[0] || 'img/';
-
-    // Collect size variations
-    const variationRows = document.querySelectorAll('.variation-row');
-    const variations = Array.from(variationRows).map(row => {
-        const gridId = row.querySelector('.v-image-grid').id;
-        const varImages = collectImagesFromGrid(gridId);
-        return {
-            size: row.querySelector('.v-size').value,
-            price: row.querySelector('.v-price').value,
-            images: varImages,
-            img: varImages[0] || 'img/' // fallback for existing logic
-        };
-    }).filter(v => v.size || v.price);
-
-    // Collect color variations
-    const colorRows = document.querySelectorAll('.color-variation-row');
-    const colorVariations = Array.from(colorRows).map(row => {
-        const gridId = row.querySelector('.vc-image-grid').id;
-        const varImages = collectImagesFromGrid(gridId);
-        return {
-            color: row.querySelector('.vc-color').value,
-            price: row.querySelector('.vc-price').value,
-            images: varImages,
-            img: varImages[0] || 'img/', // fallback
-            hex: row.querySelector('.vc-hex').value
-        };
-    }).filter(v => v.color || v.price);
-
-    const data = {
-        name: document.getElementById('p-name')?.value || "",
-        price: document.getElementById('p-price')?.value || "",
-        originalPrice: document.getElementById('p-original-price')?.value || "",
-        size: document.getElementById('p-size')?.value || "",
-        material: document.getElementById('p-material')?.value || "",
-        inStock: document.getElementById('p-stock')?.checked ?? true,
-        img: primaryImg || "img/",
-        images: images || [],
-        catId: document.getElementById('p-cat-id')?.value || "",
-        badge: document.getElementById('p-badge')?.value || "",
-        isFeatured: document.getElementById('p-featured')?.value === 'true',
-        desc: document.getElementById('p-desc')?.value || "",
-        keywords: document.getElementById('p-keywords')?.value || "",
-        isPinned: document.getElementById('p-pinned')?.checked || false,
-        variations: variations || [],
-        colorVariations: colorVariations || [],
-        updatedAt: Date.now()
+function createAdminProxy(name) {
+    const proxy = async (...args) => {
+        const loaded = await ensureAdminModuleLoaded();
+        if (!loaded) return;
+        if (window[name] === proxy) return;
+        return window[name](...args);
     };
-    if (!data.name || !data.img) return showToast("Required info missing");
-    if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
-    try { if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id), data); else await addDoc(prodCol, data); showToast("Synced Successfully"); resetForm(); DATA.p = []; refreshData(); }
-    catch (e) { console.error("Save Error:", e); showToast("Save Error"); } finally { if (btn) { btn.disabled = false; btn.innerText = "Sync Product"; } }
-};
+    return proxy;
+}
 
-window.saveCategory = async () => {
-    const id = document.getElementById('edit-cat-id')?.value;
-    const btn = document.getElementById('c-save-btn');
-    const data = {
-        name: document.getElementById('c-name')?.value,
-        img: document.getElementById('c-img')?.value,
-        isPinned: document.getElementById('c-pinned')?.checked || false,
-        pinnedAt: document.getElementById('c-pinned')?.checked ? (DATA.c.find(c => c.id === id)?.pinnedAt || Date.now()) : null
-    };
-    if (!data.name) return showToast("Name required");
-    if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
-    try { if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id), data); else await addDoc(catCol, data); showToast("Category Synced"); resetForm(); DATA.p = []; refreshData(); }
-    catch (e) { console.error("Category Error:", e); showToast("Category Error"); } finally { if (btn) { btn.disabled = false; btn.innerText = "Sync Category"; } }
-};
-
-window.deleteProduct = async (id) => { if (!confirm("Are you sure?")) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id)); showToast("Deleted"); refreshData(); } catch (e) { showToast("Delete Error"); } };
-window.deleteCategory = async (id) => { if (!confirm("Delete Category?")) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id)); showToast("Category Removed"); refreshData(); } catch (e) { showToast("Error"); } };
-
-window.saveMegaMenu = async () => {
-    const id = document.getElementById('edit-megamenu-id')?.value;
-    const btn = document.getElementById('m-save-btn');
-
-    // Collect checked subcategories
-    const checkboxes = document.querySelectorAll('.mega-cat-checkbox:checked');
-    const categoryIds = Array.from(checkboxes).map(cb => cb.value);
-
-    const data = {
-        name: document.getElementById('m-name')?.value,
-        categoryIds: categoryIds,
-        order: id ? (DATA.m.find(m => m.id === id)?.order || 0) : Date.now() // simple ordering
-    };
-    if (!data.name) return showToast("Name required");
-    if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
-    try {
-        if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mega_menus', id), data);
-        else await addDoc(megaCol, data);
-        showToast("Mega Menu Synced");
-        resetForm();
-        refreshData();
-    }
-    catch (e) { console.error("Mega Menu Error:", e); showToast("Mega Menu Error"); }
-    finally { if (btn) { btn.disabled = false; btn.innerText = "Save Desktop Menu"; } }
-};
-
-window.deleteMegaMenu = async (id) => { if (!confirm("Delete Desktop Menu?")) return; try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'mega_menus', id)); showToast("Menu Removed"); refreshData(); } catch (e) { showToast("Error"); } };
-
-window.editMegaMenu = (id) => {
-    const item = DATA.m.find(x => x.id === id);
-    if (!item) return;
-
-    // 1. Switch to megamenu tab FIRST so the DOM gets rendered
-    switchAdminTab('megamenu');
-
-    // 2. Now that DOM is ready, fill the form fields
-    const editId = document.getElementById('edit-megamenu-id');
-    const mName = document.getElementById('m-name');
-    const mFormTitle = document.getElementById('m-form-title');
-    if (editId) editId.value = item.id;
-    if (mName) mName.value = item.name;
-    if (mFormTitle) mFormTitle.innerText = 'Editing: ' + item.name;
-
-    // 3. renderAdminMegaMenus rebuilds the checklist - call it to ensure boxes are fresh
-    renderAdminMegaMenus();
-
-    // 4. NOW tick the correct boxes (checklist exists in DOM now)
-    setTimeout(() => {
-        document.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
-            cb.checked = Array.isArray(item.categoryIds) && item.categoryIds.includes(cb.value);
-            cb.dispatchEvent(new Event('change')); // update custom tick visual
-        });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 50);
-};
+window.saveProduct = createAdminProxy('saveProduct');
+window.saveCategory = createAdminProxy('saveCategory');
+window.deleteProduct = createAdminProxy('deleteProduct');
+window.deleteCategory = createAdminProxy('deleteCategory');
+window.saveMegaMenu = createAdminProxy('saveMegaMenu');
+window.deleteMegaMenu = createAdminProxy('deleteMegaMenu');
+window.editMegaMenu = createAdminProxy('editMegaMenu');
 
 window.editProduct = (id) => {
     const item = DATA.p.find(x => x.id === id);
@@ -1893,102 +1796,7 @@ window.handleFloatingWhatsAppClick = () => {
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
-window.renderAdminUI = () => {
-    const pList = document.getElementById('admin-product-list');
-    const cList = document.getElementById('admin-category-list');
-    const iList = document.getElementById('admin-insights-list');
-    if (!pList || !cList || !iList) return;
-
-    if (state.adminTab === 'insights') {
-        renderInsights(iList);
-        return;
-    }
-    if (state.adminTab === 'leads') {
-        renderAdminLeads();
-        return;
-    }
-    const filterEl = document.getElementById('admin-cat-filter');
-    const catFilter = filterEl ? filterEl.value : "all";
-
-    let products = DATA.p.filter(p => {
-        const matchesCat = catFilter === 'all' || p.catId === catFilter;
-        return matchesCat;
-    });
-
-    const grouped = {};
-    products.forEach(p => {
-        const catName = DATA.c.find(c => c.id === p.catId)?.name || "Uncategorized";
-        if (!grouped[catName]) grouped[catName] = [];
-        grouped[catName].push(p);
-    });
-
-    let pHtml = "";
-    Object.keys(grouped).sort().forEach(cat => {
-        pHtml += `<div class="col-span-full mt-10 mb-4 flex items-center gap-4">
-    <h5 class="text-[15px] font-semibold text-gray-800 tracking-tight text-gray-400 shrink-0">${cat}</h5>
-    <div class="h-[1px] bg-gray-100 flex-1"></div>
-    <span class="text-[13px] font-medium text-gray-500 shrink-0">${grouped[cat].length} Items</span>
-</div>`;
-
-        grouped[cat].forEach(p => {
-            const stockTag = p.inStock !== false ? '<span class="stock-badge in">In Stock</span>' : '<span class="stock-badge out">Out of Stock</span>';
-            const pinIcon = p.isPinned ? '<div class="absolute top-3 left-3 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg z-20"><i class="fa-solid fa-thumbtack text-[10px]"></i></div>' : '';
-            const badgeHtml = p.badge ? `<div class="absolute top-3 left-10 px-3 py-1 bg-black text-white text-[8px] font-black uppercase rounded-full shadow-lg z-10">${getBadgeLabel(p.badge)}</div>` : '';
-            const viewCount = (p.views || 0) + (p.adViews || 0);
-
-            pHtml += `
-                        <div class="admin-product-card group">
-                            <div class="admin-product-img-box">
-                                <img src="${getOptimizedUrl(p.img, 400)}" alt="${p.name}">
-                                ${pinIcon}
-                                ${badgeHtml}
-                                <div class="admin-card-actions">
-                                    <button onclick="editProduct('${p.id}')" class="admin-action-btn" title="Edit Item">
-                                        <i class="fa-solid fa-pen-to-square text-[11px]"></i>
-                                    </button>
-                                    <button onclick="deleteProduct('${p.id}')" class="admin-action-btn delete" title="Delete Item">
-                                        <i class="fa-solid fa-trash text-[11px]"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="admin-product-info">
-                                <h4 class="font-bold text-[13px] capitalize truncate text-gray-800">${p.name}</h4>
-                                <div class="flex items-center justify-between mt-1">
-                                    <p class="text-[10px] text-gray-500 font-black tracking-widest uppercase">${p.price} AED</p>
-                                    ${stockTag}
-                                </div>
-                            </div>
-                        </div>
-                        `;
-        });
-    });
-
-    const prodCountEl = document.getElementById('admin-prod-count');
-    if (prodCountEl) {
-        prodCountEl.innerText = `${products.length} Products`;
-        prodCountEl.classList.toggle('hidden', !isProd);
-    }
-
-    pList.innerHTML = pHtml || `<div class="col-span-full py-40 text-center"><p class="text-[13px] text-gray-500 font-medium italic">No items found.</p></div>`;
-
-    cList.innerHTML = DATA.c.map(c => `
-                        <div class="flex items-center gap-4 p-4 bg-white rounded-[1.5rem] border border-gray-100 relative group transition-all hover:border-black hover:shadow-xl hover:-translate-y-1">
-                            <div class="relative shrink-0">
-                                <img src="${getOptimizedUrl(c.img, 100) || 'https://placehold.co/100x100?text=Icon'}" class="w-12 h-12 rounded-xl object-cover" ${getOptimizedUrl(c.img, 100) ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
-                                ${c.isPinned ? '<div class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center border-2 border-white shadow-lg"><i class="fa-solid fa-thumbtack text-[7px]"></i></div>' : ''}
-                            </div>
-                            <div class="flex-1 font-bold text-[12px] uppercase tracking-tight truncate">${c.name}</div>
-                            <div class="flex gap-2">
-                                <button onclick="editCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-100 hover:text-black transition-all hover:scale-110 hover:shadow-lg active:scale-95">
-                                    <i class="fa-solid fa-pen text-[11px]"></i>
-                                </button>
-                                <button onclick="deleteCategory('${c.id}')" class="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 hover:text-black transition-all hover:scale-110 hover:shadow-lg active:scale-95">
-                                    <i class="fa-solid fa-trash text-[11px]"></i>
-                                </button>
-                            </div>
-                        </div>
-                        `).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
-};
+window.renderAdminUI = createAdminProxy('renderAdminUI');
 
 window.handleCategoryRowScroll = (el) => {
     const container = el.parentElement;
@@ -2107,235 +1915,11 @@ async function ensureAdminModuleLoaded() {
     }
 }
 
-window.showAdminPanel = async function showAdminPanelLegacy() {
-    if (!window.__adminModuleReady) {
-        const loaded = await ensureAdminModuleLoaded();
-        if (loaded && window.showAdminPanel !== showAdminPanelLegacy) {
-            return window.showAdminPanel();
-        }
-    }
-    const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
-
-    // Auto-retry once to give Firebase time to log in
-    if (!u && !window._adminAuthAttempted) {
-        window._adminAuthAttempted = true;
-        showToast("Verifying Admin Access...");
-        setTimeout(() => window.showAdminPanel(), 1500);
-        return;
-    }
-
-    // Strict auth block — do NOT load any admin HTML for unauthorized users
-    if (!u || u.email !== "laszonaicreation@gmail.com") {
-        alert("ACCESS DENIED: You are not authorized to view the control panel.");
-        const url = new URL(window.location);
-        url.searchParams.delete('admin');
-        window.history.replaceState({}, '', url);
-        return;
-    }
-
-    if (window.innerWidth < 1024) {
-        alert("The Admin Panel is only accessible on Desktop devices. Please switch to a computer.");
-        return;
-    }
-
-    // ── LAZY HTML LOAD ──────────────────────────────────────────────
-    // Fetch admin-panel.html only once (first open). Normal users never trigger this.
-    if (!window._adminHtmlLoaded) {
-        try {
-            showToast("Loading Admin Panel...");
-            const res = await fetch('./admin-panel.html');
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const html = await res.text();
-            const mount = document.getElementById('admin-panel-mount');
-            if (mount) {
-                mount.outerHTML = html; // Replace mount placeholder with real HTML
-            }
-            window._adminHtmlLoaded = true;
-
-            // Wait one frame for browser to finalize the DOM after outerHTML swap
-            await new Promise(r => requestAnimationFrame(r));
-
-            // Re-populate category dropdowns — they were empty during initial refreshData
-            // because admin HTML wasn't in the DOM yet
-            populateCatSelect();
-            populateAdminCatFilter();
-            if (typeof populateHomeAdminUI === 'function') populateHomeAdminUI();
-        } catch (e) {
-            console.error('[Admin] Failed to load admin-panel.html:', e);
-            showToast('Admin panel failed to load. Please refresh.');
-            return;
-        }
-    }
-    // ────────────────────────────────────────────────────────────────
-
-    document.getElementById('admin-panel').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-
-    // URL Persistence
-    const url = new URL(window.location);
-    url.searchParams.set('admin', 'true');
-    if (state.adminTab) url.searchParams.set('atab', state.adminTab);
-    window.history.replaceState({}, '', url);
-
-    // Preset Popup Settings
-    if (DATA.popupSettings) {
-        if (document.getElementById('popup-title')) document.getElementById('popup-title').value = DATA.popupSettings.title || "";
-        if (document.getElementById('popup-msg')) document.getElementById('popup-msg').value = DATA.popupSettings.msg || "";
-        if (document.getElementById('popup-img')) document.getElementById('popup-img').value = DATA.popupSettings.img || "img/";
-
-        // Success Message Fields
-        if (document.getElementById('popup-success-title'))
-            document.getElementById('popup-success-title').value = DATA.popupSettings.successTitle || "";
-        if (document.getElementById('popup-success-msg'))
-            document.getElementById('popup-success-msg').value = DATA.popupSettings.successMsg || "";
-    }
-
-    if (typeof populateLandingProductSelects === 'function') populateLandingProductSelects();
-    populateLandingSettingsUI();
-
-    switchAdminTab(state.adminTab || 'products');
-};
-window.hideAdminPanel = () => {
-    document.getElementById('admin-panel')?.classList.add('hidden');
-    document.body.style.overflow = 'auto';
-
-    // URL Persistence: Clear admin params
-    const url = new URL(window.location);
-    url.searchParams.delete('admin');
-    url.searchParams.delete('atab');
-    window.history.replaceState({}, '', url);
-};
-
-window.toggleSidebarGroup = (groupId) => {
-    const el = document.getElementById('sidebar-' + groupId);
-    const icon = document.getElementById('icon-' + groupId);
-    if (!el || !icon) return;
-
-    if (el.style.maxHeight === '0px' || el.style.maxHeight === '') {
-        el.style.maxHeight = '500px';
-        el.style.opacity = '1';
-        icon.classList.remove('rotate-180');
-    } else {
-        el.style.maxHeight = '0px';
-        el.style.opacity = '0';
-        icon.classList.add('rotate-180');
-    }
-};
-
-window.expandSidebarGroupForTab = (tab) => {
-    let groupId = 'core';
-    if (['products', 'categories'].includes(tab)) groupId = 'core';
-    if (['homepage', 'sliders', 'megamenu', 'announcements'].includes(tab)) groupId = 'design';
-    if (['insights', 'landing', 'leads'].includes(tab)) groupId = 'marketing';
-    if (['migration'].includes(tab)) groupId = 'tools';
-
-    ['core', 'design', 'marketing', 'tools'].forEach(id => {
-        const el = document.getElementById('sidebar-' + id);
-        const icon = document.getElementById('icon-' + id);
-        if (el && icon) {
-            el.style.maxHeight = '0px';
-            el.style.opacity = '0';
-            icon.classList.add('rotate-180');
-        }
-    });
-
-    const activeEl = document.getElementById('sidebar-' + groupId);
-    const activeIcon = document.getElementById('icon-' + groupId);
-    if (activeEl && activeIcon) {
-        activeEl.style.maxHeight = '500px';
-        activeEl.style.opacity = '1';
-        activeIcon.classList.remove('rotate-180');
-    }
-};
-window.switchAdminTab = (tab) => {
-    state.adminTab = tab;
-    if (window.expandSidebarGroupForTab) window.expandSidebarGroupForTab(tab);
-
-    // URL Persistence: Update active tab
-    const url = new URL(window.location);
-    if (document.getElementById('admin-panel')?.classList.contains('hidden') === false) {
-        url.searchParams.set('atab', tab);
-        window.history.replaceState({}, '', url);
-    }
-    const isProd = tab === 'products';
-    const isCat = tab === 'categories';
-    const isMega = tab === 'megamenu';
-    const isSlider = tab === 'sliders';
-    const isInsight = tab === 'insights';
-    const isAnnounce = tab === 'announcements';
-    const isLeads = tab === 'leads';
-    const isLanding = tab === 'landing';
-    const isHomepage = tab === 'homepage';
-    const isMigration = tab === 'migration';
-
-    document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
-    document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isMigration);
-    document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
-    document.getElementById('admin-megamenu-section')?.classList.toggle('hidden', !isMega);
-    document.getElementById('admin-slider-section').classList.toggle('hidden', !isSlider);
-    document.getElementById('admin-landing-section').classList.toggle('hidden', !isLanding);
-    document.getElementById('admin-homepage-section')?.classList.toggle('hidden', !isHomepage);
-    document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
-    document.getElementById('admin-announcements-section').classList.toggle('hidden', !isAnnounce);
-    document.getElementById('admin-leads-section').classList.toggle('hidden', !isLeads);
-
-    // Populate homepage admin UI when switching to it
-    if (isHomepage) populateHomeAdminUI();
-
-    // Center Insights View Full Width
-    const formContainer = document.getElementById('admin-form-container');
-    formContainer.classList.toggle('hidden', isInsight);
-    const rightCol = document.getElementById('admin-right-column');
-    if (isInsight) {
-        rightCol.className = "transition-all duration-500";
-        rightCol.style.gridColumn = "1 / -1";
-        rightCol.style.maxWidth = "1000px";
-        rightCol.style.margin = "0 auto";
-        rightCol.style.width = "100%";
-    } else {
-        rightCol.className = "lg:col-span-7 transition-all duration-500";
-        rightCol.style.gridColumn = "";
-        rightCol.style.maxWidth = "";
-        rightCol.style.margin = "";
-        rightCol.style.width = "";
-    }
-
-    // Migration opens as a standalone tools view
-    rightCol.classList.toggle('hidden', isMigration);
-    formContainer.style.gridColumn = isMigration ? "1 / -1" : "";
-    formContainer.style.maxWidth = isMigration ? "1000px" : "";
-    formContainer.style.margin = isMigration ? "0 auto" : "";
-
-    document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
-    document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
-    document.getElementById('admin-megamenu-list')?.classList.toggle('hidden', !isMega);
-    document.getElementById('admin-slider-list').classList.toggle('hidden', !isSlider);
-    document.getElementById('admin-announcements-list').classList.toggle('hidden', !isAnnounce);
-    document.getElementById('admin-insights-list').classList.toggle('hidden', !isInsight);
-    document.getElementById('admin-leads-list').classList.toggle('hidden', !isLeads);
-
-    document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
-
-    const activeClass = "w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium transition-all bg-black text-white shadow-lg";
-    const inactiveClass = "w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all";
-
-    document.getElementById('tab-p').className = isProd ? activeClass : inactiveClass;
-    document.getElementById('tab-c').className = isCat ? activeClass : inactiveClass;
-    const tabM = document.getElementById('tab-m');
-    if (tabM) tabM.className = isMega ? activeClass : inactiveClass;
-    document.getElementById('tab-s').className = isSlider ? activeClass : inactiveClass;
-    document.getElementById('tab-a').className = isAnnounce ? activeClass : inactiveClass;
-    document.getElementById('tab-i').className = isInsight ? activeClass : inactiveClass;
-    document.getElementById('tab-landing').className = isLanding ? activeClass : inactiveClass;
-    document.getElementById('tab-l').className = isLeads ? activeClass : inactiveClass;
-    const tabHp = document.getElementById('tab-hp');
-    if (tabHp) tabHp.className = isHomepage ? activeClass : inactiveClass;
-    const tabMig = document.getElementById('tab-mig');
-    if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
-
-    document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : (isMigration ? "Migration & Cloud Tools" : ""))))))));
-    renderAdminUI();
-};
+window.showAdminPanel = createAdminProxy('showAdminPanel');
+window.hideAdminPanel = createAdminProxy('hideAdminPanel');
+window.toggleSidebarGroup = createAdminProxy('toggleSidebarGroup');
+window.expandSidebarGroupForTab = createAdminProxy('expandSidebarGroupForTab');
+window.switchAdminTab = createAdminProxy('switchAdminTab');
 
 /* CATEGORY PICKER LOGIC */
 
@@ -3437,175 +3021,11 @@ function startSliderAutoPlay() {
 }
 
 // ADMIN SLIDER FUNCTIONS
-window.saveSlider = async () => {
-    const id = document.getElementById('edit-slider-id').value;
-    const sliderData = {
-        img: document.getElementById('s-img').value.trim(),
-        mobileImg: document.getElementById('s-mobileImg').value.trim(),
-        title: document.getElementById('s-title').value.trim(),
-        link: document.getElementById('s-link').value.trim(),
-        order: Number(document.getElementById('s-order').value) || 0,
-        updatedAt: Date.now()
-    };
-
-    const isUrl = (val) => val && typeof val === 'string' && val.trim() !== '' && val !== 'img/';
-    const hasImg = isUrl(sliderData.img);
-    const hasMobileImg = isUrl(sliderData.mobileImg);
-
-    if (!hasImg && !hasMobileImg) return showToast("Image is required");
-
-    try {
-        if (id) {
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sliders', id), sliderData);
-            showToast("Slider Updated");
-        } else {
-            await addDoc(sliderCol, sliderData);
-            showToast("Slider Added");
-        }
-        resetForm();
-        DATA.s = []; // Clear local to force refresh
-        refreshData();
-    } catch (e) {
-        console.error("Slider Save Error:", e);
-        showToast("Error saving slider");
-    }
-};
-
-window.cloudinaryBulkSliderUpload = (type) => {
-    cloudinary.openUploadWidget({
-        cloudName: 'dxkcvm2yh',
-        uploadPreset: 'speed_preset',
-        multiple: true,
-        maxFiles: 20,
-        sources: ['local', 'url', 'camera']
-    }, async (error, result) => {
-        if (!error && result && result.event === "success") {
-            const url = result.info.secure_url;
-            showToast(`Saving ${type} image...`);
-
-            const sliderData = {
-                title: "",
-                link: "",
-                order: DATA.s.length + 1,
-                updatedAt: Date.now()
-            };
-
-            if (type === 'desktop') {
-                sliderData.img = url;
-                sliderData.mobileImg = "img/";
-            } else {
-                sliderData.img = "img/";
-                sliderData.mobileImg = url;
-            }
-
-            try {
-                await addDoc(sliderCol, sliderData);
-                DATA.s = []; // Trigger full refresh
-                refreshData();
-                showToast(`New ${type} slider added!`);
-            } catch (err) {
-                console.error("Bulk Upload Save Error:", err);
-                showToast("Save failed");
-            }
-        }
-    });
-};
-
-window.handleSliderBulkDrop = async (e, type) => {
-    e.preventDefault();
-    const zone = e.currentTarget;
-    zone.classList.remove('border-black', 'bg-gray-50');
-
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-    if (!files.length) return showToast("No images found.");
-
-    showToast(`Uploading ${files.length} ${type} images...`);
-
-    for (const file of files) {
-        try {
-            const url = await directCloudinaryUpload(file);
-            const sliderData = {
-                title: "",
-                link: "",
-                order: DATA.s.length + 1,
-                updatedAt: Date.now(),
-                img: type === 'desktop' ? url : "img/",
-                mobileImg: type === 'mobile' ? url : "img/"
-            };
-            await addDoc(sliderCol, sliderData);
-        } catch (err) {
-            console.error("Bulk Drop Error:", err);
-            showToast("One or more uploads failed");
-        }
-    }
-
-    DATA.s = [];
-    refreshData();
-    showToast("Bulk Upload Complete!");
-};
-
-window.editSlider = (id) => {
-    const s = DATA.s.find(x => x.id === id);
-    if (!s) return;
-    document.getElementById('edit-slider-id').value = s.id;
-    document.getElementById('s-img').value = s.img;
-    document.getElementById('s-mobileImg').value = s.mobileImg || "img/";
-    document.getElementById('s-title').value = s.title || "";
-    document.getElementById('s-link').value = s.link || "";
-    document.getElementById('s-order').value = s.order || 0;
-    document.getElementById('slider-form-title').innerText = "Edit Slider Image";
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-window.deleteSlider = async (id) => {
-    if (!confirm("Are you sure?")) return;
-    try {
-        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sliders', id));
-        showToast("Slider Deleted");
-        refreshData();
-    } catch (e) {
-        showToast("Error deleting slider");
-    }
-};
-
-function renderAdminSliders(container) {
-    const sorted = [...DATA.s].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
-    container.innerHTML = sorted.map(s => {
-        const hasMobile = s.mobileImg && s.mobileImg !== 'img/';
-        const hasDesktop = s.img && s.img !== 'img/';
-
-        return `
-            <div class="admin-slider-card">
-                <div class="flex gap-4 w-full">
-                    <div class="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 border">
-                        <img src="${getOptimizedUrl(s.img, 200)}" class="w-full h-full object-cover ${!hasDesktop ? 'opacity-20 grayscale' : ''}">
-                        <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[7px] text-center font-bold uppercase py-1">Desktop</div>
-                    </div>
-                    <div class="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 border">
-                        <img src="${getOptimizedUrl(s.mobileImg, 200)}" class="w-full h-full object-cover ${!hasMobile ? 'opacity-20 grayscale' : ''}" onerror="this.src='https://placehold.co/200x200?text=No+Mobile'">
-                        <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[7px] text-center font-bold uppercase py-1">Mobile</div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-bold text-[13px] truncate">${s.title || 'Untitled Slide'}</p>
-                        <p class="text-[9px] text-gray-400 font-black uppercase mt-1">Order: ${s.order}</p>
-                        <div class="flex gap-2 mt-2">
-                             ${hasDesktop ? '<span class="px-2 py-0.5 bg-blue-50 text-blue-400 text-[7px] font-black rounded-full uppercase">Desktop On</span>' : '<span class="px-2 py-0.5 bg-gray-50 text-gray-300 text-[7px] font-black rounded-full uppercase">Desktop Off</span>'}
-                             ${hasMobile ? '<span class="px-2 py-0.5 bg-green-50 text-green-400 text-[7px] font-black rounded-full uppercase">Mobile On</span>' : '<span class="px-2 py-0.5 bg-gray-50 text-gray-300 text-[7px] font-black rounded-full uppercase">Mobile Off</span>'}
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <button onclick="editSlider('${s.id}')" class="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:text-black transition-all">
-                            <i class="fa-solid fa-pen text-[10px]"></i>
-                        </button>
-                        <button onclick="deleteSlider('${s.id}')" class="w-8 h-8 flex items-center justify-center bg-red-50 rounded-full text-red-200 hover:text-red-500 transition-all">
-                            <i class="fa-solid fa-trash text-[10px]"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('') || `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Sliders</p>`;
-}
+window.saveSlider = createAdminProxy('saveSlider');
+window.cloudinaryBulkSliderUpload = createAdminProxy('cloudinaryBulkSliderUpload');
+window.handleSliderBulkDrop = createAdminProxy('handleSliderBulkDrop');
+window.editSlider = createAdminProxy('editSlider');
+window.deleteSlider = createAdminProxy('deleteSlider');
 
 // ANNOUNCEMENT BAR LOGIC
 let announcementInterval;
@@ -3647,150 +3067,9 @@ function initAnnouncementRotation() {
 }
 
 // ADMIN ANNOUNCEMENTS
-window.addAnnouncementRow = (text = "") => {
-    const container = document.getElementById('announcement-rows');
-    if (!container) return;
-    const div = document.createElement('div');
-    div.className = "flex gap-3 animate-fade-in";
-    div.innerHTML = `
-        <input type="text" class="admin-input flex-1 a-msg" placeholder="Notice text..." value="${text}">
-        <button onclick="this.parentElement.remove()" class="w-12 h-12 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">
-            <i class="fa-solid fa-trash-can"></i>
-        </button>
-    `;
-    container.appendChild(div);
-};
+window.addAnnouncementRow = createAdminProxy('addAnnouncementRow');
+window.saveAnnouncements = createAdminProxy('saveAnnouncements');
 
-window.saveAnnouncements = async () => {
-    const btn = document.getElementById('a-save-btn');
-    const msgs = Array.from(document.querySelectorAll('.a-msg')).map(i => i.value.trim()).filter(v => v);
-
-    if (btn) { btn.disabled = true; btn.innerText = "Syncing..."; }
-    try {
-        const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_announcements_');
-        await setDoc(statsRef, { messages: msgs, updatedAt: Date.now() });
-        showToast("Announcements Saved!");
-        refreshData();
-    } catch (e) {
-        console.error("Save Error:", e);
-        showToast("Error saving data");
-    } finally {
-        if (btn) { btn.disabled = false; btn.innerText = "Save Announcements"; }
-    }
-};
-
-function renderAdminAnnouncements() {
-    const container = document.getElementById('announcement-rows');
-    if (!container) return;
-    container.innerHTML = '';
-    const msgs = DATA.announcements || [];
-    if (msgs.length === 0) {
-        addAnnouncementRow("");
-    } else {
-        msgs.forEach(m => addAnnouncementRow(m));
-    }
-}
-
-function renderAdminMegaMenus() {
-    const list = document.getElementById('admin-megamenu-list');
-    const checklist = document.getElementById('m-categories-checkboxes');
-    if (!list || !checklist) return;
-
-    // 1. Render Checklist (all normal categories)
-    checklist.innerHTML = DATA.c.map(c => `
-        <label class="flex items-center gap-2 cursor-pointer border border-gray-100 bg-white rounded-xl shadow-sm transition-all hover:border-gray-900 hover:bg-gray-50" style="height:52px; padding: 0 10px; overflow:hidden;">
-            <input type="checkbox" value="${c.id}" class="mega-cat-checkbox sr-only">
-            <div class="flex-shrink-0 w-5 h-5 rounded-md border-2 border-gray-200 bg-white flex items-center justify-center transition-all mega-tick-box" style="min-width:20px;">
-                <svg class="mega-tick-icon hidden" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <img src="${getOptimizedUrl(c.img, 50)}" class="flex-shrink-0 w-7 h-7 object-cover rounded-lg bg-gray-100" onerror="this.src='https://placehold.co/50x50?text=Icon'">
-            <span class="text-[11px] font-semibold text-gray-700 leading-tight truncate">${c.name}</span>
-        </label>
-    `).join('');
-
-    // Wire up custom tick visuals for each checkbox
-    checklist.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
-        const tickBox = cb.nextElementSibling;
-        const tickIcon = tickBox ? tickBox.querySelector('.mega-tick-icon') : null;
-        const updateTick = () => {
-            if (cb.checked) {
-                tickBox.style.borderColor = '#111';
-                tickBox.style.background = '#111';
-                if (tickIcon) tickIcon.classList.remove('hidden');
-                if (tickIcon) tickIcon.querySelector('path').setAttribute('stroke', '#fff');
-            } else {
-                tickBox.style.borderColor = '';
-                tickBox.style.background = '';
-                if (tickIcon) tickIcon.classList.add('hidden');
-            }
-        };
-        cb.addEventListener('change', updateTick);
-        updateTick(); // apply initial state if pre-checked
-    });
-
-    // 2. Render created Mega Menus
-    const sorted = [...(DATA.m || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
-    list.innerHTML = sorted.map(m => {
-        // Get mapped category objects
-        const mappedCats = (m.categoryIds || [])
-            .map(cId => DATA.c.find(c => c.id === cId))
-            .filter(Boolean);
-
-        const thumbs = mappedCats.slice(0, 5).map(c => `
-            <img src="${getOptimizedUrl(c.img, 60)}" title="${c.name}"
-                class="w-9 h-9 rounded-xl object-cover border-2 border-white shadow-sm -ml-2 first:ml-0 bg-gray-100"
-                onerror="this.src='https://placehold.co/60x60?text=?'">
-        `).join('');
-
-        const extra = mappedCats.length > 5 ? `<span class="w-9 h-9 rounded-xl bg-gray-100 border-2 border-white shadow-sm -ml-2 flex items-center justify-center text-[9px] font-black text-gray-500">+${mappedCats.length - 5}</span>` : '';
-
-        return `
-        <div style="background:#fff; border:1px solid #f0f0f0; border-radius:20px; padding:16px 20px; display:flex; align-items:center; gap:16px; box-shadow:0 2px 12px rgba(0,0,0,0.04);">
-            <!-- Left: Title + Category Thumbs -->
-            <div style="flex:1; min-width:0;">
-                <p style="font-size:13px; font-weight:900; color:#111; margin:0 0 8px;">${m.name}</p>
-                <div style="display:flex; align-items:center; gap:0;">
-                    ${thumbs}${extra}
-                    ${mappedCats.length === 0 ? '<span style="font-size:10px;color:#9ca3af;font-style:italic;">No categories mapped</span>' : ''}
-                </div>
-                ${mappedCats.length > 0 ? `<p style="font-size:9px;color:#9ca3af;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:0.1em;">${mappedCats.length} categor${mappedCats.length === 1 ? 'y' : 'ies'} mapped</p>` : ''}
-            </div>
-
-            <!-- Right: Edit + Delete Buttons -->
-            <div style="display:flex; gap:8px; flex-shrink:0;">
-                <button onclick="editMegaMenu('${m.id}')"
-                    style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#f3f4f6;border:none;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#374151;cursor:pointer;transition:all 0.2s;"
-                    onmouseover="this.style.background='#000';this.style.color='#fff'"
-                    onmouseout="this.style.background='#f3f4f6';this.style.color='#374151'">
-                    <i class="fa-solid fa-pen" style="font-size:9px;"></i> Edit
-                </button>
-                <button onclick="deleteMegaMenu('${m.id}')"
-                    style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff0f0;border:none;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#ef4444;cursor:pointer;transition:all 0.2s;"
-                    onmouseover="this.style.background='#ef4444';this.style.color='#fff'"
-                    onmouseout="this.style.background='#fff0f0';this.style.color='#ef4444'">
-                    <i class="fa-solid fa-trash" style="font-size:9px;"></i> Delete
-                </button>
-            </div>
-        </div>
-        `;
-    }).join('') || `<div style="text-align:center;padding:60px 20px;color:#d1d5db;font-size:11px;font-style:italic;">No Desktop Menus created yet.</div>`;
-}
-
-// Update renderAdminUI to handle announcements and megamenus
-const originalRenderAdminUI = window.renderAdminUI;
-window.renderAdminUI = () => {
-    originalRenderAdminUI();
-    const sList = document.getElementById('admin-slider-list');
-    if (sList && state.adminTab === 'sliders') {
-        renderAdminSliders(sList);
-    }
-    if (state.adminTab === 'announcements') {
-        renderAdminAnnouncements();
-    }
-    if (state.adminTab === 'megamenu') {
-        renderAdminMegaMenus();
-    }
-};
 // Auth state and data fetching are handled by onAuthStateChanged.
 refreshData();
 
@@ -4019,205 +3298,21 @@ window.submitLead = async (e) => {
 };
 
 // --- ADMIN LEAD MANAGEMENT ---
-window.savePopupSettings = async () => {
-    const title = document.getElementById('popup-title').value;
-    const msg = document.getElementById('popup-msg').value;
-    const img = document.getElementById('popup-img').value;
-    const successTitle = document.getElementById('popup-success-title').value;
-    const successMsg = document.getElementById('popup-success-msg').value;
-    const btn = document.getElementById('popup-save-btn');
-
-    if (!title) return showToast("Title is required");
-
-    btn.innerText = "Saving...";
-    btn.disabled = true;
-
-    try {
-        const snap = await getDocs(popupSettingsCol);
-        const data = { title, msg, img, successTitle, successMsg };
-        if (snap.empty) {
-            await addDoc(popupSettingsCol, data);
-        } else {
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'popupSettings', snap.docs[0].id), data);
-        }
-        showToast("Popup Settings Updated");
-        DATA.popupSettings = data;
-
-        // Update Admin UI fields just in case
-        document.getElementById('popup-success-title').value = successTitle;
-        document.getElementById('popup-success-msg').value = successMsg;
-    } catch (err) {
-        console.error(err);
-        showToast("Save Error");
-    } finally {
-        btn.innerText = "Update Popup";
-        btn.disabled = false;
-    }
-};
-
-window.landingSec1Selected = [];
-window.landingSec2Selected = [];
-
-window.searchLandingProducts = (sec, query) => {
-    const dropdown = document.getElementById(`landing-${sec}-dropdown`);
-    if (!dropdown) return;
-
-    const selectedList = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
-    let matches = DATA.p.filter(p => !p.id.startsWith('_') && !p.id.startsWith('-'));
-
-    if (query && query.trim()) {
-        matches = matches.filter(p => p.name.toLowerCase().includes(query.trim().toLowerCase()));
-    }
-
-    // Build category tabs using actual catId → name from DATA.c
-    const catIds = [...new Set(matches.map(p => p.catId).filter(Boolean))];
-    const activeCat = dropdown.dataset.activeCat || 'all';
-
-    let filtered = matches;
-    if (activeCat !== 'all') {
-        filtered = matches.filter(p => p.catId === activeCat);
-    }
-
-    const tabBase = 'padding:3px 8px;border-radius:8px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;border:1px solid #e5e7eb;transition:all .2s;';
-    const tabActive = tabBase + 'background:#000;color:#fff;border-color:#000;';
-    const tabInactive = tabBase + 'background:#fff;color:#6b7280;';
-
-    const catTabsHTML = `
-        <div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-bottom:1px solid #f3f4f6;background:#f9fafb;position:sticky;top:0;z-index:10;">
-            <button onclick="landingSetCat('${sec}','all')" style="${activeCat === 'all' ? tabActive : tabInactive}">All (${matches.length})</button>
-            ${catIds.map(cid => { const cat = DATA.c.find(c => c.id === cid); const label = cat ? cat.name : cid; return `<button onclick="landingSetCat('${sec}','${cid}')" style="${activeCat === cid ? tabActive : tabInactive}">${label}</button>`; }).join('')}
-        </div>`;
-
-    if (filtered.length === 0) {
-        dropdown.innerHTML = catTabsHTML + `<div style="padding:16px;text-align:center;font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-style:italic;">No products found</div>`;
-    } else {
-        const gridItems = filtered.map(p => {
-            const isSelected = selectedList.includes(p.id);
-            const wrapStyle = `position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:10px;cursor:pointer;transition:all .2s;border:2px solid ${isSelected ? '#000' : 'transparent'};background:${isSelected ? 'rgba(0,0,0,0.04)' : 'transparent'};`;
-            const checkmark = isSelected ? `<div style="position:absolute;top:3px;right:3px;width:14px;height:14px;background:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-check" style="color:#fff;font-size:7px;"></i></div>` : '';
-            const nameStyle = `font-size:8px;font-weight:700;text-transform:uppercase;text-align:center;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%;`;
-            return `
-            <div onclick="${isSelected ? `removeLandingProduct('${sec}','${p.id}')` : `addLandingProduct('${sec}','${p.id}')`}" style="${wrapStyle}">
-                ${checkmark}
-                <img src="${getOptimizedUrl(p.img, 80)}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
-                <span style="${nameStyle}">${p.name}</span>
-            </div>`;
-        }).join('');
-        dropdown.innerHTML = catTabsHTML + `<div style="padding:8px;"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">${gridItems}</div></div>`;
-    }
-    dropdown.classList.remove('hidden');
-};
-
-window.landingSetCat = (sec, cat) => {
-    const dropdown = document.getElementById(`landing-${sec}-dropdown`);
-    if (dropdown) dropdown.dataset.activeCat = cat;
-    const query = document.getElementById(`landing-${sec}-search`)?.value || '';
-    window.searchLandingProducts(sec, query);
-};
-
-window.addLandingProduct = (sec, id) => {
-    const list = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
-    if (!list.includes(id)) list.push(id);
-    renderLandingPills(sec);
-    // refresh grid to show checkmark
-    const query = document.getElementById(`landing-${sec}-search`)?.value || '';
-    window.searchLandingProducts(sec, query);
-};
-
-window.removeLandingProduct = (sec, id) => {
-    if (sec === 'sec1') {
-        window.landingSec1Selected = window.landingSec1Selected.filter(x => x !== id);
-    } else {
-        window.landingSec2Selected = window.landingSec2Selected.filter(x => x !== id);
-    }
-    renderLandingPills(sec);
-    // refresh grid to remove checkmark
-    const query = document.getElementById(`landing-${sec}-search`)?.value || '';
-    window.searchLandingProducts(sec, query);
-};
-
-window.renderLandingPills = (sec) => {
-    const list = sec === 'sec1' ? window.landingSec1Selected : window.landingSec2Selected;
-    const container = document.getElementById(`landing-${sec}-pills`);
-    if (!container) return;
-
-    if (list.length === 0) {
-        container.innerHTML = `<span class="text-[9px] text-gray-400 italic font-bold">No products selected...</span>`;
-        return;
-    }
-
-    container.innerHTML = list.map(id => {
-        const p = DATA.p.find(x => x.id === id);
-        if (!p) return '';
-        return `
-            <div class="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
-                <img src="${getOptimizedUrl(p.img, 50)}" class="w-4 h-4 rounded-full object-cover">
-                <span class="text-[9px] font-bold uppercase truncate max-w-[120px]">${p.name}</span>
-                <button type="button" onclick="removeLandingProduct('${sec}', '${id}')" class="text-gray-400 hover:text-red-500 ml-1">
-                    <i class="fa-solid fa-xmark text-[10px]"></i>
-                </button>
-            </div>
-        `;
-    }).join('');
-};
-
-window.populateLandingProductSelects = () => {
-    // Legacy function, replaced by custom pill UI logic. Kept empty for compatibility with old calls.
-};
-
-window.populateLandingSettingsUI = () => {
-    if (DATA.landingSettings) {
-        if (document.getElementById('landing-announcement')) document.getElementById('landing-announcement').value = DATA.landingSettings.announcement || "";
-        if (document.getElementById('landing-hero-mob')) document.getElementById('landing-hero-mob').value = DATA.landingSettings.heroMob || "img/";
-        if (document.getElementById('landing-hero-desk')) document.getElementById('landing-hero-desk').value = DATA.landingSettings.heroDesk || "img/";
-        if (document.getElementById('landing-sec1-title')) document.getElementById('landing-sec1-title').value = DATA.landingSettings.sec1Title || "";
-        if (document.getElementById('landing-sec1-subtitle')) document.getElementById('landing-sec1-subtitle').value = DATA.landingSettings.sec1Subtitle || "";
-
-        window.landingSec1Selected = DATA.landingSettings.sec1Products || [];
-        renderLandingPills('sec1');
-
-        if (document.getElementById('landing-sec2-title')) document.getElementById('landing-sec2-title').value = DATA.landingSettings.sec2Title || "";
-        if (document.getElementById('landing-sec2-subtitle')) document.getElementById('landing-sec2-subtitle').value = DATA.landingSettings.sec2Subtitle || "";
-
-        window.landingSec2Selected = DATA.landingSettings.sec2Products || [];
-        renderLandingPills('sec2');
-    }
-};
-
-window.saveLandingSettings = async () => {
-    const announcement = document.getElementById('landing-announcement').value;
-    const heroMob = document.getElementById('landing-hero-mob').value;
-    const heroDesk = document.getElementById('landing-hero-desk').value;
-    const sec1Title = document.getElementById('landing-sec1-title').value;
-    const sec1Subtitle = document.getElementById('landing-sec1-subtitle').value;
-    const sec1Products = window.landingSec1Selected || [];
-
-    const sec2Title = document.getElementById('landing-sec2-title').value;
-    const sec2Subtitle = document.getElementById('landing-sec2-subtitle').value;
-    const sec2Products = window.landingSec2Selected || [];
-
-    const btn = document.getElementById('landing-save-btn');
-
-    btn.innerText = "Saving...";
-    btn.disabled = true;
-
-    try {
-        const data = { announcement, heroMob, heroDesk, sec1Title, sec1Subtitle, sec1Products, sec2Title, sec2Subtitle, sec2Products };
-
-        // Save using setDoc into the products collection to bypass potential new collection Firebase Rules
-        const landRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_landing_settings_');
-        await setDoc(landRef, data);
-
-        showToast("Landing Page Settings Saved");
-        DATA.landingSettings = data;
-    } catch (err) {
-        console.error(err);
-        showToast("Save Error");
-    } finally {
-        btn.innerText = "Save Landing Page";
-        btn.disabled = false;
-    }
-};
+window.savePopupSettings = createAdminProxy('savePopupSettings');
+window.searchLandingProducts = createAdminProxy('searchLandingProducts');
+window.landingSetCat = createAdminProxy('landingSetCat');
+window.addLandingProduct = createAdminProxy('addLandingProduct');
+window.removeLandingProduct = createAdminProxy('removeLandingProduct');
+window.renderLandingPills = createAdminProxy('renderLandingPills');
+window.populateLandingProductSelects = createAdminProxy('populateLandingProductSelects');
+window.populateLandingSettingsUI = createAdminProxy('populateLandingSettingsUI');
+window.saveLandingSettings = createAdminProxy('saveLandingSettings');
+window.addSpotlightProduct = createAdminProxy('addSpotlightProduct');
+window.removeSpotlightProduct = createAdminProxy('removeSpotlightProduct');
+window.renderSpotlightPills = createAdminProxy('renderSpotlightPills');
+window.searchSpotlightProducts = createAdminProxy('searchSpotlightProducts');
+window.populateHomeAdminUI = createAdminProxy('populateHomeAdminUI');
+window.saveHomeSettings = createAdminProxy('saveHomeSettings');
 
 // Global mousedown to close dropdowns (mousedown fires before click, so dropdown items still register their click)
 document.addEventListener('mousedown', (e) => {
@@ -4236,135 +3331,6 @@ document.addEventListener('mousedown', (e) => {
    HOME PAGE (SPOTLIGHT) SETTINGS LOGIC
    ============================================================================== */
 
-window.spotlightSelectedProducts = [];
-
-window.addSpotlightProduct = (id) => {
-    if (!window.spotlightSelectedProducts.includes(id)) {
-        window.spotlightSelectedProducts.push(id);
-    }
-    const searchInput = document.getElementById('spotlight-product-search');
-    if (searchInput) searchInput.value = '';
-    document.getElementById('spotlight-dropdown')?.classList.add('hidden');
-    renderSpotlightPills();
-};
-
-window.removeSpotlightProduct = (id) => {
-    window.spotlightSelectedProducts = window.spotlightSelectedProducts.filter(x => x !== id);
-    renderSpotlightPills();
-};
-
-window.renderSpotlightPills = () => {
-    const container = document.getElementById('spotlight-pills');
-    if (!container) return;
-
-    if (!window.spotlightSelectedProducts || window.spotlightSelectedProducts.length === 0) {
-        container.innerHTML = `<span class="text-[9px] text-gray-400 italic font-bold">No products selected yet...</span>`;
-        return;
-    }
-
-    container.innerHTML = window.spotlightSelectedProducts.map(id => {
-        const p = DATA.p.find(x => x.id === id);
-        if (!p) return '';
-        return `
-            <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm transition-all hover:border-black group">
-                <img src="${getOptimizedUrl(p.img, 50)}" class="w-5 h-5 rounded-lg object-cover shadow-sm bg-gray-50">
-                <span class="text-[9px] font-black uppercase tracking-tight truncate max-w-[140px] text-gray-800">${p.name}</span>
-                <button type="button" onclick="removeSpotlightProduct('${id}')" 
-                    class="w-5 h-5 flex items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-red-500 transition-all ml-1">
-                    <i class="fa-solid fa-xmark text-[10px]"></i>
-                </button>
-            </div>
-        `;
-    }).join('');
-};
-
-window.searchSpotlightProducts = (query) => {
-    const dropdown = document.getElementById('spotlight-dropdown');
-    if (!query || query.trim().length < 1) {
-        dropdown?.classList.add('hidden');
-        return;
-    }
-
-    const q = query.toLowerCase().trim();
-    const matches = DATA.p.filter(p =>
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.id && p.id.toLowerCase() === q)
-    ).slice(0, 8);
-
-    if (matches.length === 0) {
-        if (dropdown) {
-            dropdown.innerHTML = `<div class="p-4 text-[10px] text-gray-400 font-bold uppercase italic text-center">No products found</div>`;
-            dropdown.classList.remove('hidden');
-        }
-        return;
-    }
-
-    if (dropdown) {
-        dropdown.innerHTML = matches.map(p => `
-            <div onclick="addSpotlightProduct('${p.id}')" 
-                 class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors group">
-                <img src="${getOptimizedUrl(p.img, 100)}" class="w-10 h-10 rounded-xl object-cover bg-gray-50 shadow-sm group-hover:scale-105 transition-transform">
-                <div class="flex-1 min-w-0">
-                    <div class="text-[10px] font-black uppercase text-gray-900 truncate">${p.name}</div>
-                    <div class="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">${p.price} AED</div>
-                </div>
-                <i class="fa-solid fa-plus text-gray-300 group-hover:text-black mr-2 text-[10px]"></i>
-            </div>
-        `).join('');
-        dropdown.classList.remove('hidden');
-    }
-};
-
-window.populateHomeAdminUI = () => {
-
-    if (DATA.homeSettings) {
-        if (document.getElementById('spotlight-enabled')) document.getElementById('spotlight-enabled').checked = DATA.homeSettings.spotlightEnabled || false;
-        if (document.getElementById('spotlight-title')) document.getElementById('spotlight-title').value = DATA.homeSettings.spotlightTitle || "";
-        if (document.getElementById('spotlight-subtitle')) document.getElementById('spotlight-subtitle').value = DATA.homeSettings.spotlightSubtitle || "";
-        if (document.getElementById('spotlight-cat-id')) document.getElementById('spotlight-cat-id').value = DATA.homeSettings.spotlightCatId || "";
-        if (document.getElementById('spotlight-limit')) document.getElementById('spotlight-limit').value = DATA.homeSettings.spotlightLimit || 8;
-
-        window.spotlightSelectedProducts = DATA.homeSettings.spotlightProducts || [];
-        renderSpotlightPills();
-    }
-};
-
-window.saveHomeSettings = async () => {
-    const spotlightEnabled = document.getElementById('spotlight-enabled').checked;
-    const spotlightTitle = document.getElementById('spotlight-title').value;
-    const spotlightSubtitle = document.getElementById('spotlight-subtitle').value;
-    const spotlightCatId = document.getElementById('spotlight-cat-id').value;
-    const spotlightLimit = parseInt(document.getElementById('spotlight-limit').value) || 8;
-    const spotlightProducts = window.spotlightSelectedProducts || [];
-
-    const btn = document.getElementById('homepage-save-btn');
-    if (btn) {
-        btn.innerText = "Saving Configuration...";
-        btn.disabled = true;
-    }
-
-    try {
-        const data = { spotlightEnabled, spotlightTitle, spotlightSubtitle, spotlightCatId, spotlightLimit, spotlightProducts };
-
-        const homeRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_home_settings_');
-        await setDoc(homeRef, data);
-
-        showToast("Home Page Settings Saved", "success");
-        DATA.homeSettings = data;
-
-        // Refresh home render to show changes
-        renderHome();
-
-    } catch (err) {
-        console.error(err);
-        showToast("Error Saving Settings", "error");
-    } finally {
-        if (btn) {
-            btn.innerText = "Save Configuration";
-            btn.disabled = false;
-        }
-    }
-};
 
 window.renderSpotlightSection = () => {
     const appMain = document.getElementById('app');
@@ -4512,106 +3478,9 @@ window.renderSpotlightSection = () => {
     container.classList.remove('hidden');
 };
 
-window.renderAdminLeads = async () => {
-    const container = document.getElementById('admin-leads-list');
-    if (!container) return;
-
-    // Check if Auth has initialized. If not, wait.
-    if (!state.authUser && getAuth().currentUser === null) {
-        container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-300 animate-pulse"><i class="fa-solid fa-cloud-arrow-down text-3xl mb-4"></i><p class="text-[10px] font-bold uppercase tracking-widest">Verifying Admin Access...</p></div>';
-        setTimeout(() => renderAdminLeads(), 1000); // Retry automatically after 1s
-        return;
-    }
-
-    container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-300 animate-pulse"><i class="fa-solid fa-cloud-arrow-down text-3xl mb-4"></i><p class="text-[10px] font-bold uppercase tracking-widest">Fetching live leads...</p></div>';
-
-    try {
-        console.log("[Admin] Fetching leads from:", leadsCol.path);
-        const snap = await getDocs(leadsCol);
-        DATA.leads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        DATA.leads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-        console.log(`[Admin] Successfully fetched ${DATA.leads.length} leads.`);
-
-        if (DATA.leads.length === 0) {
-            container.innerHTML = `
-                <div class="col-span-full text-center py-40 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-100">
-                    <i class="fa-solid fa-users-slash text-gray-200 text-3xl mb-6"></i>
-                    <h3 class="text-gray-900 font-bold text-[12px] uppercase tracking-widest mb-2">No Leads Collected</h3>
-                    <p class="text-gray-400 text-[10px] max-w-xs mx-auto">New gift claim entries will appear here automatically as customers fill out the popup.</p>
-                </div>`;
-            return;
-        }
-
-        container.innerHTML = DATA.leads.map(lead => {
-            const dateObj = new Date(lead.createdAt);
-            const displayDate = isNaN(dateObj) ? 'Recently' : dateObj.toLocaleString('en-AE', {
-                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true
-            });
-
-            const leadWhatsApp = lead.whatsapp || 'No Number';
-
-            return `
-            <div class="lead-row fade-in">
-                <div class="lead-info">
-                    <h4>${lead.name || 'Anonymous User'}</h4>
-                    <p class="flex items-center gap-2">
-                        <span class="text-black font-bold">${leadWhatsApp}</span>
-                        <span class="w-1 h-1 bg-gray-200 rounded-full"></span>
-                        <span>${lead.age || 0} Years</span>
-                    </p>
-                    <span class="lead-date">${displayDate}</span>
-                </div>
-                <div class="flex gap-2">
-                    <a href="https://wa.me/${lead.whatsapp.replace(/\D/g, '')}" target="_blank" 
-                       class="w-12 h-12 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm">
-                        <i class="fa-brands fa-whatsapp text-lg"></i>
-                    </a>
-                    <button onclick="deleteLead('${lead.id}')" 
-                            class="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm">
-                        <i class="fa-solid fa-trash-can text-sm"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        }).join('');
-    } catch (err) {
-        console.error("[Admin] Lead Load Error:", err);
-        container.innerHTML = `
-            <div class="p-10 text-center bg-red-50 rounded-[2rem] border border-red-100">
-                <i class="fa-solid fa-triangle-exclamation text-red-400 text-2xl mb-4"></i>
-                <p class="text-red-500 font-bold text-[11px] uppercase tracking-widest">Connection Error</p>
-                <p class="text-red-300 text-[9px] mt-2">Could not sync with leads collection. Please check your internet or Firebase permissions.</p>
-                <button onclick="renderAdminLeads()" class="mt-4 px-6 py-2 bg-red-500 text-white rounded-full text-[9px] font-bold uppercase tracking-widest">Retry Sync</button>
-            </div>`;
-    }
-};
-
-window.deleteLead = async (id) => {
-    if (!confirm("Delete this lead?")) return;
-    try {
-        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leads', id));
-        showToast("Lead Deleted");
-        renderAdminLeads();
-    } catch (err) { showToast("Delete Error"); }
-};
-
-window.exportLeadsExcel = () => {
-    if (DATA.leads.length === 0) return showToast("No leads to export");
-
-    let csv = "Name,WhatsApp,Age,Created At\n";
-    DATA.leads.forEach(l => {
-        csv += `"${l.name}","${l.whatsapp}",${l.age},"${l.createdAt}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-};
+window.renderAdminLeads = createAdminProxy('renderAdminLeads');
+window.deleteLead = createAdminProxy('deleteLead');
+window.exportLeadsExcel = createAdminProxy('exportLeadsExcel');
 
 window.resetInsightsData = async () => {
     if (!confirm("Are you sure you want to reset all Insights data? This will clear all visit counts, product views, and leads forever.")) return;
