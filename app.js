@@ -2083,7 +2083,37 @@ window.clearCustomerSearch = () => {
     renderHome();
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
-window.showAdminPanel = async () => {
+async function ensureAdminModuleLoaded() {
+    if (window.__adminModuleReady) return true;
+    try {
+        const mod = await import('./app-admin.js');
+        if (typeof mod.initAdmin !== 'function') return false;
+        mod.initAdmin({
+            db, auth, state, DATA, appId,
+            prodCol, catCol, shareCol, sliderCol, megaCol,
+            popupSettingsCol, landingSettingsCol, leadsCol,
+            doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs,
+            collection, increment, writeBatch, arrayUnion,
+            query, where, documentId,
+            showToast, refreshData, renderHome, getAuth,
+            getBadgeLabel, getOptimizedUrl, getColumnsCount,
+            renderSlider, renderInsights
+        });
+        window.__adminModuleReady = true;
+        return true;
+    } catch (e) {
+        console.error('[Admin] Failed to load app-admin.js:', e);
+        return false;
+    }
+}
+
+window.showAdminPanel = async function showAdminPanelLegacy() {
+    if (!window.__adminModuleReady) {
+        const loaded = await ensureAdminModuleLoaded();
+        if (loaded && window.showAdminPanel !== showAdminPanelLegacy) {
+            return window.showAdminPanel();
+        }
+    }
     const u = state.authUser || window._fbAuth?.currentUser || getAuth().currentUser;
 
     // Auto-retry once to give Firebase time to log in
