@@ -2994,8 +2994,8 @@ function renderSlider() {
         }
     };
 
-    // Desktop Mouse Drag Support
-    initSliderDrag(slider);
+    // Desktop Mouse Drag Support — disabled on mobile to prevent interference with vertical scrolling
+    if (!isMobile) initSliderDrag(slider);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
