@@ -28,6 +28,22 @@
     --detail-desc-size: 13.5px;
 
     --font-main: 'Inter', sans-serif;
+
+    /* =================================================
+       TAILWIND v4 OKLCH GRAY OVERRIDE
+       Fix: Tailwind v4 gray-100 uses oklch with hue 264° (blue).
+       Override all grays to pure neutral hex to eliminate blue tint
+       on skeleton loading UI and all bg-gray-* elements.
+       ================================================= */
+    --color-gray-50: #f9f9f9;
+    --color-gray-100: #f2f2f2;
+    --color-gray-200: #e8e8e8;
+    --color-gray-300: #d4d4d4;
+    --color-gray-400: #a3a3a3;
+    --color-gray-500: #737373;
+    --color-gray-600: #525252;
+    --color-gray-800: #262626;
+    --color-gray-900: #171717;
 }
 
 body {
@@ -50,6 +66,7 @@ body {
 }
 
 @media (max-width: 767px) {
+
     html,
     body,
     #app,
@@ -675,7 +692,7 @@ img[src=""] {
 
 /* NEW LARGE ADMIN PRODUCT LIST ROW HINTS (Tailwind used in app.js primarily) */
 .admin-list-row {
-    transform: translateZ(0); 
+    transform: translateZ(0);
     will-change: transform, box-shadow, border-color;
 }
 
@@ -1000,6 +1017,7 @@ img[src=""] {
 }
 
 @media (max-width: 767px) {
+
     /* Restore native horizontal swiping while maintaining vertical page scroll */
     #home-slider {
         touch-action: pan-x pan-y !important;
@@ -1517,7 +1535,7 @@ img[src=""] {
     background: #ffffff !important;
     color: #111111 !important;
     border: none !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1550,8 +1568,15 @@ img[src=""] {
     text-transform: uppercase;
 }
 
-.stock-badge.in { background: #f0fdf4; color: #16a34a; }
-.stock-badge.out { background: #fef2f2; color: #dc2626; }
+.stock-badge.in {
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.stock-badge.out {
+    background: #fef2f2;
+    color: #dc2626;
+}
 
 /* Fix missing Tailwind rotation utility for Admin Panel dropdown icons */
 .rotate-180 {
@@ -1583,12 +1608,23 @@ img[src=""] {
     line-height: 1.35;
 }
 
-#admin-panel h1 { font-size: var(--admin-text-h1) !important; font-weight: 700 !important; }
-#admin-panel h2 { font-size: var(--admin-text-h2) !important; font-weight: 700 !important; }
+#admin-panel h1 {
+    font-size: var(--admin-text-h1) !important;
+    font-weight: 700 !important;
+}
+
+#admin-panel h2 {
+    font-size: var(--admin-text-h2) !important;
+    font-weight: 700 !important;
+}
+
 #admin-panel h3,
 #admin-panel h4,
 #admin-panel h5,
-#admin-panel h6 { font-size: var(--admin-text-h3) !important; font-weight: 600 !important; }
+#admin-panel h6 {
+    font-size: var(--admin-text-h3) !important;
+    font-weight: 600 !important;
+}
 
 #admin-panel p,
 #admin-panel span,
@@ -1644,14 +1680,14 @@ img[src=""] {
 }
 
 /* Consistent section card surface */
-#admin-product-section > div,
-#admin-category-section > div,
-#admin-megamenu-section > div,
-#admin-slider-section > div,
-#admin-announcements-section > div,
-#admin-leads-section > div,
-#admin-homepage-section > div,
-#admin-landing-section > div,
+#admin-product-section>div,
+#admin-category-section>div,
+#admin-megamenu-section>div,
+#admin-slider-section>div,
+#admin-announcements-section>div,
+#admin-leads-section>div,
+#admin-homepage-section>div,
+#admin-landing-section>div,
 #admin-migration-section {
     border-radius: var(--admin-card-radius) !important;
     padding: var(--admin-card-padding) !important;
@@ -1731,35 +1767,46 @@ img[src=""] {
 }
 
 /* Normalize section rhythm */
-#admin-panel [id$="-section"] .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+#admin-panel [id$="-section"] .space-y-1> :not([hidden])~ :not([hidden]) {
     margin-top: var(--admin-space-1) !important;
 }
 
-#admin-panel [id$="-section"] .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+#admin-panel [id$="-section"] .space-y-2> :not([hidden])~ :not([hidden]) {
     margin-top: var(--admin-space-2) !important;
 }
 
-#admin-panel [id$="-section"] .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+#admin-panel [id$="-section"] .space-y-3> :not([hidden])~ :not([hidden]) {
     margin-top: var(--admin-space-2) !important;
 }
 
-#admin-panel [id$="-section"] .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+#admin-panel [id$="-section"] .space-y-4> :not([hidden])~ :not([hidden]) {
     margin-top: var(--admin-space-3) !important;
 }
 
-#admin-panel [id$="-section"] .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+#admin-panel [id$="-section"] .space-y-5> :not([hidden])~ :not([hidden]) {
     margin-top: var(--admin-space-3) !important;
 }
 
-#admin-panel [id$="-section"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+#admin-panel [id$="-section"] .space-y-6> :not([hidden])~ :not([hidden]) {
     margin-top: var(--admin-space-4) !important;
 }
 
 /* Consistent grid gaps inside admin sections */
-#admin-panel [id$="-section"] .gap-2 { gap: var(--admin-space-1) !important; }
-#admin-panel [id$="-section"] .gap-3 { gap: var(--admin-space-2) !important; }
-#admin-panel [id$="-section"] .gap-4 { gap: var(--admin-space-3) !important; }
-#admin-panel [id$="-section"] .gap-6 { gap: var(--admin-space-4) !important; }
+#admin-panel [id$="-section"] .gap-2 {
+    gap: var(--admin-space-1) !important;
+}
+
+#admin-panel [id$="-section"] .gap-3 {
+    gap: var(--admin-space-2) !important;
+}
+
+#admin-panel [id$="-section"] .gap-4 {
+    gap: var(--admin-space-3) !important;
+}
+
+#admin-panel [id$="-section"] .gap-6 {
+    gap: var(--admin-space-4) !important;
+}
 
 /* Inputs/buttons share same control height rhythm */
 #admin-panel .admin-input {
@@ -1839,7 +1886,7 @@ img[src=""] {
 
 /* Force normal letter spacing for all admin text */
 #admin-panel,
-#admin-panel * ,
+#admin-panel *,
 #admin-panel *::before,
 #admin-panel *::after {
     letter-spacing: normal !important;
@@ -1874,12 +1921,23 @@ img[src=""] {
     line-height: 1.35 !important;
 }
 
-#admin-panel h1 { font-size: 22px !important; }
-#admin-panel h2 { font-size: 19px !important; }
-#admin-panel h3 { font-size: 17px !important; }
+#admin-panel h1 {
+    font-size: 22px !important;
+}
+
+#admin-panel h2 {
+    font-size: 19px !important;
+}
+
+#admin-panel h3 {
+    font-size: 17px !important;
+}
+
 #admin-panel h4,
 #admin-panel h5,
-#admin-panel h6 { font-size: 15px !important; }
+#admin-panel h6 {
+    font-size: 15px !important;
+}
 
 /* Make all non-heading text thin and slightly bigger */
 #admin-panel :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(i):not(svg):not(path):not(fa-icon) {
@@ -2023,7 +2081,7 @@ img[src=""] {
 }
 
 #admin-panel .bg-white,
-#admin-panel [id$="-section"] > div,
+#admin-panel [id$="-section"]>div,
 #admin-panel #admin-migration-section {
     background-color: var(--admin-surface) !important;
 }
@@ -2122,6 +2180,7 @@ img[src=""] {
 }
 
 @media (max-width: 640px) {
+
     #admin-panel #admin-landing-section #landing-save-btn,
     #admin-panel #admin-landing-section a[href="landing.html"] {
         width: 100%;
@@ -2176,12 +2235,12 @@ img[src=""] {
     padding-left: 40px !important;
 }
 
-#admin-panel #admin-homepage-section #spotlight-product-search + #spotlight-dropdown,
-#admin-panel #admin-homepage-section .relative > .absolute.left-4 {
+#admin-panel #admin-homepage-section #spotlight-product-search+#spotlight-dropdown,
+#admin-panel #admin-homepage-section .relative>.absolute.left-4 {
     left: 12px !important;
 }
 
-#admin-panel #admin-homepage-section .relative > .absolute.left-4 i {
+#admin-panel #admin-homepage-section .relative>.absolute.left-4 i {
     width: 14px !important;
     height: 14px !important;
 }
@@ -2192,7 +2251,7 @@ img[src=""] {
 }
 
 /* Sidebar main group titles: semibold */
-#admin-panel button[onclick^="toggleSidebarGroup"] > p {
+#admin-panel button[onclick^="toggleSidebarGroup"]>p {
     font-weight: 600 !important;
 }
 
@@ -2976,3 +3035,37 @@ body.search-mode #search-result-count {
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     }
 }
+
+/* ==========================================================================
+   SKELETON LOADING UI — Clean & Flat (No Shadow, No Blue Tint)
+   Fixes the bluish/shadowed loading cards visible during page refresh
+   ========================================================================== */
+
+/* Hide skeleton loading UI completely — its layout is from old design.
+   Plain white during load is cleaner than showing wrong skeleton layout. */
+#app > .animate-pulse {
+    display: none !important;
+}
+
+/* Kill any shadow on the skeleton wrapper itself */
+.animate-pulse {
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Global: no shadow on body/html/app at any time */
+html, body, #app {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Product card images — clean square, no shadow ever */
+.product-card,
+.product-card .img-container,
+.product-card .img-container img,
+.product-card .img-container.shadow-sm,
+.product-card .img-container[class*="shadow"] {
+    box-shadow: none !important;
+    filter: none !important;
+    border: none !important;
+}
