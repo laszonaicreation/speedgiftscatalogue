@@ -1,7 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, arrayUnion, query, where, documentId } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, getDoc, setDoc, increment, writeBatch, arrayUnion, query, where, documentId, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile, verifyPasswordResetCode, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { isStandaloneDetailPage, getProductDetailUrl } from "./product-detail-utils.js";
+import { initSharedNavbar } from "./shared-navbar.js";
+import { initSharedAuth } from "./shared-auth.js";
+import { mountSharedShell } from "./shared-shell.js?v=2";
+import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -31,13 +35,67 @@ const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
 let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, homeSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, selected: [], wishlist: [], cart: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1, authMode: 'login' };
+let sharedNavMain = null;
+let wishlistRealtimeUnsub = null;
 const PAGE_SIZE = 16;
 const HOME_SNAPSHOT_KEY = 'speedgifts_home_snapshot';
+const WISHLIST_LOCAL_KEY = 'speedgifts_detail_wishlist';
+const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
+const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 const INITIAL_EAGER_IMAGES = 4;
 const INITIAL_PRELOAD_PRODUCTS = 4;
 const INITIAL_PRELOAD_SLIDERS = 2;
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
+const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
+    ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
+    : null;
+
+function setupHomeSharedShell() {
+    // Home already has its own full shell markup in index.html.
+    // Avoid mounting shared shell here to prevent duplicate/invalid DOM state.
+    if (document.querySelector('body > nav.sticky')) return;
+
+    let root = document.getElementById('shared-shell-root');
+    if (!root) {
+        root = document.createElement('div');
+        root.id = 'shared-shell-root';
+        document.body.prepend(root);
+    }
+    mountSharedShell('home');
+
+    // Remove legacy duplicate shell nodes so IDs remain unique.
+    const duplicateIds = [
+        'mobile-bottom-nav',
+        'favorites-sidebar-overlay',
+        'favorites-sidebar',
+        'categories-sidebar-overlay',
+        'categories-sidebar',
+        'auth-modal-overlay',
+        'auth-login-modal',
+        'auth-account-modal',
+        'auth-reset-modal',
+        'nav-user-btn',
+        'desk-search',
+        'desk-clear-btn',
+        'nav-wishlist-count',
+        'nav-wishlist-count-mob'
+    ];
+    duplicateIds.forEach(id => {
+        const nodes = document.querySelectorAll(`#${id}`);
+        nodes.forEach((el, idx) => {
+            if (idx > 0) el.remove();
+        });
+    });
+
+    const legacyTopNav = document.querySelector('body > nav.sticky');
+    const sharedTopNav = document.querySelector('#shared-shell-root nav.sticky');
+    if (legacyTopNav && sharedTopNav) {
+        legacyTopNav.remove();
+    }
+}
+
+setupHomeSharedShell();
 
 // Format Date to YYYY-MM-DD (Robust)
 const getTodayStr = () => {
@@ -381,36 +439,80 @@ window.onpopstate = () => {
 
 
 async function loadWishlist() {
+    const getWishId = (entry) => (typeof entry === 'string' ? entry : entry?.id);
+    const normalizeWishlistEntries = (entries = []) => {
+        const seen = new Set();
+        const normalized = [];
+        entries.forEach((entry) => {
+            const id = getWishId(entry);
+            if (!id || seen.has(id)) return;
+            seen.add(id);
+            if (typeof entry === 'string') normalized.push({ id });
+            else normalized.push(entry?.id ? { ...entry } : { id });
+        });
+        return normalized;
+    };
+    try {
+        const localRaw = localStorage.getItem(WISHLIST_LOCAL_KEY);
+        const localList = localRaw ? JSON.parse(localRaw) : [];
+        state.wishlist = normalizeWishlistEntries(localList);
+    } catch (_) { /* no-op */ }
+
     if (!state.user) return;
     try {
-        const wishDoc = await getDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'));
+        const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
+        const wishDoc = await getDoc(wishRef);
         if (wishDoc.exists()) {
-            const cloudIds = wishDoc.data().ids || [];
-
-            // Merge existing session wishlist (if they favorited items before logging in) with cloud
-            // Need to merge arrays of objects/strings properly.
-            const merged = [...state.wishlist];
-            cloudIds.forEach(cloudId => {
-                const idToCheck = typeof cloudId === 'string' ? cloudId : cloudId.id;
-                const exists = merged.some(x => (typeof x === 'string' ? x : x.id) === idToCheck);
-                if (!exists) merged.push(cloudId);
-            });
-
-            state.wishlist = merged;
+            const cloudIds = normalizeWishlistEntries(wishDoc.data().ids || []);
+            state.wishlist = cloudIds;
+            localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
             updateWishlistBadge();
             updateAllWishlistUI();
-
-            // Re-sync merged data back to cloud immediately
-            setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e => console.error);
-
         } else {
-            // No cloud data. If they favorited items anonymously before logging in, push to new cloud account.
+            // First-time cloud doc: push current local wishlist.
             if (state.wishlist.length > 0) {
-                setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist }).catch(e => console.error);
+                state.wishlist = normalizeWishlistEntries(state.wishlist);
+                localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
+                setDoc(wishRef, { ids: state.wishlist }).catch(e => console.error);
             }
             updateAllWishlistUI();
         }
+        startWishlistRealtimeSync();
     } catch (err) { console.error("Wishlist Load Error"); }
+}
+
+function startWishlistRealtimeSync() {
+    if (!state.user) return;
+    const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
+    wishlistRealtimeUnsub?.();
+    wishlistRealtimeUnsub = onSnapshot(wishRef, (snap) => {
+        const raw = snap.exists() ? (snap.data().ids || []) : [];
+        const seen = new Set();
+        state.wishlist = raw.filter((entry) => {
+            const wishId = typeof entry === 'string' ? entry : entry?.id;
+            if (!wishId || seen.has(wishId)) return false;
+            seen.add(wishId);
+            return true;
+        }).map((entry) => (typeof entry === 'string' ? { id: entry } : entry));
+        localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
+        updateWishlistBadge();
+        updateAllWishlistUI();
+        if (document.getElementById('favorites-sidebar')?.classList.contains('open')) renderFavoritesSidebar();
+    }, (err) => {
+        console.error("Wishlist Realtime Sync Error", err);
+    });
+}
+
+async function syncWishlistToCurrentUserCloud() {
+    if (!state.user) return;
+    try {
+        await setDoc(
+            doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'),
+            { ids: state.wishlist }
+        );
+    } catch (err) {
+        console.error("Wishlist Cloud Sync From Local Error", err);
+    }
 }
 
 function updateAllWishlistUI() {
@@ -466,6 +568,8 @@ function updateWishlistBadge() {
             mobBadge.classList.add('hidden');
         }
     }
+
+    sharedNavMain?.refresh();
 }
 
 window.toggleWishlist = async (e, id) => {
@@ -509,9 +613,85 @@ window.toggleWishlist = async (e, id) => {
     if (document.getElementById('favorites-sidebar')?.classList.contains('open')) renderFavoritesSidebar();
 
     try {
+        const seen = new Set();
+        state.wishlist = state.wishlist.filter((entry) => {
+            const wishId = typeof entry === 'string' ? entry : entry?.id;
+            if (!wishId || seen.has(wishId)) return false;
+            seen.add(wishId);
+            return true;
+        }).map((entry) => (typeof entry === 'string' ? { id: entry } : entry));
+        localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
+        localStorage.setItem(WISHLIST_SYNC_PING_KEY, String(Date.now()));
+        wishlistChannel?.postMessage({ wishlist: state.wishlist, at: Date.now() });
+    } catch (_) { /* no-op */ }
+
+    try {
         await setDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist'), { ids: state.wishlist });
     } catch (err) { showToast("Sync Error"); }
 };
+
+window.addEventListener('storage', (event) => {
+    if (event.key !== WISHLIST_LOCAL_KEY && event.key !== WISHLIST_SYNC_PING_KEY) return;
+    try {
+        const raw = localStorage.getItem(WISHLIST_LOCAL_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        const seen = new Set();
+        state.wishlist = (parsed || []).filter((entry) => {
+            const wishId = typeof entry === 'string' ? entry : entry?.id;
+            if (!wishId || seen.has(wishId)) return false;
+            seen.add(wishId);
+            return true;
+        }).map((entry) => (typeof entry === 'string' ? { id: entry } : entry));
+    } catch {
+        state.wishlist = [];
+    }
+    updateWishlistBadge();
+    updateAllWishlistUI();
+    if (document.getElementById('favorites-sidebar')?.classList.contains('open')) renderFavoritesSidebar();
+    syncWishlistToCurrentUserCloud();
+});
+
+wishlistChannel?.addEventListener('message', (event) => {
+    try {
+        const parsed = event?.data?.wishlist || [];
+        const seen = new Set();
+        state.wishlist = (parsed || []).filter((entry) => {
+            const wishId = typeof entry === 'string' ? entry : entry?.id;
+            if (!wishId || seen.has(wishId)) return false;
+            seen.add(wishId);
+            return true;
+        }).map((entry) => (typeof entry === 'string' ? { id: entry } : entry));
+        localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
+    } catch {
+        state.wishlist = [];
+    }
+    updateWishlistBadge();
+    updateAllWishlistUI();
+    if (document.getElementById('favorites-sidebar')?.classList.contains('open')) renderFavoritesSidebar();
+    syncWishlistToCurrentUserCloud();
+});
+
+let wishlistPollSignature = '';
+setInterval(() => {
+    try {
+        const raw = localStorage.getItem(WISHLIST_LOCAL_KEY) || '[]';
+        if (raw === wishlistPollSignature) return;
+        wishlistPollSignature = raw;
+        const parsed = JSON.parse(raw);
+        const seen = new Set();
+        state.wishlist = (parsed || []).filter((entry) => {
+            const wishId = typeof entry === 'string' ? entry : entry?.id;
+            if (!wishId || seen.has(wishId)) return false;
+            seen.add(wishId);
+            return true;
+        }).map((entry) => (typeof entry === 'string' ? { id: entry } : entry));
+        updateWishlistBadge();
+        updateAllWishlistUI();
+        if (document.getElementById('favorites-sidebar')?.classList.contains('open')) renderFavoritesSidebar();
+    } catch (_) {
+        // no-op
+    }
+}, 700);
 
 window.renderDesktopMegaMenu = () => {
     const container = document.getElementById('desk-mega-menu');
@@ -686,6 +866,8 @@ async function refreshData(isNavigationOnly = false) {
 
             renderAnnouncementBar();
             renderDesktopMegaMenu();
+            initMainSharedNavbar();
+            sharedNavMain?.refresh();
             // Defer non-critical preloading until the first paint is done.
             if ('requestIdleCallback' in window) {
                 window.requestIdleCallback(() => window.preloadInitialBatch(), { timeout: 1200 });
@@ -2267,80 +2449,25 @@ window.closeCategoriesSidebar = () => {
 };
 
 window.renderCategoriesSidebar = () => {
-    const container = document.getElementById('sidebar-categories-list');
-    if (!container) return;
-
-    if (DATA.c.length === 0) {
-        container.innerHTML = `<p class="text-center py-20 text-[11px] text-gray-300 italic">No Categories</p>`;
-        return;
-    }
-
-    container.innerHTML = DATA.c.map(c => {
-        const productCount = DATA.p.filter(p => p.catId === c.id).length;
-        return `
-            <div class="sidebar-cat-item group" onclick="window.closeCategoriesSidebar(); applyFilter('${c.id}')">
-                <div class="sidebar-cat-img-box">
-                    <img src="${getOptimizedUrl(c.img, 100) || 'https://placehold.co/100x100?text=Icon'}" alt="${c.name}" ${getOptimizedUrl(c.img, 100) ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
-                </div>
-                <h4 class="sidebar-cat-name">${c.name}</h4>
-                <span class="sidebar-cat-count">${productCount}</span>
-            </div>
-        `;
-    }).join('');
+    renderCategoriesSidebarMainLike({
+        categories: DATA.c,
+        products: DATA.p,
+        getOptimizedUrl,
+        onSelectCategoryJs: "window.closeCategoriesSidebar();"
+    });
 };
 
 // End of sidebar functions (cleaned duplicates)
 
 
 window.renderFavoritesSidebar = () => {
-    const container = document.getElementById('sidebar-items');
-    if (!container) return;
-
-    if (state.wishlist.length === 0) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-20 text-center px-6">
-                <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                    <i class="fa-solid fa-heart text-gray-200 text-2xl"></i>
-                </div>
-                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Your list is empty</p>
-                <p class="text-[9px] text-gray-300 mt-2 leading-relaxed">Add items you love to find them here easily.</p>
-            </div>
-        `;
-        document.getElementById('sidebar-inquiry-btn')?.classList.add('hidden');
-        return;
-    }
-
-    document.getElementById('sidebar-inquiry-btn')?.classList.remove('hidden');
-
-    const items = state.wishlist.map(entry => {
-        const id = typeof entry === 'string' ? entry : entry.id;
-        const p = DATA.p.find(x => x.id === id);
-        if (!p) return null;
-
-        let displayP = { ...p };
-        let preSelect = null;
-        if (entry.var) {
-            displayP = { ...displayP, ...entry.var };
-            preSelect = entry.var;
-        }
-        return { ...displayP, originalId: id, preSelect };
-    }).filter(x => x);
-
-    container.innerHTML = items.map(p => `
-                                <div class="sidebar-item group" onclick="window.closeFavoritesSidebar(); viewDetail('${p.originalId}', false, ${p.preSelect ? JSON.stringify(p.preSelect) : 'null'})">
-                                    <div class="sidebar-img-box">
-                                        <img src="${getOptimizedUrl(p.img, 300)}" alt="${p.name}">
-                                    </div>
-                                    <div class="sidebar-info">
-                                        <h4 class="sidebar-item-name">${p.name}</h4>
-                                        <p class="sidebar-item-price">${p.price} AED</p>
-                                    </div>
-                                    <button onclick="event.stopPropagation(); window.toggleWishlist(null, '${p.originalId}')"
-                                        class="sidebar-remove-btn shadow-sm">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                </div>
-                                `).join('');
+    renderFavoritesSidebarMainLike({
+        wishlist: state.wishlist,
+        products: DATA.p,
+        getOptimizedUrl,
+        onItemClickJs: (p) => `window.closeFavoritesSidebar(); viewDetail('${p.originalId}', false, ${p.preSelect ? JSON.stringify(p.preSelect) : 'null'})`,
+        onRemoveClickJs: (p) => `window.toggleWishlist(null, '${p.originalId}')`
+    });
 };
 
 window.preloadProductImage = (id, priority = 'low') => {
@@ -3876,6 +4003,21 @@ window.handleUserAuthClick = () => {
     window.openAuthModal();
 };
 
+function autoOpenAuthFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auth') !== '1') return;
+    window.openAuthModal();
+    params.delete('auth');
+    const clean = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash || ''}`;
+    window.history.replaceState({}, '', clean);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', autoOpenAuthFromQuery);
+} else {
+    autoOpenAuthFromQuery();
+}
+
 window.toggleAuthMode = () => {
     state.authMode = state.authMode === 'login' ? 'register' : 'login';
     window.updateAuthUI();
@@ -3984,6 +4126,34 @@ window.handleSignOut = async () => {
     }
 };
 
+function refreshMainAuthUI() {
+    const u = state.authUser;
+    const navBtn = document.getElementById('nav-user-btn');
+    if (navBtn) navBtn.classList.toggle('text-black', !!u);
+    const accountName = document.getElementById('account-user-name');
+    const accountEmail = document.getElementById('account-user-email');
+    if (accountName) accountName.innerText = u?.displayName || "User";
+    if (accountEmail) accountEmail.innerText = u?.email || "";
+}
+
+initSharedAuth({
+    auth,
+    firebaseAuth: {
+        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
+        GoogleAuthProvider,
+        signInWithPopup,
+        sendPasswordResetEmail,
+        signOut,
+        updateProfile
+    },
+    getAuthUser: () => state.authUser,
+    getAuthMode: () => state.authMode,
+    setAuthMode: (mode) => { state.authMode = mode; },
+    updateAuthUserUI: refreshMainAuthUI,
+    showToast
+});
+
 // ============================================================================
 // CUSTOMER PASSWORD RESET FLOW
 // ============================================================================
@@ -4049,6 +4219,44 @@ window.handlePasswordResetFormSubmit = async (e) => {
         btn.innerHTML = originalText;
     }
 };
+
+function initMainSharedNavbar() {
+    const hasFavoritesUI = document.getElementById('favorites-sidebar') && document.getElementById('categories-sidebar');
+    if (!hasFavoritesUI) return;
+
+    const legacyBulkInquiry = window.sendBulkInquiry;
+    const legacyAccountClick = window.handleUserAuthClick;
+    const legacyFocusSearch = window.focusSearch;
+
+    if (!sharedNavMain) {
+        sharedNavMain = initSharedNavbar({
+            getWishlistIds: () => state.wishlist,
+            getProductById: (id) => DATA.p.find(p => p.id === id),
+            getCategories: () => DATA.c,
+            getProductUrl: (id) => getProductDetailUrl(id),
+            getCategoryImage: (item) => getOptimizedUrl(item?.img || item?.images?.[0], 140),
+            onWishlistToggle: (id) => window.toggleWishlist(null, id),
+            onCategorySelect: (catId) => window.applyFilter(catId),
+            onSearchFocus: () => {
+                if (typeof legacyFocusSearch === 'function') legacyFocusSearch();
+            },
+            onAccountClick: () => {
+                if (typeof legacyAccountClick === 'function') legacyAccountClick();
+            },
+            onBulkInquiry: () => {
+                if (typeof legacyBulkInquiry === 'function') legacyBulkInquiry();
+            },
+            renderFavorites: () => window.renderFavoritesSidebar?.(),
+            renderCategories: () => window.renderCategoriesSidebar?.(),
+            onSidebarStateChange: (isOpen) => {
+                document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+            },
+            showToast
+        });
+    } else {
+        sharedNavMain.refresh();
+    }
+}
 
 // Check for reset links on boot
 if (document.readyState === 'loading') {

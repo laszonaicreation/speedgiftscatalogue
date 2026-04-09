@@ -292,6 +292,13 @@ window.addEventListener('popstate', () => {
 const backBtn = document.getElementById('detail-back-btn');
 if (backBtn) {
     backBtn.addEventListener('click', () => {
+        // 1. If came from shop page, go back there (preserves filters/scroll)
+        const shopUrl = sessionStorage.getItem('speedgifts_shop_url');
+        if (shopUrl && shopUrl.includes('shop.html')) {
+            window.location.href = shopUrl;
+            return;
+        }
+        // 2. If came from index (home snapshot)
         try {
             const raw = sessionStorage.getItem(HOME_SNAPSHOT_KEY);
             if (raw) {
@@ -305,6 +312,7 @@ if (backBtn) {
         } catch {
             // ignore and fallback
         }
+        // 3. Browser back or fallback
         if (window.history.length > 1) {
             window.history.back();
         } else {

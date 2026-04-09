@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Shop All Products | Speed Gifts - Premium Gift Collection</title>
+    <meta name="description" content="Browse all premium gifts at Speed Gifts. Filter by category, search products, and find the perfect personalized gift for every occasion.">
+    <meta name="keywords" content="gifts, personalized gifts, shop gifts, UAE gifts, Speed Gifts">
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <link rel="canonical" href="https://speedgifts.ae/shop.html">
+
+    <!-- Same CSS as main page for identical card styling -->
+    <link rel="stylesheet" href="tailwind-compiled.css">
+    <link rel="stylesheet" href="style.min.css?v=2.6">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+
+    <!-- Cloudinary -->
+    <link rel="preconnect" href="https://res.cloudinary.com">
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
+
+    <link rel="stylesheet" href="shop.css?v=46">
+</head>
+<body>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+
+    <!-- Full Screen Image Preview -->
+    <div id="img-full-preview" onclick="closeFullScreen()">
+        <div class="close-preview-btn"><i class="fa-solid fa-xmark"></i></div>
+        <img id="full-preview-img" src="" alt="Product Preview">
+    </div>
+
+    <div id="shared-shell-root"></div>
+    <!-- SHOP CONTROLS (Filters + Sort) -->
+    <div class="shop-controls-bar" id="shop-controls">
+        <div class="controls-inner">
+            <!-- Category Chips -->
+            <div class="cat-chips-wrap" id="cat-chips-wrap">
+                <div class="cat-chips" id="cat-chips">
+                    <button class="cat-chip active" data-id="all" id="chip-all" onclick="applyFilter('all')">
+                        All
+                    </button>
+                    <!-- Dynamic chips injected here -->
+                </div>
+            </div>
+
+            <!-- Price Filter Only -->
+            <div class="controls-right">
+                <!-- Desktop heading row will carry the filter -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE SEARCH BAR (same top placement as main page mobile) -->
+    <div class="mobile-search-bar" id="mobile-search-bar">
+        <div class="mobile-search-shell">
+            <div class="mobile-search-inner">
+                <i class="fa-solid fa-magnifying-glass mob-search-icon"></i>
+                <input
+                    type="text"
+                    id="mob-shop-search"
+                    class="mob-search-input"
+                    placeholder="Search our collection..."
+                    autocomplete="off"
+                >
+                <button class="mob-search-clear hidden" id="mob-clear-btn" onclick="clearSearch()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mobile-category-visual" id="mobile-category-visual">
+        <div class="mobile-category-scroll" id="mobile-category-scroll"></div>
+        <div class="mobile-category-progress-wrap">
+            <div class="mobile-category-progress-track">
+                <div id="mobile-category-progress-bar" class="mobile-category-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <main class="shop-main" id="shop-main">
+
+        <!-- Active filter banner (shown when a category is selected) -->
+        <div class="filter-banner hidden" id="filter-banner">
+            <div class="filter-banner-inner">
+                <div>
+                    <h1 class="filter-title" id="filter-title">All Products</h1>
+                    <p class="filter-subtitle" id="filter-subtitle">Premium Curated Selection</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="shop-sort-row">
+            <div class="heading-actions">
+                <div class="price-filter-inline">
+                    <button type="button" id="price-filter-trigger" class="price-filter-trigger" onclick="togglePriceDropdown()">
+                        <span class="price-filter-text">Price</span>
+                        <i class="fa-solid fa-chevron-down price-filter-inline-icon"></i>
+                    </button>
+                    <div id="price-filter-dropdown" class="price-filter-dropdown hidden">
+                        <button type="button" class="price-option" onclick="selectPriceSort('default')">Default</button>
+                        <button type="button" class="price-option" onclick="selectPriceSort('price-asc')">Low to High</button>
+                        <button type="button" class="price-option" onclick="selectPriceSort('price-desc')">High to Low</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skeleton Loader -->
+        <div class="product-grid" id="skeleton-grid">
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card hidden-mobile"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+            <div class="skeleton-card hidden-mobile"><div class="skeleton-img"></div><div class="skeleton-line w80"></div><div class="skeleton-line w50"></div></div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="product-grid hidden" id="product-grid"></div>
+
+        <!-- Empty State -->
+        <div class="empty-state hidden" id="empty-state">
+            <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+            <h2 class="empty-title">No products found</h2>
+            <p class="empty-sub">Try a different search or category</p>
+            <button class="empty-reset-btn" onclick="applyFilter('all'); clearSearch();">Show All Products</button>
+        </div>
+
+        <!-- Load More -->
+        <div class="load-more-wrap hidden" id="load-more-wrap">
+            <button class="load-more-btn" id="load-more-btn" onclick="loadMore()">
+                Load More <i class="fa-solid fa-arrow-down"></i>
+            </button>
+        </div>
+
+    </main>
+
+    <footer class="bg-black text-white border-t border-gray-900" style="margin-top:6rem;padding-top:6rem;padding-bottom:3rem">
+        <div class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16" style="margin-bottom:4rem;gap:2.5rem">
+                <div class="lg:col-span-2">
+                    <h2 class="text-xl font-black uppercase tracking-[0.15em] mb-2 text-white" style="margin-bottom:.75rem">Speed Gifts</h2>
+                    <p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase mb-8" style="margin-bottom:2.5rem">Instant Gifting</p>
+                    <div>
+                        <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-4" style="margin-bottom:1.5rem">Follow Us</h4>
+                        <div class="flex gap-4">
+                            <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&amp;utm_source=qr" target="_blank" class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="https://wa.me/971561010387" target="_blank" class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i class="fa-brands fa-whatsapp"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6" style="margin-bottom:1.5rem">Quick Links</h4>
+                    <ul class="space-y-3 text-[12px] text-gray-400 font-medium">
+                        <li><a href="/" class="hover:text-white transition-colors block">Home</a></li>
+                        <li><a href="/?tab=shop" class="hover:text-white transition-colors block">Shop</a></li>
+                        <li><a href="/" class="hover:text-white transition-colors block">Categories</a></li>
+                        <li><a href="/contact.html" class="hover:text-white transition-colors block">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6" style="margin-bottom:1.5rem">Support</h4>
+                    <ul class="space-y-3 text-[12px] text-gray-400 font-medium">
+                        <li class="flex items-center gap-2"><img src="FAST DELIVERY.svg" style="filter:brightness(0) saturate(100%) invert(72%) sepia(10%) saturate(301%) hue-rotate(182deg) brightness(87%) contrast(85%);width:17px;height:17px" class="inline-block mr-1 opacity-70"> Fast Delivery</li>
+                        <li class="flex items-center gap-2"><img src="PREMIUM QUALITY ICON.svg" style="filter:brightness(0) saturate(100%) invert(72%) sepia(10%) saturate(301%) hue-rotate(182deg) brightness(87%) contrast(85%)" class="w-3.5 h-3.5 inline-block mr-1 opacity-70"> High Quality Products</li>
+                        <li class="flex items-center gap-2"><img src="custom design 01.svg" style="filter:brightness(0) saturate(100%) invert(72%) sepia(10%) saturate(301%) hue-rotate(182deg) brightness(87%) contrast(85%)" class="w-3.5 h-3.5 inline-block mr-1 opacity-70"> Custom Designs</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6" style="margin-bottom:1.5rem">Contact Us</h4>
+                    <ul class="space-y-4 text-[12px] text-gray-400 font-medium">
+                        <li><a href="https://wa.me/971561010387" target="_blank" class="hover:text-white transition-colors flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i class="fa-brands fa-whatsapp text-sm"></i></div><span>+971 56 101 0387</span></a></li>
+                        <li class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i class="fa-solid fa-location-dot text-sm text-gray-500"></i></div><span>Speed Gifts, WTC Mall, Abu Dhabi, UAE</span></li>
+                        <li><a href="mailto:speedgiftsuae@gmail.com" class="hover:text-white transition-colors flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i class="fa-regular fa-envelope text-sm"></i></div><span>speedgiftsuae@gmail.com</span></a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-500 uppercase border-t border-gray-900 pt-8 text-left md:text-center block" style="padding-top:2rem;margin-top:2rem">&copy; <span id="year"></span> Speed Gifts. All Rights Reserved.</div>
+        </div>
+    </footer>
+    <script>
+        const y = document.getElementById("year");
+        if (y) y.innerText = (new Date()).getFullYear();
+    </script>
+
+    <div class="hidden" id="mob-cat-list"></div>
+
+    <script type="module" src="shop.js?v=34"></script>
+</body>
+</html>
