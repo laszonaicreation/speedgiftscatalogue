@@ -59,6 +59,11 @@ const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
     ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
     : null;
 mountSharedShell('shop');
+
+function getDefaultCategoryId() {
+    const sorted = [...(DATA.categories || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+    return sorted[0]?.id || 'all';
+}
 function refreshAuthUI() {
     const navBtn = document.getElementById('nav-user-btn');
     if (navBtn) navBtn.classList.toggle('text-black', !!state.authUser);
@@ -103,6 +108,11 @@ async function fetchData() {
         const urlQ   = params.get('q');
         if (urlCat && urlCat !== 'all') state.filter = urlCat;
         if (urlQ)                       state.search  = urlQ;
+
+        // Better first load UX: start with all products unless URL/search forces a filter.
+        if ((!urlCat || urlCat === 'all') && !state.search) {
+            state.filter = 'all';
+        }
 
         await loadWishlist();
         renderCategoryChips();
@@ -351,7 +361,7 @@ function getFilteredSorted() {
     let list = DATA.products.filter(p => p.inStock !== false);
 
     // Category filter
-    if (state.filter !== 'all') {
+    if (!q && state.filter !== 'all') {
         list = list.filter(p => String(p.catId) === String(state.filter));
     }
 
@@ -386,12 +396,14 @@ function renderProducts(append = false) {
     const grid = document.getElementById('product-grid');
     const emptyEl = document.getElementById('empty-state');
     const loadMoreWrap = document.getElementById('load-more-wrap');
+    const loadMoreBtn = document.getElementById('load-more-btn');
     const resultsEl = document.getElementById('results-count');
 
     const all = getFilteredSorted();
     const total = all.length;
     const paged = all.slice(0, state.page * PAGE_SIZE);
     const hasMore = total > paged.length;
+    const canPaginate = total > PAGE_SIZE;
 
     if (resultsEl) resultsEl.textContent = `${total} item${total !== 1 ? 's' : ''}`;
 
@@ -419,10 +431,23 @@ function renderProducts(append = false) {
     });
 
     // Load more
-    if (hasMore) {
+    if (loadMoreBtn && canPaginate) {
+        if (hasMore) {
+            loadMoreBtn.innerHTML = `Load More <i class="fa-solid fa-arrow-down"></i>`;
+            loadMoreBtn.classList.remove('back-to-top');
+        } else {
+            loadMoreBtn.innerHTML = `Show Less <i class="fa-solid fa-arrow-up"></i>`;
+            loadMoreBtn.classList.add('back-to-top');
+        }
+    }
+
+    if (!canPaginate) {
+        loadMoreWrap.classList.add('hidden');
+    } else if (hasMore) {
         loadMoreWrap.classList.remove('hidden');
     } else {
-        loadMoreWrap.classList.add('hidden');
+        // Keep visible at list end to show "Show Less"
+        loadMoreWrap.classList.remove('hidden');
     }
 }
 
@@ -502,6 +527,14 @@ window.goToProduct = (id) => {
 
 // ─── Load More ────────────────────────────────────────────────────
 window.loadMore = () => {
+    const all = getFilteredSorted();
+    const loadedCount = state.page * PAGE_SIZE;
+    if (loadedCount >= all.length) {
+        state.page = 1;
+        renderProducts(false);
+        document.getElementById('shop-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
     state.page++;
     renderProducts(true);
 };
@@ -510,8 +543,17 @@ window.loadMore = () => {
 function renderCategoryChips() {
     const container = document.getElementById('cat-chips');
     if (!container) return;
+    container.innerHTML = '';
 
     const sorted = [...DATA.categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // Keep "All" chip first so users can always reset quickly.
+    const allBtn = document.createElement('button');
+    allBtn.className = 'cat-chip' + (state.filter === 'all' ? ' active' : '');
+    allBtn.dataset.id = 'all';
+    allBtn.textContent = 'All';
+    allBtn.onclick = () => applyFilter('all');
+    container.appendChild(allBtn);
 
     sorted.forEach(cat => {
         const btn = document.createElement('button');
@@ -531,8 +573,10 @@ function renderMobileVisualCategories() {
 
     const sorted = [...DATA.categories].sort((a, b) => (a.order || 0) - (b.order || 0));
     container.innerHTML = [
-        `<button class="category-item ${state.filter === 'all' ? 'active' : ''}" data-id="all" onclick="applyFilter('all')">
-            <div class="category-img-box"><img src="https://placehold.co/160x160?text=All" alt="All Products"></div>
+        `<button class="category-item category-item-all ${state.filter === 'all' ? 'active' : ''}" data-id="all" onclick="applyFilter('all')">
+            <div class="category-img-box">
+                <span class="category-all-text">ALL</span>
+            </div>
             <span class="category-label">All</span>
         </button>`,
         ...sorted.map(cat => {
@@ -575,7 +619,9 @@ function renderDesktopMegaMenu() {
                 .filter(Boolean);
 
             if (!mappedCats.length) {
-                return `<li class="mega-menu-li"><a class="mega-menu-link" onclick="applyFilter('all')">${menu.name || 'Menu'}</a></li>`;
+                const firstCatId = sortedCats[0]?.id || '';
+                const action = firstCatId ? `onclick="applyFilter('${firstCatId}')"` : '';
+                return `<li class="mega-menu-li"><a class="mega-menu-link" ${action}>${menu.name || 'Menu'}</a></li>`;
             }
 
             const cards = mappedCats.map(cat => {
@@ -648,15 +694,16 @@ function updateMobileCategoryProgress() {
 function renderMobCatList() {
     const container = document.getElementById('mob-cat-list');
     if (!container) return;
+    container.innerHTML = '';
 
+    const sorted = [...DATA.categories].sort((a, b) => (a.order || 0) - (b.order || 0));
     const allBtn = document.createElement('button');
     allBtn.className = 'mob-cat-item' + (state.filter === 'all' ? ' active' : '');
     allBtn.dataset.id = 'all';
-    allBtn.innerHTML = `<div class="mob-cat-item-dot"><i class="fa-solid fa-grid-2"></i></div><span>All Products</span>`;
+    allBtn.innerHTML = `<div class="mob-cat-item-dot"><i class="fa-solid fa-layer-group"></i></div><span>All</span>`;
     allBtn.onclick = () => { applyFilter('all'); syncMobCatUI(); };
     container.appendChild(allBtn);
 
-    const sorted = [...DATA.categories].sort((a, b) => (a.order || 0) - (b.order || 0));
     sorted.forEach(cat => {
         const btn = document.createElement('button');
         btn.className = 'mob-cat-item' + (state.filter === cat.id ? ' active' : '');
@@ -688,7 +735,10 @@ function renderFilterBanner() {
 
     banner.classList.remove('hidden');
 
-    if (state.filter !== 'all') {
+    if (state.search) {
+        if (titleEl) titleEl.textContent = 'Search Results';
+        if (subEl) subEl.textContent = 'Premium Curated Selection';
+    } else if (state.filter !== 'all') {
         const cat = DATA.categories.find(c => c.id === state.filter);
         if (titleEl) titleEl.textContent = cat ? cat.name : 'Products';
         if (subEl) subEl.textContent = 'Premium Curated Selection';

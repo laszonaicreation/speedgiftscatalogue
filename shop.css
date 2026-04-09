@@ -274,6 +274,33 @@ select { font-family: inherit; }
         padding: 0;
     }
 
+    /* "All" tile text inside square icon */
+    .mobile-category-scroll .category-item-all .category-img-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 79px;
+        height: 79px;
+        border-radius: 14px;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+    }
+
+    .mobile-category-scroll .category-item-all.active .category-img-box {
+        border: 2px solid #D4AF37;
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+    }
+
+    .mobile-category-scroll .category-item-all .category-all-text {
+        font-family: 'Poppins', sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1;
+        color: #9ca3af;
+    }
+
     .mobile-category-progress-wrap {
         padding: 10px 14px 0 14px;
         display: flex;
@@ -579,7 +606,7 @@ select { font-family: inherit; }
 
 .filter-title {
     font-family: 'Poppins', sans-serif;
-    font-size: clamp(22px, 4vw, 36px);
+    font-size: clamp(26px, 5vw, 44px);
     font-weight: 800;
     letter-spacing: -0.02em;
     color: var(--black);
@@ -853,9 +880,9 @@ select { font-family: inherit; }
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: transparent;
-    border: 2px solid var(--gray-200);
-    color: var(--black);
+    background: #111111;
+    border: 2px solid #111111;
+    color: #ffffff;
     padding: 14px 36px;
     border-radius: 999px;
     font-size: 11px;
@@ -864,9 +891,17 @@ select { font-family: inherit; }
     text-transform: uppercase;
     transition: all 0.25s;
 }
-.load-more-btn:hover { background: var(--black); border-color: var(--black); color: #fff; transform: translateY(-2px); }
+.load-more-btn:hover { background: #000; border-color: #000; color: #fff; transform: translateY(-2px); }
 .load-more-btn i { transition: transform 0.3s; }
 .load-more-btn:hover i { transform: translateY(3px); }
+
+.load-more-btn.back-to-top i {
+    transform: none;
+}
+
+.load-more-btn.back-to-top:hover i {
+    transform: translateY(-3px);
+}
 
 /* =============================================
    MOBILE SEARCH BAR
