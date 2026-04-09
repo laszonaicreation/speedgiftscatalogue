@@ -102,6 +102,11 @@
 
         <div class="shop-sort-row">
             <div class="heading-actions">
+                <div class="desktop-select-actions" id="shop-select-actions" style="display:none;">
+                    <button id="select-all-btn" onclick="toggleSelectAll()" class="shop-select-all-btn">
+                        Select All Items
+                    </button>
+                </div>
                 <div class="price-filter-inline">
                     <button type="button" id="price-filter-trigger" class="price-filter-trigger" onclick="togglePriceDropdown()">
                         <span class="price-filter-text">Price</span>
@@ -148,6 +153,17 @@
             </button>
         </div>
 
+        <div id="selection-bar">
+            <span class="selection-count" id="selected-count">0 items</span>
+            <div class="selection-divider"></div>
+            <div class="selection-actions">
+                <button onclick="shareSelection()">Copy Share Link</button>
+            </div>
+            <button onclick="clearSelection()" class="selection-close-btn">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
     </main>
 
     <footer class="bg-black text-white border-t border-gray-900" style="margin-top:6rem;padding-top:6rem;padding-bottom:3rem">
@@ -168,7 +184,7 @@
                     <h4 class="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-6" style="margin-bottom:1.5rem">Quick Links</h4>
                     <ul class="space-y-3 text-[12px] text-gray-400 font-medium">
                         <li><a href="/" class="hover:text-white transition-colors block">Home</a></li>
-                        <li><a href="/?tab=shop" class="hover:text-white transition-colors block">Shop</a></li>
+                        <li><a href="/shop.html" class="hover:text-white transition-colors block">Shop</a></li>
                         <li><a href="/" class="hover:text-white transition-colors block">Categories</a></li>
                         <li><a href="/contact.html" class="hover:text-white transition-colors block">Contact</a></li>
                     </ul>

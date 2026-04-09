@@ -100,7 +100,7 @@
 
 
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-50">
-        <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between"
+        <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between relative"
             style="padding-left: clamp(20px, 5vw, 96px); padding-right: clamp(20px, 5vw, 96px);">
             <div class="w-1/4 md:w-auto flex items-center gap-2">
                 <button id="admin-entry-btn"
@@ -114,8 +114,9 @@
                     <i class="fa-solid fa-xmark text-[10px]"></i>
                 </button>
                 <h1 class="brand-logo cursor-pointer select-none hidden md:block" id="desk-logo"
+                    style="position:absolute; left:50%; transform:translateX(-50%); margin:0; z-index:1;"
                     onclick="handleLogoClick()">
-                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-8 md:h-10 ml-2 w-auto inline-block">
+                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-8 md:h-10 w-auto inline-block">
                 </h1>
             </div>
             <div class="flex-1 md:hidden text-center flex justify-center items-center">
@@ -336,14 +337,6 @@
                     Premium Curated Selection
                 </p>
             </div>
-            <!-- Admin Button - Absolute via inline styles for guaranteed right-alignment -->
-            <div class="hidden md:flex desktop-select-actions items-center"
-                style="position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);">
-                <button id="select-all-btn" onclick="toggleSelectAll()"
-                    class="text-[8.5px] font-black uppercase tracking-widest py-2 px-4 rounded-full border border-gray-100 bg-gray-50 hover:bg-black hover:text-white transition-all text-gray-400 shadow-sm">
-                    Select All Visible
-                </button>
-            </div>
         </div>
 
         <!-- PRODUCT GRID -->
@@ -353,18 +346,6 @@
 
         <!-- CATEGORY SPOTLIGHT SECTION (rendered by JS) -->
         <div id="spotlight-section" class="hidden mt-16 md:mt-24"></div>
-    </div>
-
-    <div id="selection-bar">
-        <span class="selection-count" id="selected-count">0 items</span>
-        <div class="h-4 w-px bg-white/20"></div>
-        <div class="flex gap-2">
-            <button onclick="shareSelection()"
-                class="bg-white/10 text-white px-3 py-2 rounded-full border border-white/10 whitespace-nowrap">Copy
-                link</button>
-        </div>
-        <button onclick="clearSelection()" class="text-white opacity-40 hover:opacity-100 text-sm ml-1 pr-1"><i
-                class="fa-solid fa-xmark"></i></button>
     </div>
 
     <!-- Admin Panel: loaded dynamically when admin opens panel -->
@@ -407,7 +388,7 @@
                         style="margin-bottom: 1.5rem;">Quick Links</h4>
                     <ul class="space-y-3 text-[12px] text-gray-400 font-medium">
                         <li><a href="/" class="hover:text-white transition-colors block">Home</a></li>
-                        <li><a href="/?tab=shop" class="hover:text-white transition-colors block">Shop</a></li>
+                        <li><a href="/shop.html" class="hover:text-white transition-colors block">Shop</a></li>
                         <li><a href="/" class="hover:text-white transition-colors block">Categories</a></li>
                         <li><a href="/contact.html" class="hover:text-white transition-colors block">Contact</a></li>
                     </ul>

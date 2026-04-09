@@ -332,42 +332,6 @@ img[src=""] {
     transform: translateY(-2px);
 }
 
-@media (max-width: 767px) {
-    .select-btn {
-        display: none !important;
-    }
-
-    #selection-bar {
-        display: none !important;
-    }
-
-    .desktop-select-actions {
-        display: none !important;
-    }
-}
-
-.select-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 26px;
-    height: 26px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 24;
-    border: 1px solid #eee;
-    transition: 0.3s;
-}
-
-.selected .select-btn {
-    background: var(--accent-black);
-    color: #fff;
-    border-color: var(--accent-black);
-}
-
 /* WISHLIST BUTTON */
 .wish-btn {
     position: absolute;
@@ -385,13 +349,6 @@ img[src=""] {
     transition: 0.3s;
     color: #ccc;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-@media (max-width: 767px) {
-    .wish-btn~.select-btn {
-        top: 42px;
-        /* Shift tick down only on mobile if heart exists */
-    }
 }
 
 .wish-active .wish-btn {
@@ -418,60 +375,6 @@ img[src=""] {
     .product-card.wish-active .wish-btn {
         color: var(--wishlist-red) !important;
     }
-}
-
-/* SELECTION BAR - Compact Centered */
-#selection-bar {
-    position: fixed;
-    bottom: 15px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent-black);
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 100px;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    z-index: 1000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    width: auto;
-    min-width: 180px;
-    max-width: 95vw;
-    backdrop-filter: blur(15px);
-}
-
-@keyframes slideUpCenter {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(15px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-}
-
-.animate-selection {
-    animation: slideUpCenter 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-}
-
-.selection-count {
-    font-size: 8.5px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding-left: 4px;
-    white-space: nowrap;
-}
-
-#selection-bar button {
-    font-size: 8px !important;
-    padding: 4px 10px !important;
-    font-weight: 700;
-    letter-spacing: 0.03em;
 }
 
 /* Admin UI Fixes */

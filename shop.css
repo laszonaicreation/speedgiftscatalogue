@@ -643,6 +643,25 @@ select { font-family: inherit; }
     z-index: 540;
 }
 
+.shop-select-all-btn {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.shop-select-all-btn:hover {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff;
+}
+
 @media (max-width: 767px) {
     .filter-banner {
         margin-top: 19px;
@@ -717,6 +736,29 @@ select { font-family: inherit; }
 }
 
 .product-grid.hidden { display: none; }
+
+.select-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 24;
+    border: 1px solid #eee;
+    color: #6b7280;
+    transition: 0.3s;
+}
+
+.product-card.selected .select-btn {
+    background: #111111;
+    color: #fff;
+    border-color: #111111;
+}
 
 /* Product cards are styled by style.min.css (same as index.html) — no overrides needed */
 /* Hard-sync typography with main page to avoid spacing mismatch */
@@ -903,6 +945,59 @@ select { font-family: inherit; }
     transform: translateY(-3px);
 }
 
+#selection-bar {
+    position: fixed;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111111;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 100px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    min-width: 180px;
+    max-width: 95vw;
+}
+
+.selection-count {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.selection-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.selection-actions button {
+    font-size: 9px;
+    padding: 5px 10px;
+    font-weight: 700;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.selection-close-btn {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    padding: 0 4px;
+}
+
+.selection-close-btn:hover {
+    color: #fff;
+}
+
 /* =============================================
    MOBILE SEARCH BAR
    ============================================= */
@@ -915,6 +1010,14 @@ select { font-family: inherit; }
     display: block;
 }
 @media (min-width: 768px) { .mobile-search-bar { display: none; } }
+
+@media (max-width: 767px) {
+    .select-btn,
+    #selection-bar,
+    .desktop-select-actions {
+        display: none !important;
+    }
+}
 
 .mobile-search-shell {
     max-width: 42rem;

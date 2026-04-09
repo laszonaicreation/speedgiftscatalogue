@@ -25,12 +25,16 @@ export function mountSharedShell(page = 'shop') {
         : `<div id="desktop-mega-menu-wrapper" class="hidden md:block w-full border-t border-gray-50 bg-white/95 backdrop-blur-xl transition-all duration-300">
                 <ul id="desk-mega-menu" class="max-w-[1536px] mx-auto flex items-center justify-center gap-8 xl:gap-12 h-12" style="padding-left:clamp(20px,5vw,96px);padding-right:clamp(20px,5vw,96px)"></ul>
            </div>`;
+    const desktopBackIconHtml = page === 'shop'
+        ? `<a href="index.html" id="nav-home-back-icon" class="hidden md:flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-50 transition-all" style="position:absolute;left:clamp(20px,5vw,96px);top:50%;transform:translateY(-50%);z-index:2;color:#9ca3af;" aria-label="Home"><i class="fa-solid fa-house text-[14px]" style="color:#9ca3af;"></i></a>`
+        : '';
 
     root.innerHTML = `
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-50" id="shop-header">
-        <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between" style="padding-left:clamp(20px,5vw,96px);padding-right:clamp(20px,5vw,96px)">
+        <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between relative" style="padding-left:clamp(20px,5vw,96px);padding-right:clamp(20px,5vw,96px)">
             <div class="w-1/4 md:w-auto flex items-center gap-2">
-                <h1 class="brand-logo cursor-pointer select-none hidden md:block" id="desk-logo"><a href="index.html"><img src="img/speed-logo.svg" alt="Speed Gifts" class="h-8 md:h-10 ml-2 w-auto inline-block"></a></h1>
+                ${desktopBackIconHtml}
+                <h1 class="brand-logo cursor-pointer select-none hidden md:block" id="desk-logo" style="position:absolute;left:50%;transform:translateX(-50%);margin:0;z-index:1;"><a href="index.html"><img src="img/speed-logo.svg" alt="Speed Gifts" class="h-8 md:h-10 w-auto inline-block"></a></h1>
             </div>
             <div class="flex-1 md:hidden text-center flex justify-center items-center">
                 <h1 class="brand-logo cursor-pointer select-none" id="mob-logo"><a href="index.html"><img src="img/speed-logo.svg" alt="Speed Gifts" class="h-7 w-auto inline-block"></a></h1>

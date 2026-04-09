@@ -51,6 +51,20 @@ const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
     ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
     : null;
 
+// Legacy route support: old links used /?tab=shop.
+// Redirect them to the faster dedicated shop page while preserving filter/search/share params.
+(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') !== 'shop') return;
+    const forward = new URLSearchParams();
+    ['c', 'q', 's'].forEach((key) => {
+        const val = params.get(key);
+        if (val) forward.set(key, val);
+    });
+    const target = `shop.html${forward.toString() ? `?${forward.toString()}` : ''}`;
+    window.location.replace(target);
+})();
+
 function setupHomeSharedShell() {
     // Home already has its own full shell markup in index.html.
     // Avoid mounting shared shell here to prevent duplicate/invalid DOM state.
@@ -939,16 +953,6 @@ async function refreshData(isNavigationOnly = false) {
         if (!isAdminOpen) {
             if (prodId && DATA.p.length > 0) {
                 viewDetail(prodId, true);
-            } else if (shareId) {
-                try {
-                    const selDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'selections', shareId));
-                    if (selDoc.exists()) {
-                        state.selectionId = shareId;
-                        state.selected = selDoc.data().ids;
-                    }
-                } catch (e) { console.error("Selection sync failed"); }
-                renderHome();
-                applyHomeSnapshotIfAny();
             } else {
                 renderHome();
                 applyHomeSnapshotIfAny();
@@ -1087,19 +1091,8 @@ window.goBackToHome = (forceReset = false) => {
 };
 
 window.toggleSelectAll = () => {
-    if (state.selectionId) return;
-    const stockFilter = (items) => items.filter(p => p.inStock !== false);
-    let currentVisible = [];
-    if (state.filter !== 'all') currentVisible = stockFilter(DATA.p.filter(p => p.catId === state.filter));
-    else currentVisible = stockFilter(DATA.p);
-    const visibleIds = currentVisible.map(p => p.id);
-    const allVisibleSelected = visibleIds.every(id => state.selected.includes(id));
-    if (allVisibleSelected) state.selected = state.selected.filter(id => !visibleIds.includes(id));
-    else state.selected = Array.from(new Set([...state.selected, ...visibleIds]));
-
-    // Flag to prevent the jump when selecting items
-    state.skipScroll = true;
-    renderHome();
+    // Selection feature is moved to shop page only.
+    window.location.href = 'shop.html';
 };
 
 // Detect how many columns the product grid currently shows
@@ -1323,13 +1316,13 @@ function renderHome() {
                 const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
 
                 return `
-                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" 
+                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" 
                      onmouseenter="window.preloadProductImage('${p.id}')"
                      onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
                     <div class="img-container mb-4 relative">
                         ${badgeHtml}
                         <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                        ${(!state.selectionId && isAdmin) ? `<div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
+                        
                         <img src="${getOptimizedUrl(displayP.img, 600)}" 
                              class="${idx < 4 ? 'no-animation' : ''}"
                              ${idx < INITIAL_EAGER_IMAGES ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
@@ -1487,16 +1480,10 @@ function renderHome() {
 // NEW: updateSelectionBar logic explicitly added to prevent ReferenceError
 window.updateSelectionBar = () => {
     const bar = document.getElementById('selection-bar');
-    const count = document.getElementById('selected-count');
     if (!bar) return;
-    if (state.selected.length > 0 && !state.selectionId) {
-        bar.style.display = 'flex';
-        bar.classList.add('animate-selection');
-        if (count) count.innerText = `${state.selected.length} items`;
-    } else {
-        bar.style.display = 'none';
-        bar.classList.remove('animate-selection');
-    }
+    // Main page no longer uses selection share UI.
+    bar.style.display = 'none';
+    bar.classList.remove('animate-selection');
 };
 
 function cacheDetailPayload(id) {
@@ -1922,36 +1909,15 @@ window.importData = (event) => {
 };
 
 window.toggleSelect = (e, id) => {
-    e.stopPropagation();
-    const card = e.target.closest('.product-card');
-    if (state.selected.includes(id)) {
-        state.selected = state.selected.filter(x => x !== id);
-        if (card) card.classList.remove('selected');
-    } else {
-        state.selected.push(id);
-        if (card) card.classList.add('selected');
-    }
-    updateSelectionBar();
+    if (e) e.stopPropagation();
+    // Selection feature is moved to shop page only.
 };
 
-window.clearSelection = () => { state.selected = []; state.selectionId = null; state.skipScroll = true; renderHome(); };
+window.clearSelection = () => {};
 
 window.shareSelection = async () => {
-    if (state.selected.length === 0) return;
-    showToast("Generating link...");
-    try {
-        const docRef = await addDoc(shareCol, { ids: state.selected, createdAt: Date.now() });
-        const shareUrl = `${window.location.origin}${window.location.pathname}?s=${docRef.id}`;
-        const textArea = document.createElement("textarea");
-        if (!textArea) return;
-        textArea.value = shareUrl;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        showToast("Secret Link Copied!");
-    }
-    catch (e) { showToast("Sharing failed."); }
+    // Selection feature is moved to shop page only.
+    window.location.href = 'shop.html';
 };
 
 window.sendBulkInquiry = () => {
@@ -2050,18 +2016,18 @@ window.handleCategoryRowScroll = (el) => {
 
 window.applyFilter = (id, e) => {
     if (e) e.stopPropagation();
-    state.filter = id;
-    state.search = '';
-    state.scrollPos = 0;
-
-    // Only push state if not already in that filter
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('c') !== id) {
-        safePushState({ c: id === 'all' ? null : id, q: null, p: null });
-    }
-
-    renderHome();
+    const params = new URLSearchParams();
+    if (id && id !== 'all') params.set('c', id);
+    const target = `shop.html${params.toString() ? `?${params.toString()}` : ''}`;
+    window.location.href = target;
 };
+
+function openShopWithSearch(query) {
+    const q = (query || '').trim();
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    window.location.href = `shop.html${params.toString() ? `?${params.toString()}` : ''}`;
+}
 window.showSearchSuggestions = (show) => {
     // Both desktop and mobile search tags are scoped by IDs globally now
     // the desktop search tags might have a different ID, but mobile is 'search-tags'
@@ -3828,13 +3794,13 @@ function renderSearchResults() {
             gridContent = visibleProducts.map((p, idx) => {
                 const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
                 return `
-                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${state.selected.includes(p.id) ? 'selected' : ''} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}"
+                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}"
                      onmouseenter="window.preloadProductImage('${p.id}')"
                      onclick="viewDetail('${p.id}', false, null)">
                     <div class="img-container mb-4 relative">
                         ${badgeHtml}
                         <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                        <div class="select-btn shadow-sm" onclick="toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>
+                        
                         <img src="${getOptimizedUrl(p.img, 600)}"
                              class="${idx < 4 ? 'no-animation' : ''}"
                             ${idx < INITIAL_EAGER_IMAGES ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
@@ -3937,6 +3903,11 @@ function initSearchListeners() {
         mobileSearch.addEventListener('input', (e) => {
             window.applyCustomerSearch(e.target.value);
         });
+        mobileSearch.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            openShopWithSearch(e.target.value);
+        });
         mobileSearch.addEventListener('focus', () => {
             enterSearchMode();
         });
@@ -3953,6 +3924,11 @@ function initSearchListeners() {
     if (desktopSearch) {
         desktopSearch.addEventListener('input', (e) => {
             window.applyCustomerSearch(e.target.value);
+        });
+        desktopSearch.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            openShopWithSearch(e.target.value);
         });
         desktopSearch.addEventListener('focus', () => {
             enterSearchMode();

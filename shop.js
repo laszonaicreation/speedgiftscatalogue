@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    collection, getDocs, doc, getDoc, setDoc, onSnapshot
+    collection, getDocs, doc, getDoc, setDoc, onSnapshot, addDoc
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import {
     getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword,
@@ -33,6 +33,7 @@ const appId = firebaseConfig.projectId;
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol  = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 const megaCol = collection(db, 'artifacts', appId, 'public', 'data', 'mega_menus');
+const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 
 // ─── State ───────────────────────────────────────────────────────
 const INTERNAL_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'];
@@ -47,6 +48,8 @@ const state  = {
     sort: 'default',
     search: '',
     page: 1,
+    selected: [],
+    selectionId: null,
     viewMode: 'normal',  // 'normal' | 'compact'
     wishlist: [],
     user: null,
@@ -106,12 +109,28 @@ async function fetchData() {
         const params = new URLSearchParams(window.location.search);
         const urlCat = params.get('c');
         const urlQ   = params.get('q');
+        const shareId = params.get('s');
         if (urlCat && urlCat !== 'all') state.filter = urlCat;
         if (urlQ)                       state.search  = urlQ;
 
         // Better first load UX: start with all products unless URL/search forces a filter.
         if ((!urlCat || urlCat === 'all') && !state.search) {
             state.filter = 'all';
+        }
+
+        if (shareId) {
+            try {
+                const selDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'selections', shareId));
+                if (selDoc.exists()) {
+                    state.selectionId = shareId;
+                    state.selected = Array.isArray(selDoc.data().ids) ? selDoc.data().ids : [];
+                    state.filter = 'all';
+                    state.search = '';
+                    state.page = 1;
+                }
+            } catch (err) {
+                console.error('[ShopPage] selection load error:', err);
+            }
         }
 
         await loadWishlist();
@@ -144,6 +163,7 @@ async function fetchData() {
         hideSkeleton();
         bindSearchInputs();
         setMobileCategorySearchVisibility();
+        updateSelectionBar();
     } catch (err) {
         console.error('[ShopPage] fetchData error:', err);
         hideSkeleton();
@@ -313,6 +333,7 @@ function renderCategoriesSidebarLikeMain() {
 
 // ─── Filter / Sort / Search ───────────────────────────────────────
 window.applyFilter = (catId) => {
+    if (state.selectionId) return;
     state.filter = catId;
     state.page = 1;
     updateURL();
@@ -358,7 +379,13 @@ window.selectPriceSort = (val) => {
 
 function getFilteredSorted() {
     const q = state.search.trim().toLowerCase();
-    let list = DATA.products.filter(p => p.inStock !== false);
+    let list;
+    if (state.selectionId && !q) {
+        const selectedSet = new Set(state.selected || []);
+        list = DATA.products.filter(p => selectedSet.has(p.id));
+    } else {
+        list = DATA.products.filter(p => p.inStock !== false);
+    }
 
     // Category filter
     if (!q && state.filter !== 'all') {
@@ -411,6 +438,8 @@ function renderProducts(append = false) {
         grid.classList.add('hidden');
         emptyEl.classList.remove('hidden');
         if (loadMoreWrap) loadMoreWrap.classList.add('hidden');
+        updateSelectAllButtonText(all);
+        updateSelectionBar();
         return;
     }
 
@@ -429,6 +458,9 @@ function renderProducts(append = false) {
         const card = buildCard(p, append ? startIdx + i : i);
         grid.appendChild(card);
     });
+
+    updateSelectAllButtonText(all);
+    updateSelectionBar();
 
     // Load more
     if (loadMoreBtn && canPaginate) {
@@ -479,7 +511,7 @@ function buildCard(p, index) {
     const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${badgeLabels[p.badge] || p.badge}</div>` : '';
 
     const card = document.createElement('div');
-    card.className = `product-card group fade-in cursor-pointer ${isWish ? 'wish-active' : ''}`;
+    card.className = `product-card group fade-in cursor-pointer ${isWish ? 'wish-active' : ''} ${state.selected.includes(p.id) ? 'selected' : ''}`;
     card.dataset.id = p.id;
     card.style.animationDelay = `${Math.min(index * 0.04, 0.5)}s`;
     card.onclick = () => goToProduct(p.id);
@@ -490,6 +522,7 @@ function buildCard(p, index) {
             <div class="wish-btn shadow-sm hidden-desktop" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
                 <i class="fa-solid fa-heart text-[10px]"></i>
             </div>
+            ${canUseSelectionControls() ? `<div class="select-btn shadow-sm" onclick="event.stopPropagation(); toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
             ${imgUrl
                 ? `<img
                     src="${imgUrl}"
@@ -516,6 +549,93 @@ function buildCard(p, index) {
 
     return card;
 }
+
+function canUseSelectionControls() {
+    return !!state.authUser && !state.selectionId;
+}
+
+function getVisibleSelectionIds(filteredList = null) {
+    const all = filteredList || getFilteredSorted();
+    return all.map(p => p.id);
+}
+
+function updateSelectAllButtonText(filteredList = null) {
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const actionsWrap = document.getElementById('shop-select-actions');
+    if (!selectAllBtn || !actionsWrap) return;
+
+    if (!canUseSelectionControls()) {
+        actionsWrap.style.display = 'none';
+        return;
+    }
+
+    actionsWrap.style.display = '';
+    const visibleIds = getVisibleSelectionIds(filteredList);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
+    selectAllBtn.innerText = allVisibleSelected ? 'Clear Selection' : 'Select All Items';
+}
+
+window.toggleSelect = (e, id) => {
+    e.stopPropagation();
+    if (!canUseSelectionControls()) return;
+    const idx = state.selected.indexOf(id);
+    if (idx >= 0) state.selected.splice(idx, 1);
+    else state.selected.push(id);
+    renderProducts();
+};
+
+window.toggleSelectAll = () => {
+    if (!canUseSelectionControls()) return;
+    const visibleIds = getVisibleSelectionIds();
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
+    if (allVisibleSelected) {
+        state.selected = state.selected.filter(id => !visibleIds.includes(id));
+    } else {
+        state.selected = Array.from(new Set([...state.selected, ...visibleIds]));
+    }
+    renderProducts();
+};
+
+function updateSelectionBar() {
+    const bar = document.getElementById('selection-bar');
+    const count = document.getElementById('selected-count');
+    if (!bar || !count) return;
+    if (canUseSelectionControls() && state.selected.length > 0) {
+        count.innerText = `${state.selected.length} items`;
+        bar.style.display = 'flex';
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+window.clearSelection = () => {
+    state.selected = [];
+    renderProducts();
+};
+
+window.shareSelection = async () => {
+    if (!canUseSelectionControls()) return;
+    if (state.selected.length === 0) return;
+    showToast('Preparing share link...');
+    try {
+        const docRef = await addDoc(shareCol, { ids: state.selected, createdAt: Date.now() });
+        const shareUrl = `${window.location.origin}${window.location.pathname}?s=${docRef.id}`;
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(shareUrl);
+        } else {
+            const textArea = document.createElement('textarea');
+            textArea.value = shareUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+        showToast('Share link copied');
+    } catch (err) {
+        console.error('[ShopPage] share selection error:', err);
+        showToast('Failed to create share link');
+    }
+};
 
 
 window.goToProduct = (id) => {
@@ -613,7 +733,13 @@ function renderDesktopMegaMenu() {
 
     // Main-page style: multiple top menu items from mega_menus with dropdown cards.
     if (sortedMega.length) {
-        container.innerHTML = sortedMega.map(menu => {
+        const allMenuItem = `
+            <li class="mega-menu-li">
+                <a class="mega-menu-link" onclick="applyFilter('all')">All Products</a>
+            </li>
+        `;
+
+        const dynamicItems = sortedMega.map(menu => {
             const mappedCats = (menu.categoryIds || [])
                 .map(catId => sortedCats.find(c => c.id === catId))
                 .filter(Boolean);
@@ -644,11 +770,13 @@ function renderDesktopMegaMenu() {
                 </li>
             `;
         }).join('');
+
+        container.innerHTML = allMenuItem + dynamicItems;
         return;
     }
 
     // Fallback if mega menus are not configured: show direct category links.
-    container.innerHTML = sortedCats
+    container.innerHTML = `<li class="mega-menu-li"><a class="mega-menu-link" onclick="applyFilter('all')">All Products</a></li>` + sortedCats
         .map(cat => `<li class="mega-menu-li"><a class="mega-menu-link" onclick="applyFilter('${cat.id}')">${cat.name || 'Category'}</a></li>`)
         .join('');
 }
@@ -738,6 +866,9 @@ function renderFilterBanner() {
     if (state.search) {
         if (titleEl) titleEl.textContent = 'Search Results';
         if (subEl) subEl.textContent = 'Premium Curated Selection';
+    } else if (state.selectionId) {
+        if (titleEl) titleEl.textContent = 'Shared Selection';
+        if (subEl) subEl.textContent = 'Curated items shared with you';
     } else if (state.filter !== 'all') {
         const cat = DATA.categories.find(c => c.id === state.filter);
         if (titleEl) titleEl.textContent = cat ? cat.name : 'Products';
@@ -755,6 +886,10 @@ function setMobileCategorySearchVisibility() {
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     if (!isMobile) {
         section.classList.remove('search-hide');
+        return;
+    }
+    if (state.selectionId) {
+        section.classList.add('search-hide');
         return;
     }
     const hasSearch = !!state.search?.trim();
@@ -845,6 +980,7 @@ window.focusMobSearch = () => {
 // ─── URL sync ─────────────────────────────────────────────────────
 function updateURL() {
     const params = new URLSearchParams();
+    if (state.selectionId)       params.set('s', state.selectionId);
     if (state.filter !== 'all')  params.set('c', state.filter);
     if (state.search)            params.set('q', state.search);
     const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
