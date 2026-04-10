@@ -1,4 +1,6 @@
-﻿// ============================================================================
+﻿import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
+
+// ============================================================================
 // app-admin.js — Admin Panel (Lazy Loaded)
 // Loaded ONLY when admin clicks the admin button. Normal users never download this.
 // Shared context (db, auth, state, DATA, helpers) passed via initAdmin()
@@ -7,7 +9,7 @@
 export function initAdmin(ctx) {
     const {
         db, auth, state, DATA, appId,
-        prodCol, catCol, shareCol, sliderCol, megaCol,
+        prodCol, catCol, sliderCol, megaCol,
         popupSettingsCol, landingSettingsCol, leadsCol,
         doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs,
         collection, increment, writeBatch, arrayUnion,
@@ -15,6 +17,9 @@ export function initAdmin(ctx) {
         refreshData, renderHome, getAuth,
         getColumnsCount
     } = ctx;
+    const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
+    if (!Array.isArray(state.selected)) state.selected = [];
+    if (typeof state.selectionId === 'undefined') state.selectionId = null;
 window.saveProduct = async () => {
     const id = document.getElementById('edit-id')?.value;
     const btn = document.getElementById('p-save-btn');
@@ -433,15 +438,13 @@ window.shareSelection = async () => {
     if (state.selected.length === 0) return;
     showToast("Generating link...");
     try {
-        const docRef = await addDoc(shareCol, { ids: state.selected, createdAt: Date.now() });
-        const shareUrl = `${window.location.origin}${window.location.pathname}?s=${docRef.id}`;
-        const textArea = document.createElement("textarea");
-        if (!textArea) return;
-        textArea.value = shareUrl;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
+        const shareUrl = await createSelectionLink({
+            addDoc,
+            shareCol,
+            ids: state.selected,
+            baseUrl: `${window.location.origin}${window.location.pathname}`
+        });
+        await copyTextToClipboard(shareUrl);
         showToast("Secret Link Copied!");
     }
     catch (e) { showToast("Sharing failed."); }

@@ -26,7 +26,6 @@ const appId = firebaseConfig.projectId;
 
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
-const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
 const megaCol = collection(db, 'artifacts', appId, 'public', 'data', 'mega_menus');
 const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'popupSettings');
@@ -34,7 +33,7 @@ const landingSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
 let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, homeSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
-let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, selected: [], wishlist: [], cart: [], selectionId: null, scrollPos: 0, currentVar: null, visibleChunks: 1, authMode: 'login' };
+let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, wishlist: [], cart: [], scrollPos: 0, currentVar: null, visibleChunks: 1, authMode: 'login' };
 let sharedNavMain = null;
 let wishlistRealtimeUnsub = null;
 const PAGE_SIZE = 16;
@@ -892,7 +891,6 @@ async function refreshData(isNavigationOnly = false) {
             console.log("[Ad Tracking] UI Refreshed. Counter is now:", DATA.stats.adVisits);
         }
         const urlParams = new URLSearchParams(window.location.search);
-        const shareId = urlParams.get('s');
         const prodId = urlParams.get('p');
         const catId = urlParams.get('c');
         const query = urlParams.get('q');
@@ -980,8 +978,7 @@ async function refreshData(isNavigationOnly = false) {
         const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img)).filter(u => u && u !== 'img/').slice(0, 10);
         const stockFilter = (items) => items.filter(p => p.inStock !== false);
         let filteredForPreload = [];
-        if (state.selectionId) filteredForPreload = DATA.p.filter(p => state.selected.includes(p.id));
-        else if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
+        if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
         else filteredForPreload = stockFilter(DATA.p);
 
         filteredForPreload.sort((a, b) => {
@@ -1008,7 +1005,7 @@ const safePushState = (params, replace = false) => {
     try {
         const url = new URL(window.location.href);
         // Clear conflicting params if needed, or just handle all
-        const keys = ['p', 's', 'c', 'q'];
+        const keys = ['p', 'c', 'q'];
         keys.forEach(key => {
             if (params.hasOwnProperty(key)) {
                 if (params[key] === null) url.searchParams.delete(key);
@@ -1049,7 +1046,7 @@ window.handleLogoClick = () => {
     } else {
         // Stability: Only navigate home if we're not already viewing the main collection
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('p') || urlParams.has('s') || state.filter !== 'all' || state.search !== '') {
+        if (urlParams.has('p') || state.filter !== 'all' || state.search !== '') {
             goBackToHome(false);
         }
     }
@@ -1066,13 +1063,11 @@ window.hideDashboardButton = () => {
 
 window.goBackToHome = (forceReset = false) => {
     if (forceReset) {
-        state.selectionId = null;
-        state.selected = [];
         state.filter = 'all';
         state.search = '';
         state.scrollPos = 0;
         state.visibleChunks = 1; // Reset pagination
-        safePushState({ s: null, p: null, c: null, q: null });
+        safePushState({ p: null, c: null, q: null });
         // Clear search mode UI (body class, hidden elements) — critical after search→detail→back→home flow
         if (typeof exitSearchMode === 'function') exitSearchMode();
         // Clear search input fields
@@ -1088,11 +1083,6 @@ window.goBackToHome = (forceReset = false) => {
         safePushState({ p: null });
     }
     renderHome();
-};
-
-window.toggleSelectAll = () => {
-    // Selection feature is moved to shop page only.
-    window.location.href = 'shop.html';
 };
 
 // Detect how many columns the product grid currently shows
@@ -1146,7 +1136,6 @@ function renderHome() {
         if (typeof window.renderDesktopMegaMenu === 'function') window.renderDesktopMegaMenu();
         const catRow = appMain.querySelector('#category-row');
         const grid = appMain.querySelector('#product-grid');
-        const selectionHeader = appMain.querySelector('#selection-header');
         const viewTitle = appMain.querySelector('#view-title');
         const viewSubtitle = appMain.querySelector('#view-subtitle');
         const selectAllBtn = appMain.querySelector('#select-all-btn');
@@ -1164,17 +1153,9 @@ function renderHome() {
         // NOTE: Event listeners are attached ONCE at init time (see initSearchListeners)
         // Do NOT add listeners here — they would be duplicated on every renderHome() call.
 
-        // 1. Handle selection/wishlist headers
-        if (state.selectionId) {
-            if (selectionHeader) selectionHeader.classList.remove('hidden');
-            if (catRow) catRow.classList.add('hidden');
-            if (categorySelector) categorySelector.classList.add('hidden');
-            if (viewTitle) viewTitle.innerText = "Shared Selection";
-            if (viewSubtitle) viewSubtitle.innerText = "Specially picked items for you.";
-        } else {
-            if (selectionHeader) selectionHeader.classList.add('hidden');
-            if (catRow) catRow.classList.remove('hidden');
-            if (categorySelector) categorySelector.classList.remove('hidden');
+        // 1. Standard customer view (selection/share moved to shop page)
+        if (catRow) catRow.classList.remove('hidden');
+        if (categorySelector) categorySelector.classList.remove('hidden');
 
             let cHtml = ``;
             const isAdminVisible = !document.getElementById('admin-entry-btn').classList.contains('hidden');
@@ -1217,11 +1198,10 @@ function renderHome() {
 
                 }, 100);
             }
-        }
+        
         let filtered = [];
         const stockFilter = (items) => items.filter(p => p.inStock !== false);
-        if (state.selectionId) filtered = DATA.p.filter(p => state.selected.includes(p.id));
-        else if (state.filter !== 'all') {
+        if (state.filter !== 'all') {
             const isMain = DATA.c.find(c => c.id === state.filter && !c.parentId);
             let validIds = [state.filter];
             if (isMain) {
@@ -1240,7 +1220,7 @@ function renderHome() {
             const q = state.search.toLowerCase().trim();
             const words = q.split(' ').filter(w => w.length > 0);
 
-            let source = state.selectionId ? filtered : stockFilter(DATA.p);
+            let source = stockFilter(DATA.p);
 
             filtered = source.filter(p => {
                 const name = (p.name || '').toLowerCase();
@@ -1266,9 +1246,8 @@ function renderHome() {
             }
             return (b.updatedAt || 0) - (a.updatedAt || 0); // Default sort: Newest first
         });
-        let catNameDisplay = (!state.selectionId && state.filter === 'all' && filtered.length > 0 && filtered.length < stockFilter(DATA.p).length) ? "Our Bestsellers" : "All Collections";
-        if (state.selectionId) catNameDisplay = "Shared Selection";
-        else if (state.filter !== 'all') {
+        let catNameDisplay = (state.filter === 'all' && filtered.length > 0 && filtered.length < stockFilter(DATA.p).length) ? "Our Bestsellers" : "All Collections";
+        if (state.filter !== 'all') {
             const catObj = DATA.c.find(c => c.id === state.filter);
             if (catObj) catNameDisplay = catObj.name;
         }
@@ -1283,19 +1262,8 @@ function renderHome() {
             updateCanonicalURL(cId ? `?c=${cId}` : '');
         } catch (e) { console.error("SEO Update failed:", e); }
 
-        if (selectAllBtn) {
-            let uAdmin = null; try { uAdmin = state.authUser || window._fbAuth?.currentUser || (typeof getAuth !== 'undefined' ? getAuth().currentUser : null); } catch (e) { }
-            const isAdmin = uAdmin && uAdmin.email === "laszonaicreation@gmail.com";
-            const visibleIds = filtered.map(p => p.id);
-            const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => state.selected.includes(id));
-            selectAllBtn.innerText = allVisibleSelected ? "Deselect Visible" : "Select Visible Items";
-
-            if (state.selectionId || !isAdmin) {
-                if (selectAllBtn.parentElement) selectAllBtn.parentElement.style.display = 'none';
-            } else {
-                if (selectAllBtn.parentElement) selectAllBtn.parentElement.style.display = '';
-            }
-        }
+        // Selection/share UI moved to shop page; hide any legacy button if present.
+        if (selectAllBtn?.parentElement) selectAllBtn.parentElement.style.display = 'none';
         if (grid) {
             const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
             let uAdmin = null; try { uAdmin = state.authUser || window._fbAuth?.currentUser || (typeof getAuth !== 'undefined' ? getAuth().currentUser : null); } catch (e) { }
@@ -1454,13 +1422,11 @@ function renderHome() {
 
         if (mobileSort) mobileSort.value = state.sort;
 
-        updateSelectionBar();
-
         // Update Mobile Nav Active State
         document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
         if (state.search) {
             document.querySelector('.mobile-nav-btn:nth-child(2)')?.classList.add('active');
-        } else if (state.filter === 'all' && !state.selectionId && !new URLSearchParams(window.location.search).has('p')) {
+        } else if (state.filter === 'all' && !new URLSearchParams(window.location.search).has('p')) {
             document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
         }
 
@@ -1468,7 +1434,7 @@ function renderHome() {
             state.isLoadMore = false;
             state.skipScroll = false;
         } else {
-            if (!state.selectionId && !state.search) window.scrollTo({ top: state.scrollPos });
+            if (!state.search) window.scrollTo({ top: state.scrollPos });
             else if (!state.search) window.scrollTo({ top: 0 });
         }
     } catch (e) {
@@ -1476,15 +1442,6 @@ function renderHome() {
         showToast("UI Display Error");
     }
 }
-
-// NEW: updateSelectionBar logic explicitly added to prevent ReferenceError
-window.updateSelectionBar = () => {
-    const bar = document.getElementById('selection-bar');
-    if (!bar) return;
-    // Main page no longer uses selection share UI.
-    bar.style.display = 'none';
-    bar.classList.remove('animate-selection');
-};
 
 function cacheDetailPayload(id) {
     try {
@@ -1908,26 +1865,12 @@ window.importData = (event) => {
     reader.readAsText(file);
 };
 
-window.toggleSelect = (e, id) => {
-    if (e) e.stopPropagation();
-    // Selection feature is moved to shop page only.
-};
-
-window.clearSelection = () => {};
-
-window.shareSelection = async () => {
-    // Selection feature is moved to shop page only.
-    window.location.href = 'shop.html';
-};
-
 window.sendBulkInquiry = () => {
-    // Determine which list to use (Selected items for sharing OR Wishlist for sidebar)
-    const isSidebarOpen = document.getElementById('favorites-sidebar')?.classList.contains('open');
-    const sourceData = isSidebarOpen ? state.wishlist : state.selected;
+    // Customer flow: bulk inquiry is for Favorites only (selection/share moved to shop page).
+    const sourceData = state.wishlist || [];
+    if (sourceData.length === 0) return showToast("No items saved");
 
-    if (sourceData.length === 0) return showToast("No items to inquire");
-
-    let msg = `*Hello Speed Gifts!*\nI am interested in these items from my ${isSidebarOpen ? 'Favorites' : 'Selection'}:\n\n`;
+    let msg = `*Hello Speed Gifts!*\nI am interested in these items from my Favorites:\n\n`;
 
     sourceData.forEach((entry, i) => {
         const id = typeof entry === 'string' ? entry : entry.id;
@@ -2043,9 +1986,7 @@ window.showSearchSuggestions = (show) => {
 let searchTimeout;
 window.applyCustomerSearch = (val) => {
     state.search = val;
-    if (val && !state.selectionId) {
-        state.filter = 'all';
-    }
+    if (val) state.filter = 'all';
 
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
@@ -2097,7 +2038,7 @@ async function ensureAdminModuleLoaded() {
         if (typeof mod.initAdmin !== 'function') return false;
         mod.initAdmin({
             db, auth, state, DATA, appId,
-            prodCol, catCol, shareCol, sliderCol, megaCol,
+            prodCol, catCol, sliderCol, megaCol,
             popupSettingsCol, landingSettingsCol, leadsCol,
             doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs,
             collection, increment, writeBatch, arrayUnion,
@@ -2973,7 +2914,7 @@ window.resetAllAnalytics = async () => {
 
 window.focusSearch = () => {
     // Navigate home first if we're not there
-    if (new URLSearchParams(window.location.search).has('p') || state.selectionId) {
+    if (new URLSearchParams(window.location.search).has('p')) {
         window.goBackToHome(true);
     }
 
@@ -3004,7 +2945,7 @@ function renderSlider() {
 
     // Safety: always hide slider when a product detail is open (?p= in URL)
     const isProductDetail = new URLSearchParams(window.location.search).has('p');
-    if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all' || state.selectionId) {
+    if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all') {
         if (wrapper) wrapper.classList.add('hidden');
         return;
     }
@@ -3501,7 +3442,7 @@ window.renderSpotlightSection = () => {
 
     // Only show if we are on the main collections page (no filter, no search, no product detail open)
     const isProductDetail = new URLSearchParams(window.location.search).has('p');
-    if (!DATA.homeSettings || !DATA.homeSettings.spotlightEnabled || state.filter !== 'all' || state.search || state.selectionId || isProductDetail) {
+    if (!DATA.homeSettings || !DATA.homeSettings.spotlightEnabled || state.filter !== 'all' || state.search || isProductDetail) {
         container.classList.add('hidden');
         container.innerHTML = '';
         return;

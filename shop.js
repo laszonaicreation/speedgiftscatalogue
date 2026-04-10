@@ -13,6 +13,7 @@ import { initSharedNavbar } from "./shared-navbar.js";
 import { initSharedAuth } from "./shared-auth.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
+import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
 
 // ─── Firebase Setup ──────────────────────────────────────────────
 const firebaseConfig = {
@@ -333,7 +334,13 @@ function renderCategoriesSidebarLikeMain() {
 
 // ─── Filter / Sort / Search ───────────────────────────────────────
 window.applyFilter = (catId) => {
-    if (state.selectionId) return;
+    // If user is on a shared-selection link, selecting a category should
+    // switch back to normal shop browsing for that category.
+    if (state.selectionId) {
+        state.selectionId = null;
+        state.selected = [];
+        state.search = '';
+    }
     state.filter = catId;
     state.page = 1;
     updateURL();
@@ -618,18 +625,13 @@ window.shareSelection = async () => {
     if (state.selected.length === 0) return;
     showToast('Preparing share link...');
     try {
-        const docRef = await addDoc(shareCol, { ids: state.selected, createdAt: Date.now() });
-        const shareUrl = `${window.location.origin}${window.location.pathname}?s=${docRef.id}`;
-        if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(shareUrl);
-        } else {
-            const textArea = document.createElement('textarea');
-            textArea.value = shareUrl;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-        }
+        const shareUrl = await createSelectionLink({
+            addDoc,
+            shareCol,
+            ids: state.selected,
+            baseUrl: `${window.location.origin}${window.location.pathname}`
+        });
+        await copyTextToClipboard(shareUrl);
         showToast('Share link copied');
     } catch (err) {
         console.error('[ShopPage] share selection error:', err);
