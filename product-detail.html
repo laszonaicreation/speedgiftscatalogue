@@ -4,24 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Detail | Speed Gifts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="tailwind-compiled.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="product-detail.css">
 </head>
 <body>
-    <header class="detail-topbar">
-        <button id="detail-back-btn" class="detail-top-btn" type="button">
-            <i class="fa-solid fa-arrow-left"></i>
-            Back
-        </button>
-        <a class="detail-top-btn" href="index.html">
-            <i class="fa-solid fa-house"></i>
-            Home
-        </a>
-    </header>
+    <div id="shared-shell-root"></div>
     <div id="toast" class="bg-black text-white px-8 py-4 rounded-xl shadow-2xl text-[10px] font-black tracking-widest uppercase"></div>
     <div id="img-full-preview" onclick="closeFullScreen()">
         <div class="close-preview-btn"><i class="fa-solid fa-xmark"></i></div>

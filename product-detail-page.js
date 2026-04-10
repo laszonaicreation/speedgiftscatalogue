@@ -1,9 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { renderProductDetailView } from "./product-detail-renderer.js";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
 import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
+import { mountSharedShell } from "./shared-shell.js?v=2";
+import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
+import { initSharedAuth } from "./shared-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -25,6 +28,8 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 
 const DATA = { p: [], c: [] };
 const state = { wishlist: [], currentVar: null };
+state.authMode = 'login';
+state.authUser = null;
 const WISHLIST_KEY = 'speedgifts_detail_wishlist';
 const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
 const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
@@ -172,6 +177,7 @@ function saveWishlist() {
     localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist));
     localStorage.setItem(WISHLIST_SYNC_PING_KEY, String(Date.now()));
     wishlistChannel?.postMessage({ wishlist: state.wishlist, at: Date.now() });
+    updateWishlistBadges();
 }
 
 async function persistWishlistToCloud() {
@@ -196,12 +202,128 @@ window.toggleWishlist = async (event, id) => {
     }
     saveWishlist();
     await persistWishlistToCloud();
+    renderFavoritesSidebar();
     const icon = document.querySelector('#detail-wish-btn i');
     if (icon) {
         const active = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);
         icon.className = `${active ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl`;
     }
 };
+
+function updateWishlistBadges() {
+    const count = (state.wishlist || []).length;
+    const deskBadge = document.getElementById('nav-wishlist-count');
+    const mobBadge = document.getElementById('nav-wishlist-count-mob');
+    [deskBadge, mobBadge].forEach((badge) => {
+        if (!badge) return;
+        badge.innerText = String(count);
+        if (count > 0) badge.classList.remove('hidden');
+        else badge.classList.add('hidden');
+    });
+}
+
+function renderCategoriesSidebar() {
+    renderCategoriesSidebarMainLike({
+        categories: DATA.c || [],
+        products: DATA.p || [],
+        getOptimizedUrl,
+        onSelectCategoryJs: "window.closeCategoriesSidebar(); window.location.href='shop.html';"
+    });
+}
+
+function renderFavoritesSidebar() {
+    renderFavoritesSidebarMainLike({
+        wishlist: state.wishlist || [],
+        products: DATA.p || [],
+        getOptimizedUrl,
+        onItemClickJs: (p) => `window.location.href='${getProductDetailUrl(p.originalId)}'`,
+        onRemoveClickJs: (p) => `window.toggleWishlist(null, '${p.originalId}')`,
+    });
+}
+
+window.goBackToHome = () => { window.location.href = 'index.html'; };
+window.focusSearch = () => { window.location.href = 'shop.html'; };
+function openShopWithSearch(query) {
+    const q = String(query || '').trim();
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    window.location.href = `shop.html${params.toString() ? `?${params.toString()}` : ''}`;
+}
+function wireDetailShellSearch() {
+    const deskInput = document.getElementById('desk-search');
+    const deskClear = document.getElementById('desk-clear-btn');
+    if (!deskInput) return;
+
+    deskInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        openShopWithSearch(deskInput.value);
+    });
+    deskInput.addEventListener('input', () => {
+        const q = (deskInput.value || '').trim();
+        if (!deskClear) return;
+        if (q) deskClear.style.display = 'flex';
+        else deskClear.style.display = 'none';
+    });
+}
+window.clearSearch = () => {
+    const deskInput = document.getElementById('desk-search');
+    const deskClear = document.getElementById('desk-clear-btn');
+    if (deskInput) deskInput.value = '';
+    if (deskClear) deskClear.style.display = 'none';
+};
+window.handleFavoritesClick = () => window.openFavoritesSidebar();
+window.openFavoritesSidebar = () => {
+    const sidebar = document.getElementById('favorites-sidebar');
+    const overlay = document.getElementById('favorites-sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    renderFavoritesSidebar();
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+};
+window.closeFavoritesSidebar = () => {
+    const sidebar = document.getElementById('favorites-sidebar');
+    const overlay = document.getElementById('favorites-sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = 'auto';
+};
+window.openCategoriesSidebar = () => {
+    const sidebar = document.getElementById('categories-sidebar');
+    const overlay = document.getElementById('categories-sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    renderCategoriesSidebar();
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+};
+window.closeCategoriesSidebar = () => {
+    const sidebar = document.getElementById('categories-sidebar');
+    const overlay = document.getElementById('categories-sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = 'auto';
+};
+function updateAuthUserUI() {
+    const user = auth.currentUser;
+    state.authUser = user || null;
+
+    const deskIcon = document.getElementById('desk-user-icon');
+    const mobIcon = document.getElementById('mob-user-icon');
+    const mobText = document.getElementById('mob-user-text');
+    const accountName = document.getElementById('account-user-name');
+    const accountEmail = document.getElementById('account-user-email');
+
+    const signedIn = !!user;
+    if (deskIcon) deskIcon.className = 'fa-solid fa-user text-[18px]';
+    if (mobIcon) mobIcon.className = 'fa-solid fa-user';
+    if (mobText) mobText.innerText = signedIn ? 'Account' : 'Login';
+    if (accountName) accountName.innerText = user?.displayName || 'User';
+    if (accountEmail) accountEmail.innerText = user?.email || 'Signed in';
+}
 
 window.shareProduct = async (id, name) => {
     const url = getProductDetailUrl(id);
@@ -265,7 +387,27 @@ function readDetailCache(id) {
 }
 
 async function bootstrap() {
+    mountSharedShell('home');
+    wireDetailShellSearch();
+    initSharedAuth({
+        auth,
+        firebaseAuth: {
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            GoogleAuthProvider,
+            signInWithPopup,
+            sendPasswordResetEmail,
+            signOut,
+            updateProfile
+        },
+        getAuthUser: () => state.authUser,
+        setAuthMode: (mode) => { state.authMode = mode; },
+        getAuthMode: () => state.authMode,
+        updateAuthUserUI,
+        showToast
+    });
     onAuthStateChanged(auth, async (u) => {
+        updateAuthUserUI();
         if (!u) {
             await signInAnonymously(auth).catch(() => { /* no-op */ });
             return;
@@ -285,6 +427,7 @@ async function bootstrap() {
     }
 
     loadWishlist();
+    updateWishlistBadges();
 
     // Fast-path: render from session cache immediately (if available),
     // then sync with Firestore in background.
@@ -299,6 +442,7 @@ async function bootstrap() {
     DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id));
     DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCategoriesSidebar();
     await renderById(id);
 }
 
