@@ -6,6 +6,9 @@ import { initSharedNavbar } from "./shared-navbar.js";
 import { initSharedAuth } from "./shared-auth.js";
 import { mountSharedShell } from "./shared-shell.js?v=2";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
+import { createAdminProxyFactory } from "./home-admin-bridge.js";
+import { fetchHomeDataBundle } from "./home-data.js";
+import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, buildHomeProductCardHtml, ensureHomeLoadMoreContainer, buildHomeCategoryRowHtml, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection } from "./home-ui.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -811,71 +814,29 @@ window.renderDesktopMegaMenu = () => {
 async function refreshData(isNavigationOnly = false) {
     try {
         if (!isNavigationOnly || DATA.p.length === 0) {
-            const today = getTodayStr();
-            const todayRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
+            const bundle = await fetchHomeDataBundle({
+                db,
+                appId,
+                getTodayStr,
+                doc,
+                getDoc,
+                getDocs,
+                prodCol,
+                catCol,
+                megaCol,
+                sliderCol,
+                popupSettingsCol
+            });
 
-            const [pSnap, cSnap, mSnap, sSnap, popSnap, todaySnap] = await Promise.all([
-                getDocs(prodCol),
-                getDocs(catCol),
-                getDocs(megaCol).catch(e => ({ docs: [] })),
-                getDocs(sliderCol).catch(e => {
-                    console.error("Slider fetch failed:", e);
-                    return { docs: [] };
-                }),
-                getDocs(popupSettingsCol).catch(e => ({ empty: true })),
-                getDoc(todayRef).catch(e => null)
-            ]);
-            DATA.p = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            DATA.c = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            DATA.m = mSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
-            DATA.s = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-            // Fetch Announcements (from products collection with ID _announcements_)
-            const announceDoc = DATA.p.find(p => p.id === '_announcements_');
-            DATA.announcements = announceDoc ? (announceDoc.messages || []) : [];
-
-            // Apply Popup Settings
-            if (!popSnap.empty && popSnap.docs) {
-                DATA.popupSettings = popSnap.docs[0].data();
-            }
-
-            // Apply Landing Settings (from products collection)
-            const landDoc = DATA.p.find(p => p.id === '_landing_settings_');
-            if (landDoc) {
-                DATA.landingSettings = { ...landDoc };
-            } else {
-                DATA.landingSettings = null;
-            }
-
-            // Apply Home Settings (from products collection)
-            const homeDoc = DATA.p.find(p => p.id === '_home_settings_');
-            if (homeDoc) {
-                DATA.homeSettings = { ...homeDoc };
-            } else {
-                DATA.homeSettings = null;
-            }
-
-            // Extract stats from legacy _ad_stats_ 
-            const statsDoc = DATA.p.find(p => p.id === '_ad_stats_');
-            const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
-
-            // Initial legacy/all-time baseline
-            DATA.stats = statsDoc ? { ...defaultStats, ...statsDoc } : defaultStats;
-
-            // Merge Today's active stats into memory baseline
-            if (todaySnap?.exists()) {
-                const td = todaySnap.data();
-                DATA.stats.adVisits += (td.adVisits || 0) + (td.landingAdVisits || 0);
-                DATA.stats.normalVisits += (td.normalVisits || 0);
-                DATA.stats.adProductClicks = (DATA.stats.adProductClicks || 0) + (td.adProductClicks || 0);
-                DATA.stats.normalProductClicks = (DATA.stats.normalProductClicks || 0) + (td.normalProductClicks || 0);
-                DATA.stats.adInquiries += (td.adInquiries || 0);
-                DATA.stats.imageLoadFail += (td.imageLoadFail || 0);
-                // Note: adHops and other fields can also be merged if present in daily_stats
-            }
-
-            // Remove internal docs from the products list
-            DATA.p = DATA.p.filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id));
+            DATA.p = bundle.products;
+            DATA.c = bundle.categories;
+            DATA.m = bundle.megaMenus;
+            DATA.s = bundle.sliders;
+            DATA.announcements = bundle.announcements;
+            DATA.popupSettings = bundle.popupSettings || DATA.popupSettings;
+            DATA.landingSettings = bundle.landingSettings;
+            DATA.homeSettings = bundle.homeSettings;
+            DATA.stats = bundle.stats;
 
             renderAnnouncementBar();
             renderDesktopMegaMenu();
@@ -1157,7 +1118,6 @@ function renderHome() {
         if (catRow) catRow.classList.remove('hidden');
         if (categorySelector) categorySelector.classList.remove('hidden');
 
-            let cHtml = ``;
             const isAdminVisible = !document.getElementById('admin-entry-btn').classList.contains('hidden');
 
             let categories = [...DATA.c].sort((a, b) => {
@@ -1170,14 +1130,11 @@ function renderHome() {
                 return 0;
             });
 
-            categories.forEach(c => {
-                cHtml += `<div class="category-item ${state.filter === c.id ? 'active' : ''}" onclick="applyFilter('${c.id}', event)">
-                    <div class="category-img-box">
-                        <img src="${getOptimizedUrl(c.img, 200) || 'https://placehold.co/100x100?text=Gift'}" loading="lazy" decoding="async" ${getOptimizedUrl(c.img, 200) ? "onerror=\"this.src='https://placehold.co/100x100?text=Gift'\"" : ''}>
-                        ${c.isPinned && isAdminVisible ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm"><i class="fa-solid fa-thumbtack text-[6px]"></i></div>' : ''}
-                    </div>
-                    <p class="category-label truncate px-1 w-full">${c.name}</p>
-                </div>`;
+            const cHtml = buildHomeCategoryRowHtml({
+                categories,
+                activeFilter: state.filter,
+                getImageUrl: (c) => getOptimizedUrl(c.img, 200) || 'https://placehold.co/100x100?text=Gift',
+                isAdminVisible
             });
             if (catRow) {
                 catRow.innerHTML = cHtml;
@@ -1234,135 +1191,20 @@ function renderHome() {
         if (selectAllBtn?.parentElement) selectAllBtn.parentElement.style.display = 'none';
         if (grid) {
             const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
-            let uAdmin = null; try { uAdmin = state.authUser || window._fbAuth?.currentUser || (typeof getAuth !== 'undefined' ? getAuth().currentUser : null); } catch (e) { }
-            const isAdmin = uAdmin && uAdmin.email === "laszonaicreation@gmail.com";
-
-            // Always show complete rows — never leave an orphan product on the last row
-            const cols = getColumnsCount();
-            // Home page shows a compact bestsellers slice by default, expandable in-place.
-            const limit = state.homeBestExpanded ? filtered.length : (cols * 2);
-            const visibleProducts = filtered.slice(0, limit);
-            const hasMore = filtered.length > limit;
-
-            let gridContent = visibleProducts.map((p, idx) => {
-                let displayP = { ...p };
-                let savedVar = null;
-
-                const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
-
-                return `
-                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}" 
-                     onmouseenter="window.preloadProductImage('${p.id}')"
-                     onclick="viewDetail('${p.id}', false, ${savedVar ? JSON.stringify(savedVar) : 'null'})">
-                    <div class="img-container mb-4 relative">
-                        ${badgeHtml}
-                        <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                        
-                        <img src="${getOptimizedUrl(displayP.img, 600)}" 
-                             class="${idx < 4 ? 'no-animation' : ''}"
-                             ${idx < INITIAL_EAGER_IMAGES ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
-                             decoding="async"
-                             onload="this.classList.add('loaded')"
-                             onerror="window.handleImgError(this)"
-                             alt="${displayP.name}">
-                    </div>
-                    <div class="px-1 text-left flex justify-between items-start mt-4">
-                        <div class="flex-1 min-w-0">
-                            <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${displayP.name}</h3>
-                            ${(() => {
-                        const origPrice = parseFloat(displayP.originalPrice);
-                        const salePrice = parseFloat(displayP.price);
-                        if (displayP.originalPrice && origPrice > salePrice) {
-                            const disc = Math.round((1 - salePrice / origPrice) * 100);
-                            return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
-                                '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + displayP.originalPrice + ' AED</span>' +
-                                '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + displayP.price + ' AED</span>' +
-                                '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span>' +
-                                '</div>';
-                        }
-                        return '<p class="price-tag mt-2 font-bold">' + displayP.price + ' AED</p>';
-                    })()}
-                        </div>
-                        <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="toggleWishlist(event, '${p.id}')">
-                            <i class="fa-solid fa-heart"></i>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-
-            // Ghost cards: only add when ALL products are visible (no Load More button)
-            // When hasMore=true, the limit rounding already ensures only full rows show.
-            // When hasMore=false, pad the last row with sized ghost cards so it looks complete.
-            if (visibleProducts.length > 0 && !hasMore) {
-                const remainder = visibleProducts.length % cols;
-                if (remainder > 0) {
-                    const ghosts = cols - remainder;
-                    for (let g = 0; g < ghosts; g++) {
-                        // Use same aspect ratio as product image so ghost takes up proper height
-                        gridContent += `<div style="visibility:hidden;pointer-events:none;" aria-hidden="true"><div style="aspect-ratio:4/5;width:100%;"></div></div>`;
-                    }
-                }
-            }
-
-            if (filtered.length === 0) {
-                gridContent = `
-                <div class="col-span-full text-center py-40 px-6">
-                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fa-solid fa-box-open text-gray-200 text-xl"></i>
-                    </div>
-                    <h3 class="text-gray-900 font-bold text-[14px] mb-2 uppercase tracking-widest">Collection Coming Soon</h3>
-                    <p class="text-gray-400 text-[11px] mb-8 max-w-xs mx-auto">We are currently updating this category with premium new products. Explore our other collections in the meantime.</p>
-                    <button onclick="window.applyFilter('all')" class="bg-black text-white px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-105 active:scale-95 transition-all">
-                        View All Collections
-                    </button>
-                </div>
-                `;
-            }
-            // Prevent scroll jumping by locking the current height
-            const currentHeight = grid.offsetHeight;
-            if (currentHeight > 0) {
-                grid.style.minHeight = `${currentHeight}px`;
-            }
-
-            grid.innerHTML = gridContent;
-            setTimeout(() => ensureGridImagesVisible(grid), 0);
-
-            // Release height lock after images/DOM have stabilized
-            setTimeout(() => {
-                grid.style.minHeight = '';
-            }, 800);
-            // Load More Logic (Outside the grid so it stays centered at the bottom width-wise)
-            let loadMoreContainer = document.getElementById('load-more-container');
-            if (!loadMoreContainer) {
-                loadMoreContainer = document.createElement('div');
-                loadMoreContainer.id = 'load-more-container';
-                loadMoreContainer.className = 'w-full flex justify-center view-more-container-custom';
-
-                const spotlightContainer = grid.parentElement.querySelector('#spotlight-section');
-                if (spotlightContainer) {
-                    grid.parentElement.insertBefore(loadMoreContainer, spotlightContainer);
-                } else {
-                    grid.parentElement.appendChild(loadMoreContainer);
-                }
-            }
-
-            if (hasMore) {
-                loadMoreContainer.innerHTML = `
-                    <button onclick="window.toggleHomeBestView(true)" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
-                        View More <i class="fa-solid fa-arrow-down transform md:group-hover:translate-y-1 transition-transform"></i>
-                    </button>
-                `;
-                loadMoreContainer.style.display = 'flex';
-            } else if (state.homeBestExpanded && filtered.length > (cols * 2)) {
-                loadMoreContainer.innerHTML = `
-                    <button onclick="window.toggleHomeBestView(false)" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
-                        Show Less <i class="fa-solid fa-arrow-up transform md:group-hover:-translate-y-1 transition-transform"></i>
-                    </button>
-                `;
-                loadMoreContainer.style.display = 'flex';
-            } else {
-                loadMoreContainer.style.display = 'none';
-            }
+            renderHomeBestGridSection({
+                grid,
+                filtered,
+                homeBestExpanded: state.homeBestExpanded,
+                getColumnsCount,
+                isInWishlist,
+                getBadgeLabel,
+                getOptimizedUrl,
+                initialEagerImages: INITIAL_EAGER_IMAGES,
+                ensureGridImagesVisible,
+                getEmptyStateHtml: getHomeEmptyStateHtml,
+                ensureLoadMoreContainer: ensureHomeLoadMoreContainer,
+                getLoadMoreMarkup: getHomeBestLoadMoreMarkup
+            });
         }
 
         renderSlider();
@@ -1370,33 +1212,21 @@ function renderHome() {
         initImpressionTracking();
 
         // 5. Update Search & Sort UI
-        if (discSearch && discSearch !== document.activeElement) discSearch.value = state.search;
-        if (clearBtn) {
-            if (state.search) clearBtn.classList.remove('hidden');
-            else clearBtn.classList.add('hidden');
-        }
-
-        const deskSearch = document.getElementById('desk-search');
-        if (deskSearch && deskSearch !== document.activeElement) deskSearch.value = state.search;
-        const deskClearBtn = document.getElementById('desk-clear-btn');
-        if (deskClearBtn) {
-            if (state.search) deskClearBtn.classList.remove('hidden');
-            else deskClearBtn.classList.add('hidden');
-        }
+        syncHomeSearchUi({ searchValue: state.search });
 
         if (mobileSort) mobileSort.value = state.sort;
 
         // Update Mobile Nav Active State
-        document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
+        setHomeMobileNavActive();
 
-        if (state.isLoadMore || state.skipScroll) {
-            state.isLoadMore = false;
-            state.skipScroll = false;
-        } else {
-            if (!state.search) window.scrollTo({ top: state.scrollPos });
-            else if (!state.search) window.scrollTo({ top: 0 });
-        }
+        const scrollResult = applyHomePostRenderScroll({
+            isLoadMore: state.isLoadMore,
+            skipScroll: state.skipScroll,
+            searchValue: state.search,
+            scrollPos: state.scrollPos
+        });
+        state.isLoadMore = scrollResult.nextIsLoadMore;
+        state.skipScroll = scrollResult.nextSkipScroll;
     } catch (e) {
         console.error("Render Error:", e);
         showToast("UI Display Error");
@@ -1542,15 +1372,17 @@ window.addVariationRow = (size = '', price = '', images = []) => {
     }
 };
 
-function createAdminProxy(name) {
-    const proxy = async (...args) => {
-        const loaded = await ensureAdminModuleLoaded();
-        if (!loaded) return;
-        if (window[name] === proxy) return;
-        return window[name](...args);
-    };
-    return proxy;
-}
+const createAdminProxy = createAdminProxyFactory(() => ({
+    db, auth, state, DATA, appId,
+    prodCol, catCol, sliderCol, megaCol,
+    popupSettingsCol, landingSettingsCol, leadsCol,
+    doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs,
+    collection, increment, writeBatch, arrayUnion,
+    query, where, documentId,
+    showToast, refreshData, renderHome, getAuth,
+    getBadgeLabel, getOptimizedUrl, getColumnsCount,
+    renderSlider, renderInsights
+}));
 
 window.saveProduct = createAdminProxy('saveProduct');
 window.saveCategory = createAdminProxy('saveCategory');
@@ -1981,29 +1813,6 @@ window.toggleHomeBestView = (expand) => {
     state.skipScroll = true;
     renderHome();
 };
-async function ensureAdminModuleLoaded() {
-    if (window.__adminModuleReady) return true;
-    try {
-        const mod = await import('./app-admin.js');
-        if (typeof mod.initAdmin !== 'function') return false;
-        mod.initAdmin({
-            db, auth, state, DATA, appId,
-            prodCol, catCol, sliderCol, megaCol,
-            popupSettingsCol, landingSettingsCol, leadsCol,
-            doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs,
-            collection, increment, writeBatch, arrayUnion,
-            query, where, documentId,
-            showToast, refreshData, renderHome, getAuth,
-            getBadgeLabel, getOptimizedUrl, getColumnsCount,
-            renderSlider, renderInsights
-        });
-        window.__adminModuleReady = true;
-        return true;
-    } catch (e) {
-        console.error('[Admin] Failed to load app-admin.js:', e);
-        return false;
-    }
-}
 
 window.showAdminPanel = createAdminProxy('showAdminPanel');
 window.hideAdminPanel = createAdminProxy('hideAdminPanel');
