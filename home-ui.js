@@ -163,6 +163,125 @@ export function renderHomeBestGridSection({
     }
 }
 
+export function renderHomeCategoryRow({
+    catRow,
+    categories,
+    activeFilter,
+    getImageUrl,
+    isAdminVisible
+}) {
+    if (!catRow) return;
+    catRow.innerHTML = buildHomeCategoryRowHtml({
+        categories,
+        activeFilter,
+        getImageUrl,
+        isAdminVisible
+    });
+
+    setTimeout(() => {
+        if (activeFilter === 'all') return;
+        const activeItem = catRow.querySelector('.category-item.active');
+        if (!activeItem) return;
+        catRow.scrollTo({
+            left: catRow.scrollLeft + (activeItem.getBoundingClientRect().left - catRow.getBoundingClientRect().left) - 16,
+            behavior: 'smooth'
+        });
+    }, 100);
+}
+
+export function getHomeBestsellerProducts({ products, sort }) {
+    const stockFilter = (items) => items.filter((p) => p.inStock !== false);
+    let filtered = stockFilter((products || []).filter((p) => p.isFeatured));
+    if (filtered.length === 0) filtered = stockFilter(products || []);
+
+    filtered.sort((a, b) => {
+        const pinA = a.isPinned ? 1 : 0;
+        const pinB = b.isPinned ? 1 : 0;
+        if (pinA !== pinB) return pinB - pinA;
+
+        if (sort !== 'all') {
+            const priceA = parseFloat(a.price) || 0;
+            const priceB = parseFloat(b.price) || 0;
+            return sort === 'low' ? priceA - priceB : priceB - priceA;
+        }
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
+
+    return filtered;
+}
+
+export function applyHomeBestsellerSeo({
+    activeCatTitle,
+    activeCatTitleMob,
+    activeFilter,
+    updateMetaDescription,
+    updateCanonicalURL
+}) {
+    const catNameDisplay = 'Our Bestsellers';
+    if (activeCatTitle) activeCatTitle.innerText = catNameDisplay;
+    if (activeCatTitleMob) activeCatTitleMob.innerText = catNameDisplay;
+
+    document.title = `${catNameDisplay} | Speed Gifts Website`;
+    try {
+        updateMetaDescription(`Explore our ${catNameDisplay} collection at Speed Gifts. Premium selection of personalized gifts.`);
+        const cId = activeFilter !== 'all' ? activeFilter : '';
+        updateCanonicalURL(cId ? `?c=${cId}` : '');
+    } catch (e) {
+        console.error('SEO Update failed:', e);
+    }
+}
+
+export function ensureHomeViewScaffold({ appMain, template }) {
+    if (!appMain || !template) return false;
+    if (!appMain.querySelector('#product-grid')) {
+        appMain.innerHTML = template.innerHTML;
+    }
+    return true;
+}
+
+export function getHomeRenderElements(appMain) {
+    if (!appMain) return null;
+    return {
+        catRow: appMain.querySelector('#category-row'),
+        grid: appMain.querySelector('#product-grid'),
+        mobileSort: appMain.querySelector('#price-sort-mob'),
+        selectAllBtn: appMain.querySelector('#select-all-btn'),
+        activeCatTitle: appMain.querySelector('#active-category-title'),
+        activeCatTitleMob: appMain.querySelector('#active-category-title-mob'),
+        categorySelector: appMain.querySelector('#category-selector-container')
+    };
+}
+
+export function runHomePostRenderTasks({
+    renderSlider,
+    renderSpotlightSection,
+    initImpressionTracking,
+    syncHomeSearchUi,
+    searchValue,
+    mobileSort,
+    sortValue,
+    setHomeMobileNavActive,
+    applyHomePostRenderScroll,
+    isLoadMore,
+    skipScroll,
+    scrollPos
+}) {
+    renderSlider();
+    renderSpotlightSection();
+    initImpressionTracking();
+
+    syncHomeSearchUi({ searchValue });
+    if (mobileSort) mobileSort.value = sortValue;
+    setHomeMobileNavActive();
+
+    return applyHomePostRenderScroll({
+        isLoadMore,
+        skipScroll,
+        searchValue,
+        scrollPos
+    });
+}
+
 export function buildHomeCategoryRowHtml({
     categories,
     activeFilter,

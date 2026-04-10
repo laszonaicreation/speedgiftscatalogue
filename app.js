@@ -8,7 +8,7 @@ import { mountSharedShell } from "./shared-shell.js?v=2";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { createAdminProxyFactory } from "./home-admin-bridge.js";
 import { fetchHomeDataBundle } from "./home-data.js";
-import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, buildHomeProductCardHtml, ensureHomeLoadMoreContainer, buildHomeCategoryRowHtml, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection } from "./home-ui.js";
+import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, ensureHomeLoadMoreContainer, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection, renderHomeCategoryRow, getHomeBestsellerProducts, applyHomeBestsellerSeo, ensureHomeViewScaffold, getHomeRenderElements, runHomePostRenderTasks } from "./home-ui.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -1085,31 +1085,19 @@ function renderHome() {
 
         const appMain = document.getElementById('app');
         const template = document.getElementById('home-view-template');
-        if (!appMain || !template) return;
-
-        // Simple check: If product grid is absent, load the template
-        // This ensures we always have the UI structure.
-        if (!appMain.querySelector('#product-grid')) {
-            appMain.innerHTML = template.innerHTML;
-        }
+        if (!ensureHomeViewScaffold({ appMain, template })) return;
 
         // SELECT ALL ELEMENTS AFTER INJECTION
         if (typeof window.renderDesktopMegaMenu === 'function') window.renderDesktopMegaMenu();
-        const catRow = appMain.querySelector('#category-row');
-        const grid = appMain.querySelector('#product-grid');
-        const viewTitle = appMain.querySelector('#view-title');
-        const viewSubtitle = appMain.querySelector('#view-subtitle');
-        const selectAllBtn = appMain.querySelector('#select-all-btn');
-        const activeCatTitle = appMain.querySelector('#active-category-title');
-        const activeCatTitleMob = appMain.querySelector('#active-category-title-mob');
-        const categorySelector = appMain.querySelector('#category-selector-container');
-
-        // Search elements are now outside appMain in the top layout block
-        const discSearch = document.getElementById('customer-search');
-        const clearBtn = document.getElementById('clear-search-btn');
-
-        const mobileSort = appMain.querySelector('#price-sort-mob');
-        const mSearch = document.getElementById('m-search'); // Mobile sidebar search input
+        const {
+            catRow,
+            grid,
+            mobileSort,
+            selectAllBtn,
+            activeCatTitle,
+            activeCatTitleMob,
+            categorySelector
+        } = getHomeRenderElements(appMain) || {};
 
         // NOTE: Event listeners are attached ONCE at init time (see initSearchListeners)
         // Do NOT add listeners here — they would be duplicated on every renderHome() call.
@@ -1118,9 +1106,8 @@ function renderHome() {
         if (catRow) catRow.classList.remove('hidden');
         if (categorySelector) categorySelector.classList.remove('hidden');
 
-            const isAdminVisible = !document.getElementById('admin-entry-btn').classList.contains('hidden');
-
-            let categories = [...DATA.c].sort((a, b) => {
+        const isAdminVisible = !document.getElementById('admin-entry-btn').classList.contains('hidden');
+        const categories = [...DATA.c].sort((a, b) => {
                 const pinA = a.isPinned ? 1 : 0;
                 const pinB = b.isPinned ? 1 : 0;
                 if (pinA !== pinB) return pinB - pinA;
@@ -1129,63 +1116,22 @@ function renderHome() {
                 }
                 return 0;
             });
-
-            const cHtml = buildHomeCategoryRowHtml({
-                categories,
-                activeFilter: state.filter,
-                getImageUrl: (c) => getOptimizedUrl(c.img, 200) || 'https://placehold.co/100x100?text=Gift',
-                isAdminVisible
-            });
-            if (catRow) {
-                catRow.innerHTML = cHtml;
-
-                // Wait for DOM to settle
-                setTimeout(() => {
-                    // 1. Auto-scroll active item into view
-                    if (state.filter !== 'all') {
-                        const activeItem = catRow.querySelector('.category-item.active');
-                        if (activeItem) {
-                            // Calculate relative offset within the row
-                            const scrollOffset = activeItem.offsetLeft - catRow.scrollLeft;
-                            // We want it at the start, so we adjust current scroll
-                            catRow.scrollTo({ left: catRow.scrollLeft + (activeItem.getBoundingClientRect().left - catRow.getBoundingClientRect().left) - 16, behavior: 'smooth' });
-                        }
-                    }
-
-
-                }, 100);
-            }
-        
-        let filtered = [];
-        const stockFilter = (items) => items.filter(p => p.inStock !== false);
-        // Home page now focuses on bestsellers only.
-        filtered = stockFilter(DATA.p.filter(p => p.isFeatured));
-        if (filtered.length === 0) filtered = stockFilter(DATA.p);
-
-        // Sort: Pinned items first, then by selected sort
-        filtered.sort((a, b) => {
-            const pinA = a.isPinned ? 1 : 0;
-            const pinB = b.isPinned ? 1 : 0;
-            if (pinA !== pinB) return pinB - pinA; // Pinned first
-
-            if (state.sort !== 'all') {
-                const priceA = parseFloat(a.price) || 0;
-                const priceB = parseFloat(b.price) || 0;
-                return state.sort === 'low' ? priceA - priceB : priceB - priceA;
-            }
-            return (b.updatedAt || 0) - (a.updatedAt || 0); // Default sort: Newest first
+        renderHomeCategoryRow({
+            catRow,
+            categories,
+            activeFilter: state.filter,
+            getImageUrl: (c) => getOptimizedUrl(c.img, 200) || 'https://placehold.co/100x100?text=Gift',
+            isAdminVisible
         });
-        const catNameDisplay = "Our Bestsellers";
-        if (activeCatTitle) activeCatTitle.innerText = catNameDisplay;
-        if (activeCatTitleMob) activeCatTitleMob.innerText = catNameDisplay;
-
-        // Dynamic Page Title for Ads/SEO
-        document.title = `${catNameDisplay} | Speed Gifts Website`;
-        try {
-            updateMetaDescription(`Explore our ${catNameDisplay} collection at Speed Gifts. Premium selection of personalized gifts.`);
-            const cId = state.filter !== 'all' ? state.filter : '';
-            updateCanonicalURL(cId ? `?c=${cId}` : '');
-        } catch (e) { console.error("SEO Update failed:", e); }
+        
+        const filtered = getHomeBestsellerProducts({ products: DATA.p, sort: state.sort });
+        applyHomeBestsellerSeo({
+            activeCatTitle,
+            activeCatTitleMob,
+            activeFilter: state.filter,
+            updateMetaDescription,
+            updateCanonicalURL
+        });
 
         // Selection/share UI moved to shop page; hide any legacy button if present.
         if (selectAllBtn?.parentElement) selectAllBtn.parentElement.style.display = 'none';
@@ -1207,22 +1153,18 @@ function renderHome() {
             });
         }
 
-        renderSlider();
-        renderSpotlightSection();
-        initImpressionTracking();
-
-        // 5. Update Search & Sort UI
-        syncHomeSearchUi({ searchValue: state.search });
-
-        if (mobileSort) mobileSort.value = state.sort;
-
-        // Update Mobile Nav Active State
-        setHomeMobileNavActive();
-
-        const scrollResult = applyHomePostRenderScroll({
+        const scrollResult = runHomePostRenderTasks({
+            renderSlider,
+            renderSpotlightSection,
+            initImpressionTracking,
+            syncHomeSearchUi,
+            searchValue: state.search,
+            mobileSort,
+            sortValue: state.sort,
+            setHomeMobileNavActive,
+            applyHomePostRenderScroll,
             isLoadMore: state.isLoadMore,
             skipScroll: state.skipScroll,
-            searchValue: state.search,
             scrollPos: state.scrollPos
         });
         state.isLoadMore = scrollResult.nextIsLoadMore;
