@@ -5,7 +5,7 @@ echo   Speed Gifts - Build and Deploy
 echo ========================================
 echo.
 
-echo [1/4] Minifying app.js...
+echo [1/5] Minifying app.js...
 call npx terser app.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output app.min.js
 
 if %errorlevel% neq 0 (
@@ -16,7 +16,18 @@ if %errorlevel% neq 0 (
 echo Done! app.min.js updated.
 echo.
 
-echo [2/4] Minifying style.css...
+echo [2/5] Minifying shop.js...
+call npx terser shop.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output shop.min.js
+
+if %errorlevel% neq 0 (
+    echo ERROR: Shop JS Minification failed! Deploy cancelled.
+    pause
+    exit /b 1
+)
+echo Done! shop.min.js updated.
+echo.
+
+echo [3/5] Minifying style.css...
 call npx clean-css-cli -o style.min.css style.css
 
 if %errorlevel% neq 0 (
@@ -27,7 +38,7 @@ if %errorlevel% neq 0 (
 echo Done! style.min.css updated.
 echo.
 
-echo [3/4] Minifying index.dev.html...
+echo [4/5] Minifying index.dev.html...
 call npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true -o index.html index.dev.html
 
 if %errorlevel% neq 0 (
@@ -38,7 +49,7 @@ if %errorlevel% neq 0 (
 echo Done! index.html updated.
 echo.
 
-echo [4/4] Deploying to Firebase Hosting...
+echo [5/5] Deploying to Firebase Hosting...
 call firebase deploy --only hosting
 
 if %errorlevel% neq 0 (
