@@ -30,9 +30,9 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         <div class="flex flex-col h-full justify-between detail-info-pane">
             <div class="space-y-6">
                 <div>
-                    <div class="flex items-center gap-3 mb-2">
+                    ${product.badge ? `<span class="detail-badge badge-${product.badge}" style="display:inline-flex;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:400;letter-spacing:0.04em;margin-bottom:8px;color:#111111;">${getBadgeLabel(product.badge)}</span>` : ''}
+                    <div class="flex items-center gap-3 mb-6">
                         <h2 class="detail-product-name capitalize !mb-0">${product.name}</h2>
-                        ${product.badge ? `<span class="detail-badge badge-${product.badge}">${getBadgeLabel(product.badge)}</span>` : ''}
                     </div>
                     ${(() => {
             const origP = parseFloat(product.originalPrice);
