@@ -47,6 +47,7 @@ const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 const INITIAL_EAGER_IMAGES = 4;
 const INITIAL_PRELOAD_PRODUCTS = 4;
 const INITIAL_PRELOAD_SLIDERS = 2;
+const INITIAL_EAGER_CATEGORY_IMAGES = 6;
 let clicks = 0, lastClickTime = 0;
 let iti; // Phone input instance
 const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
@@ -837,6 +838,7 @@ async function refreshData(isNavigationOnly = false) {
             DATA.landingSettings = bundle.landingSettings;
             DATA.homeSettings = bundle.homeSettings;
             DATA.stats = bundle.stats;
+            primeHomeCriticalAssets();
 
             renderAnnouncementBar();
             renderDesktopMegaMenu();
@@ -1578,6 +1580,49 @@ window.preloadInitialBatch = () => {
         DATA.p.slice(0, INITIAL_PRELOAD_PRODUCTS).forEach(p => window.preloadProductImage(p.id, 'low'));
     }
 };
+
+let homeCriticalAssetsPrimed = false;
+function primeHomeCriticalAssets() {
+    if (homeCriticalAssetsPrimed) return;
+    homeCriticalAssetsPrimed = true;
+    try {
+        const ensurePreconnect = (href) => {
+            if (!href || document.querySelector(`link[rel="preconnect"][href="${href}"]`)) return;
+            const link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = href;
+            link.crossOrigin = 'anonymous';
+            document.head.appendChild(link);
+        };
+        ensurePreconnect('https://res.cloudinary.com');
+        ensurePreconnect('https://api.cloudinary.com');
+
+        const prime = (src, priority = 'high') => {
+            if (!src) return;
+            const img = new Image();
+            img.fetchPriority = priority;
+            img.decoding = 'async';
+            img.src = src;
+        };
+
+        const isMobile = window.matchMedia("(max-width: 767px)").matches;
+        const firstSlider = (DATA.s || []).find((s) => {
+            const candidate = isMobile ? s?.mobileImg : s?.img;
+            return candidate && candidate !== 'img/';
+        });
+        if (firstSlider) {
+            const sliderSrc = getOptimizedUrl(isMobile ? firstSlider.mobileImg : firstSlider.img, isMobile ? 1200 : 1920);
+            prime(sliderSrc, 'high');
+        }
+
+        (DATA.c || []).slice(0, INITIAL_EAGER_CATEGORY_IMAGES).forEach((c) => {
+            const src = getOptimizedUrl(c?.img, 200);
+            if (src) prime(src, 'high');
+        });
+    } catch (e) {
+        // Non-blocking warmup path
+    }
+}
 
 
 function getOptimizedUrl(url, width) {
