@@ -20,6 +20,78 @@ export function initAdmin(ctx) {
     const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
     if (!Array.isArray(state.selected)) state.selected = [];
     if (typeof state.selectionId === 'undefined') state.selectionId = null;
+    let megaMenuEditSelection = null;
+window.addColorVariationRow = (colorName = '', price = '', images = [], hex = '#000000') => {
+    const container = document.getElementById('color-variation-rows');
+    if (!container) return;
+    const rowId = 'v-color-' + Date.now() + Math.random().toString(36).substr(2, 5);
+    const div = document.createElement('div');
+    div.className = 'color-variation-row bg-white p-4 rounded-xl border border-gray-100 space-y-3 relative fade-in';
+    div.innerHTML = `
+        <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+            <input type="text" class="vc-color admin-input !bg-gray-50" placeholder="Color Name" value="${colorName}">
+                <input type="text" class="vc-price admin-input !bg-gray-50" placeholder="Price" value="${price}">
+                </div>
+                <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                    <span class="text-[9px] font-black uppercase text-gray-400 ml-2">Visual Color:</span>
+                    <input type="color" class="vc-hex h-8 w-12 rounded cursor-pointer bg-transparent border-none" value="${hex}">
+                        <span class="text-[10px] font-mono text-gray-400">${hex}</span>
+                </div>
+                <div class="space-y-2">
+                    <div id="${rowId}-grid" class="grid grid-cols-4 gap-2 vc-image-grid"></div>
+                    <div class="drop-zone flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-gray-100 group hover:border-black transition-all" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleMultiDrop(event, '${rowId}-grid')">
+                        <i class="fa-solid fa-images text-gray-200 group-hover:text-black transition-all"></i>
+                        <button type="button" onclick="window.cloudinaryMultiUpload('${rowId}-grid')" class="text-[8px] font-black uppercase px-3 py-2 bg-gray-100 rounded-lg hover:bg-black hover:text-white transition-all">Add Photos</button>
+                    </div>
+                </div>
+                `;
+
+    const picker = div.querySelector('.vc-hex');
+    picker.addEventListener('input', (e) => {
+        e.target.nextElementSibling.innerText = e.target.value.toUpperCase();
+    });
+
+    container.appendChild(div);
+    if (images && images.length > 0) {
+        images.forEach(img => window.addImageToGrid(`${rowId}-grid`, img));
+    } else if (typeof images === 'string' && images !== 'img/') {
+        window.addImageToGrid(`${rowId}-grid`, images);
+    }
+};
+
+window.addVariationRow = (size = '', price = '', images = []) => {
+    const container = document.getElementById('variation-rows');
+    if (!container) return;
+    const rowId = 'v-size-' + Date.now() + Math.random().toString(36).substr(2, 5);
+    const div = document.createElement('div');
+    div.className = 'variation-row bg-white p-4 rounded-xl border border-gray-100 space-y-3 relative fade-in';
+    div.innerHTML = `
+                <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" class="v-size admin-input !bg-gray-50" placeholder="Size" value="${size}">
+                        <input type="text" class="v-price admin-input !bg-gray-50" placeholder="Price" value="${price}">
+                        </div>
+                        <div class="space-y-2">
+                            <div id="${rowId}-grid" class="grid grid-cols-4 gap-2 v-image-grid"></div>
+                            <div class="drop-zone flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-gray-100 group hover:border-black transition-all" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleMultiDrop(event, '${rowId}-grid')">
+                                <i class="fa-solid fa-images text-gray-200 group-hover:text-black transition-all"></i>
+                                <button type="button" onclick="window.cloudinaryMultiUpload('${rowId}-grid')" class="text-[8px] font-black uppercase px-3 py-2 bg-gray-100 rounded-lg hover:bg-black hover:text-white transition-all">Add Photos</button>
+                            </div>
+                        </div>
+                        `;
+    container.appendChild(div);
+    if (images && images.length > 0) {
+        images.forEach(img => window.addImageToGrid(`${rowId}-grid`, img));
+    } else if (typeof images === 'string' && images !== 'img/') {
+        window.addImageToGrid(`${rowId}-grid`, images);
+    }
+};
+
 window.saveProduct = async () => {
     const id = document.getElementById('edit-id')?.value;
     const btn = document.getElementById('p-save-btn');
@@ -129,11 +201,34 @@ window.deleteMegaMenu = async (id) => { if (!confirm("Delete Desktop Menu?")) re
 window.editMegaMenu = (id) => {
     const item = DATA.m.find(x => x.id === id);
     if (!item) return;
+    const selectedIds = new Set();
+    (Array.isArray(item.categoryIds) ? item.categoryIds : []).forEach((entry) => {
+        if (!entry) return;
+        if (typeof entry === 'string') {
+            selectedIds.add(entry);
+            selectedIds.add(entry.trim());
+            selectedIds.add(entry.toLowerCase().trim());
+            return;
+        }
+        if (typeof entry === 'object') {
+            const rawId = String(entry.id || entry.value || entry.catId || '').trim();
+            const rawName = String(entry.name || entry.label || '').trim();
+            if (rawId) {
+                selectedIds.add(rawId);
+                selectedIds.add(rawId.toLowerCase());
+            }
+            if (rawName) {
+                selectedIds.add(rawName);
+                selectedIds.add(rawName.toLowerCase());
+            }
+        }
+    });
+    megaMenuEditSelection = selectedIds;
 
-    // 1. Switch to megamenu tab FIRST so the DOM gets rendered
+    // 1) Switch tab first so megamenu form/checklist exists
     switchAdminTab('megamenu');
 
-    // 2. Now that DOM is ready, fill the form fields
+    // 2) Fill edit meta fields
     const editId = document.getElementById('edit-megamenu-id');
     const mName = document.getElementById('m-name');
     const mFormTitle = document.getElementById('m-form-title');
@@ -141,17 +236,41 @@ window.editMegaMenu = (id) => {
     if (mName) mName.value = item.name;
     if (mFormTitle) mFormTitle.innerText = 'Editing: ' + item.name;
 
-    // 3. renderAdminMegaMenus rebuilds the checklist - call it to ensure boxes are fresh
+    // 3) Rebuild checklist so latest category list is present
     renderAdminMegaMenus();
 
-    // 4. NOW tick the correct boxes (checklist exists in DOM now)
-    setTimeout(() => {
-        document.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
-            cb.checked = Array.isArray(item.categoryIds) && item.categoryIds.includes(cb.value);
-            cb.dispatchEvent(new Event('change')); // update custom tick visual
+    // 4) Tick selected categories (retry briefly in case tab render is async)
+    const applyTicks = () => {
+        const boxes = document.querySelectorAll('.mega-cat-checkbox');
+        if (!boxes.length) return false;
+        boxes.forEach(cb => {
+            const rawVal = String(cb.value || '').trim();
+            const cat = (DATA.c || []).find((c) => c.id === rawVal);
+            const catName = String(cat?.name || '').trim();
+            cb.checked =
+                selectedIds.has(rawVal) ||
+                selectedIds.has(rawVal.toLowerCase()) ||
+                (catName && (selectedIds.has(catName) || selectedIds.has(catName.toLowerCase())));
+            cb.dispatchEvent(new Event('change'));
         });
+        return true;
+    };
+
+    if (!applyTicks()) {
+        let tries = 0;
+        const maxTries = 8;
+        const retry = () => {
+            if (applyTicks() || tries >= maxTries) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            tries += 1;
+            requestAnimationFrame(retry);
+        };
+        requestAnimationFrame(retry);
+    } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 50);
+    }
 };
 
 window.editProduct = (id) => {
@@ -1063,6 +1182,7 @@ window.resetForm = () => {
     // Reset Mega Menu category checkboxes + custom tick visuals
     const editMegaId = document.getElementById('edit-megamenu-id');
     if (editMegaId) editMegaId.value = "";
+    megaMenuEditSelection = null;
     const mTitle = document.getElementById('m-form-title');
     if (mTitle) mTitle.innerText = "New Main Category";
     document.querySelectorAll('.mega-cat-checkbox').forEach(cb => {
@@ -2742,11 +2862,37 @@ function renderAdminMegaMenus() {
     const list = document.getElementById('admin-megamenu-list');
     const checklist = document.getElementById('m-categories-checkboxes');
     if (!list || !checklist) return;
+    const currentEditId = document.getElementById('edit-megamenu-id')?.value || '';
+    const currentEditItem = currentEditId ? (DATA.m || []).find(m => m.id === currentEditId) : null;
+    const preselected = megaMenuEditSelection instanceof Set ? megaMenuEditSelection : new Set();
+    if (!preselected.size) {
+        (Array.isArray(currentEditItem?.categoryIds) ? currentEditItem.categoryIds : []).forEach((entry) => {
+            if (!entry) return;
+            if (typeof entry === 'string') {
+                preselected.add(entry);
+                preselected.add(entry.trim());
+                preselected.add(entry.toLowerCase().trim());
+                return;
+            }
+            if (typeof entry === 'object') {
+                const rawId = String(entry.id || entry.value || entry.catId || '').trim();
+                const rawName = String(entry.name || entry.label || '').trim();
+                if (rawId) {
+                    preselected.add(rawId);
+                    preselected.add(rawId.toLowerCase());
+                }
+                if (rawName) {
+                    preselected.add(rawName);
+                    preselected.add(rawName.toLowerCase());
+                }
+            }
+        });
+    }
 
     // 1. Render Checklist (all normal categories)
     checklist.innerHTML = DATA.c.map(c => `
-        <label class="flex items-center gap-2 cursor-pointer border border-gray-100 bg-white rounded-xl shadow-sm transition-all hover:border-gray-900 hover:bg-gray-50" style="height:52px; padding: 0 10px; overflow:hidden;">
-            <input type="checkbox" value="${c.id}" class="mega-cat-checkbox sr-only">
+        <label class="mega-cat-label flex items-center gap-2 cursor-pointer border border-gray-100 bg-white rounded-xl shadow-sm transition-all hover:border-gray-900 hover:bg-gray-50" data-cat-id="${c.id}" style="height:52px; padding: 0 10px; overflow:hidden;">
+            <input type="checkbox" value="${c.id}" class="mega-cat-checkbox sr-only" ${(preselected.has(c.id) || preselected.has(String(c.id).toLowerCase()) || preselected.has(c.name) || preselected.has(String(c.name || '').toLowerCase())) ? 'checked' : ''}>
             <div class="flex-shrink-0 w-5 h-5 rounded-md border-2 border-gray-200 bg-white flex items-center justify-center transition-all mega-tick-box" style="min-width:20px;">
                 <svg class="mega-tick-icon hidden" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
@@ -2773,6 +2919,18 @@ function renderAdminMegaMenus() {
         };
         cb.addEventListener('change', updateTick);
         updateTick(); // apply initial state if pre-checked
+    });
+
+    // Robust click handling: even when input is visually hidden, clicking anywhere on the row toggles the checkbox.
+    checklist.querySelectorAll('.mega-cat-label').forEach((labelEl) => {
+        labelEl.addEventListener('click', (e) => {
+            const input = labelEl.querySelector('.mega-cat-checkbox');
+            if (!input) return;
+            if (e.target === input) return; // native toggle already handled
+            e.preventDefault();
+            input.checked = !input.checked;
+            input.dispatchEvent(new Event('change'));
+        });
     });
 
     // 2. Render created Mega Menus
@@ -2805,13 +2963,13 @@ function renderAdminMegaMenus() {
 
             <!-- Right: Edit + Delete Buttons -->
             <div style="display:flex; gap:8px; flex-shrink:0;">
-                <button onclick="editMegaMenu('${m.id}')"
+                <button type="button" onclick="editMegaMenu('${m.id}')"
                     style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#f3f4f6;border:none;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#374151;cursor:pointer;transition:all 0.2s;"
                     onmouseover="this.style.background='#000';this.style.color='#fff'"
                     onmouseout="this.style.background='#f3f4f6';this.style.color='#374151'">
                     <i class="fa-solid fa-pen" style="font-size:9px;"></i> Edit
                 </button>
-                <button onclick="deleteMegaMenu('${m.id}')"
+                <button type="button" onclick="deleteMegaMenu('${m.id}')"
                     style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff0f0;border:none;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#ef4444;cursor:pointer;transition:all 0.2s;"
                     onmouseover="this.style.background='#ef4444';this.style.color='#fff'"
                     onmouseout="this.style.background='#fff0f0';this.style.color='#ef4444'">
