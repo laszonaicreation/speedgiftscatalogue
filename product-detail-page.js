@@ -26,9 +26,14 @@ const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories'
 const DATA = { p: [], c: [] };
 const state = { wishlist: [], currentVar: null };
 const WISHLIST_KEY = 'speedgifts_detail_wishlist';
+const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
+const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 const DETAIL_CACHE_KEY = 'speedgifts_detail_cache';
 const HOME_SNAPSHOT_KEY = 'speedgifts_home_snapshot';
 const trackedProductViews = new Set();
+const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
+    ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
+    : null;
 
 registerProductDetailInteractions({ getOptimizedUrl, state });
 
@@ -165,19 +170,32 @@ function loadWishlist() {
 
 function saveWishlist() {
     localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist));
+    localStorage.setItem(WISHLIST_SYNC_PING_KEY, String(Date.now()));
+    wishlistChannel?.postMessage({ wishlist: state.wishlist, at: Date.now() });
 }
 
-window.toggleWishlist = (event, id) => {
+async function persistWishlistToCloud() {
+    try {
+        const user = auth.currentUser;
+        if (!user?.uid) return;
+        const wishRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'wishlist');
+        const ids = state.wishlist.map((entry) => (typeof entry === 'string' ? entry : entry?.id)).filter(Boolean);
+        await setDoc(wishRef, { ids }, { merge: true });
+    } catch (e) {
+        // Non-blocking: local wishlist is source-of-truth fallback
+    }
+}
+
+window.toggleWishlist = async (event, id) => {
     event?.stopPropagation?.();
     const idx = state.wishlist.findIndex(x => (typeof x === 'string' ? x : x.id) === id);
     if (idx >= 0) {
         state.wishlist.splice(idx, 1);
-        showToast('Removed from favorites');
     } else {
         state.wishlist.push(id);
-        showToast('Added to favorites');
     }
     saveWishlist();
+    await persistWishlistToCloud();
     const icon = document.querySelector('#detail-wish-btn i');
     if (icon) {
         const active = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);

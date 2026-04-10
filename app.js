@@ -1428,6 +1428,16 @@ window.toggleHomeBestView = (expand) => {
     state.homeBestExpanded = !!expand;
     state.skipScroll = true;
     renderHome();
+    // UX: when collapsing, bring the user back to the bestsellers heading.
+    if (!expand) {
+        setTimeout(() => {
+            const title = document.getElementById('active-category-title');
+            if (!title) return;
+            const yOffset = -120;
+            const y = title.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        }, 60);
+    }
 };
 
 window.showAdminPanel = createAdminProxy('showAdminPanel');
@@ -2154,6 +2164,7 @@ window.focusSearch = () => {
 // SLIDER LOGIC
 let sliderInterval;
 let currentSlide = 0;
+let sliderMarkupKey = '';
 
 function renderSlider() {
     const wrapper = document.getElementById('home-top-elements');
@@ -2165,6 +2176,7 @@ function renderSlider() {
     const isProductDetail = new URLSearchParams(window.location.search).has('p');
     if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all') {
         if (wrapper) wrapper.classList.add('hidden');
+        sliderMarkupKey = '';
         return;
     }
 
@@ -2193,6 +2205,19 @@ function renderSlider() {
 
     if (!visibleSliders.length) {
         if (container) container.classList.add('hidden');
+        sliderMarkupKey = '';
+        return;
+    }
+
+    // Avoid rebuilding slider markup when data/layout is unchanged (prevents white blink on mobile).
+    const nextMarkupKey = [
+        isMobile ? 'm' : 'd',
+        ...visibleSliders.map((s) => `${s.id || ''}|${isMobile ? (s.mobileImg || '') : (s.img || '')}|${s.title || ''}|${s.link || ''}`)
+    ].join('::');
+    const canReuseMarkup = sliderMarkupKey === nextMarkupKey && slider.children.length === visibleSliders.length;
+    if (canReuseMarkup) {
+        if (container) container.classList.remove('hidden');
+        if (wrapper) wrapper.classList.remove('hidden');
         return;
     }
 
@@ -2222,6 +2247,7 @@ function renderSlider() {
             </div>
         `;
     }).join('');
+    sliderMarkupKey = nextMarkupKey;
 
     if (dots) {
         dots.innerHTML = visibleSliders.map((_, i) => `
