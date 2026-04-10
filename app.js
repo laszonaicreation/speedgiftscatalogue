@@ -33,7 +33,7 @@ const landingSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
 
 let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, homeSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
-let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, wishlist: [], cart: [], scrollPos: 0, currentVar: null, visibleChunks: 1, authMode: 'login' };
+let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, wishlist: [], cart: [], scrollPos: 0, currentVar: null, visibleChunks: 1, homeBestExpanded: false, authMode: 'login' };
 let sharedNavMain = null;
 let wishlistRealtimeUnsub = null;
 const PAGE_SIZE = 16;
@@ -1201,37 +1201,9 @@ function renderHome() {
         
         let filtered = [];
         const stockFilter = (items) => items.filter(p => p.inStock !== false);
-        if (state.filter !== 'all') {
-            const isMain = DATA.c.find(c => c.id === state.filter && !c.parentId);
-            let validIds = [state.filter];
-            if (isMain) {
-                // If main category, include all its sub-categories' products
-                const childIds = DATA.c.filter(c => c.parentId === state.filter).map(c => c.id);
-                validIds = validIds.concat(childIds);
-            }
-            filtered = stockFilter(DATA.p.filter(p => validIds.includes(p.catId)));
-        }
-        else {
-            filtered = stockFilter(DATA.p.filter(p => p.isFeatured));
-            if (filtered.length === 0) filtered = stockFilter(DATA.p);
-        }
-
-        if (state.search) {
-            const q = state.search.toLowerCase().trim();
-            const words = q.split(' ').filter(w => w.length > 0);
-
-            let source = stockFilter(DATA.p);
-
-            filtered = source.filter(p => {
-                const name = (p.name || '').toLowerCase();
-                const keywords = (p.keywords || '').toLowerCase();
-                const catObj = DATA.c.find(c => c.id === p.catId);
-                const catName = catObj ? catObj.name.toLowerCase() : '';
-
-                // Match if ALL search words are found in name OR category OR keywords
-                return words.every(word => name.includes(word) || catName.includes(word) || keywords.includes(word));
-            });
-        }
+        // Home page now focuses on bestsellers only.
+        filtered = stockFilter(DATA.p.filter(p => p.isFeatured));
+        if (filtered.length === 0) filtered = stockFilter(DATA.p);
 
         // Sort: Pinned items first, then by selected sort
         filtered.sort((a, b) => {
@@ -1246,11 +1218,7 @@ function renderHome() {
             }
             return (b.updatedAt || 0) - (a.updatedAt || 0); // Default sort: Newest first
         });
-        let catNameDisplay = (state.filter === 'all' && filtered.length > 0 && filtered.length < stockFilter(DATA.p).length) ? "Our Bestsellers" : "All Collections";
-        if (state.filter !== 'all') {
-            const catObj = DATA.c.find(c => c.id === state.filter);
-            if (catObj) catNameDisplay = catObj.name;
-        }
+        const catNameDisplay = "Our Bestsellers";
         if (activeCatTitle) activeCatTitle.innerText = catNameDisplay;
         if (activeCatTitleMob) activeCatTitleMob.innerText = catNameDisplay;
 
@@ -1271,11 +1239,10 @@ function renderHome() {
 
             // Always show complete rows — never leave an orphan product on the last row
             const cols = getColumnsCount();
-            // When a specific category is selected, show ALL products in that category
-            // Only paginate on the home 'all' view where View More button exists
-            const limit = state.filter !== 'all' ? filtered.length : state.visibleChunks * (cols * 2);
+            // Home page shows a compact bestsellers slice by default, expandable in-place.
+            const limit = state.homeBestExpanded ? filtered.length : (cols * 2);
             const visibleProducts = filtered.slice(0, limit);
-            const hasMore = state.filter === 'all' && filtered.length > limit;
+            const hasMore = filtered.length > limit;
 
             let gridContent = visibleProducts.map((p, idx) => {
                 let displayP = { ...p };
@@ -1379,19 +1346,16 @@ function renderHome() {
                 }
             }
 
-            // Hide View More when a specific category is selected — show all products in that category
-            if (state.filter !== 'all') {
-                loadMoreContainer.style.display = 'none';
-            } else if (hasMore) {
+            if (hasMore) {
                 loadMoreContainer.innerHTML = `
-                    <button onclick="window.loadMoreProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
+                    <button onclick="window.toggleHomeBestView(true)" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
                         View More <i class="fa-solid fa-arrow-down transform md:group-hover:translate-y-1 transition-transform"></i>
                     </button>
                 `;
                 loadMoreContainer.style.display = 'flex';
-            } else if (state.visibleChunks > 1) {
+            } else if (state.homeBestExpanded && filtered.length > (cols * 2)) {
                 loadMoreContainer.innerHTML = `
-                    <button onclick="window.showLessProducts()" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
+                    <button onclick="window.toggleHomeBestView(false)" class="bg-black text-white rounded-full font-black uppercase tracking-[0.2em] shadow-md md:hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group view-more-btn-custom">
                         Show Less <i class="fa-solid fa-arrow-up transform md:group-hover:-translate-y-1 transition-transform"></i>
                     </button>
                 `;
@@ -1424,11 +1388,7 @@ function renderHome() {
 
         // Update Mobile Nav Active State
         document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('active'));
-        if (state.search) {
-            document.querySelector('.mobile-nav-btn:nth-child(2)')?.classList.add('active');
-        } else if (state.filter === 'all' && !new URLSearchParams(window.location.search).has('p')) {
-            document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
-        }
+        document.querySelector('.mobile-nav-btn:nth-child(1)')?.classList.add('active');
 
         if (state.isLoadMore || state.skipScroll) {
             state.isLoadMore = false;
@@ -1985,38 +1945,26 @@ window.showSearchSuggestions = (show) => {
 };
 let searchTimeout;
 window.applyCustomerSearch = (val) => {
-    state.search = val;
-    if (val) state.filter = 'all';
-
+    const query = (val || '').trim();
+    state.search = query; // Keep typed text visible until navigation happens.
+    // Do not auto-navigate while typing on home.
+    // Navigation is handled only on Enter key (see initSearchListeners).
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        // Push state for search (replace if same type to avoid polluting history with every letter)
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentQ = urlParams.get('q') || '';
-        if (val !== currentQ) {
-            // Use replaceState if we are just refining a search, pushState for a new search
-            const isRefining = currentQ && val.startsWith(currentQ);
-            safePushState({ q: val || null, c: 'all', p: null }, isRefining);
-        }
-        // Use lightweight search-only render (skips category row, mega menu, slider)
-        renderSearchResults();
-    }, 500); // 500ms debounce — good balance of speed vs. unnecessary renders
 
     // Update Clear Button UI immediately with safety
     const clearBtn = document.getElementById('clear-search-btn');
     if (clearBtn) {
-        if (val) clearBtn.classList.remove('hidden');
+        if (query) clearBtn.classList.remove('hidden');
         else clearBtn.classList.add('hidden');
     }
     const deskClearBtn = document.getElementById('desk-clear-btn');
     if (deskClearBtn) {
-        if (val) deskClearBtn.classList.remove('hidden');
+        if (query) deskClearBtn.classList.remove('hidden');
         else deskClearBtn.classList.add('hidden');
     }
 };
 window.clearCustomerSearch = () => {
     state.search = '';
-    exitSearchMode();
     const input = document.getElementById('customer-search');
     const deskInput = document.getElementById('desk-search');
     if (input) { input.value = ''; input.blur(); }
@@ -2026,11 +1974,13 @@ window.clearCustomerSearch = () => {
     if (clearBtn) clearBtn.classList.add('hidden');
     const deskClearBtn = document.getElementById('desk-clear-btn');
     if (deskClearBtn) deskClearBtn.classList.add('hidden');
-    // Clear URL search param
-    safePushState({ q: null, c: null, p: null });
-    renderHome();
 };
 window.applyPriceSort = (sort) => { state.sort = sort; renderHome(); };
+window.toggleHomeBestView = (expand) => {
+    state.homeBestExpanded = !!expand;
+    state.skipScroll = true;
+    renderHome();
+};
 async function ensureAdminModuleLoaded() {
     if (window.__adminModuleReady) return true;
     try {

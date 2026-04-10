@@ -5,6 +5,12 @@ export function mountSharedShell(page = 'shop') {
     const isHome = page === 'home';
     const deskSearchId = isHome ? 'desk-search' : 'shop-search';
     const deskClearId = isHome ? 'desk-clear-btn' : 'shop-clear-btn';
+    const initialSearchQuery = !isHome ? (new URLSearchParams(window.location.search).get('q') || '') : '';
+    const escapedInitialSearch = initialSearchQuery
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
     const mobileNavHtml = isHome
         ? `
             <button onclick="window.goBackToHome && window.goBackToHome(true)" class="mobile-nav-btn active"><i class="fa-solid fa-house"></i> <span>Home</span></button>
@@ -42,8 +48,8 @@ export function mountSharedShell(page = 'shop') {
             <div class="w-1/4 md:flex-1 flex justify-end items-center gap-4 md:gap-6">
                 <div class="hidden md:block" style="position:relative;width:100%;max-width:360px;transition:max-width .3s ease">
                     <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;pointer-events:none"></i>
-                    <input type="text" id="${deskSearchId}" class="shop-search-input" placeholder="Search products..." autocomplete="off" style="width:100%;background:#f3f4f6;border:1.5px solid transparent;border-radius:999px;padding:10px 36px 10px 38px;font-size:12px;font-weight:500;color:#111;outline:0;transition:all .2s ease;font-family:inherit">
-                    <button id="${deskClearId}" onclick="clearSearch && clearSearch()" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#e5e7eb;border:none;cursor:pointer;align-items:center;justify-content:center;font-size:9px;color:#666"><i class="fa-solid fa-xmark"></i></button>
+                    <input type="text" id="${deskSearchId}" class="shop-search-input" placeholder="Search products..." autocomplete="off" value="${escapedInitialSearch}" style="width:100%;background:#f3f4f6;border:1.5px solid transparent;border-radius:999px;padding:10px 36px 10px 38px;font-size:12px;font-weight:500;color:#111;outline:0;transition:all .2s ease;font-family:inherit">
+                    <button id="${deskClearId}" onclick="clearSearch && clearSearch()" style="display:${initialSearchQuery ? 'flex' : 'none'};position:absolute;right:8px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#e5e7eb;border:none;cursor:pointer;align-items:center;justify-content:center;font-size:9px;color:#666"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="flex items-center gap-0">
                     <button id="nav-user-btn" onclick="window.handleUserAuthClick()" class="relative flex items-center text-gray-400 hover:text-black transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-gray-50"><i class="fa-solid fa-user text-[18px]" id="desk-user-icon"></i></button>

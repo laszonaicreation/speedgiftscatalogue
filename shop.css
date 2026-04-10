@@ -33,6 +33,33 @@ html, body {
     line-height: 1.5;
 }
 
+/* Reserve shell space early to reduce visual jump before shared navbar mounts */
+#shared-shell-root {
+    display: block;
+    min-height: 64px;
+}
+
+@media (min-width: 768px) {
+    #shared-shell-root {
+        min-height: 112px;
+    }
+}
+
+/* Tiny page-transition veil to soften index -> shop navigation */
+#page-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120000;
+    background: #ffffff;
+    opacity: 1;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+}
+
+#page-transition-overlay.fade-out {
+    opacity: 0;
+}
+
 a { text-decoration: none; color: inherit; }
 button { cursor: pointer; border: none; background: none; font-family: inherit; }
 select { font-family: inherit; }

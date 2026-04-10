@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="shop.css?v=49">
 </head>
 <body>
+    <div id="page-transition-overlay" aria-hidden="true"></div>
 
     <!-- Toast -->
     <div id="toast"></div>
@@ -216,6 +217,30 @@
 
     <div class="hidden" id="mob-cat-list"></div>
 
+    <script>
+        // Instant prefill on first paint (before module boot) to avoid empty-search flash.
+        (function () {
+            const q = new URLSearchParams(window.location.search).get('q') || '';
+            if (!q) return;
+            const mob = document.getElementById('mob-shop-search');
+            const mobClear = document.getElementById('mob-clear-btn');
+            if (mob) mob.value = q;
+            if (mobClear) mobClear.classList.remove('hidden');
+        })();
+    </script>
+    <script>
+        // Remove transition veil quickly after first paint.
+        window.addEventListener('load', function () {
+            var overlay = document.getElementById('page-transition-overlay');
+            if (!overlay) return;
+            requestAnimationFrame(function () {
+                overlay.classList.add('fade-out');
+                setTimeout(function () {
+                    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                }, 220);
+            });
+        });
+    </script>
     <script type="module" src="shop.js?v=40"></script>
 </body>
 </html>

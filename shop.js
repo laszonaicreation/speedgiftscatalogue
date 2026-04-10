@@ -64,6 +64,37 @@ const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
     : null;
 mountSharedShell('shop');
 
+function setupSearchBackNavigationStep() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const q = (params.get('q') || '').trim();
+        if (!q || state.selectionId) return;
+
+        // Apply this only when user comes from home/main page.
+        const ref = document.referrer ? new URL(document.referrer) : null;
+        const fromSameOrigin = ref && ref.origin === window.location.origin;
+        const fromHome = fromSameOrigin && (
+            ref.pathname === '/' ||
+            ref.pathname.endsWith('/index.html') ||
+            ref.pathname.endsWith('/index.dev.html')
+        );
+        if (!fromHome) return;
+        if (window.history.state?.shopSearchStacked) return;
+
+        const baseParams = new URLSearchParams(params);
+        baseParams.delete('q');
+        const baseUrl = `${window.location.pathname}${baseParams.toString() ? `?${baseParams.toString()}` : ''}`;
+        const searchUrl = `${window.location.pathname}?${params.toString()}`;
+
+        // Stack: [shop base] -> [shop search]
+        // So first browser back goes to shop base, second back returns to index.
+        window.history.replaceState({ shopSearchStacked: true, step: 'base' }, '', baseUrl);
+        window.history.pushState({ shopSearchStacked: true, step: 'search' }, '', searchUrl);
+    } catch (err) {
+        console.warn('[ShopPage] back stack setup skipped:', err);
+    }
+}
+
 function getDefaultCategoryId() {
     const sorted = [...(DATA.categories || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
     return sorted[0]?.id || 'all';
@@ -133,6 +164,8 @@ async function fetchData() {
                 console.error('[ShopPage] selection load error:', err);
             }
         }
+
+        setupSearchBackNavigationStep();
 
         await loadWishlist();
         renderCategoryChips();
@@ -906,12 +939,16 @@ function bindSearchInputs() {
     const deskClear = document.getElementById('shop-clear-btn');
     const mobClear  = document.getElementById('mob-clear-btn');
 
-    // Pre-fill if URL has search query
-    if (state.search) {
-        if (deskInput) deskInput.value = state.search;
-        if (mobInput)  mobInput.value  = state.search;
-        if (deskClear) deskClear.style.display = 'flex';
-        if (mobClear)  mobClear.classList.remove('hidden');
+    // Always sync from URL/state so search text remains visible after redirect from home.
+    const urlQ = new URLSearchParams(window.location.search).get('q') || '';
+    if (urlQ && !state.search) state.search = urlQ;
+    if (deskInput) deskInput.value = state.search || '';
+    if (mobInput)  mobInput.value  = state.search || '';
+    const hasInitialVal = !!(state.search && state.search.trim().length > 0);
+    if (deskClear) deskClear.style.display = hasInitialVal ? 'flex' : 'none';
+    if (mobClear) {
+        if (hasInitialVal) mobClear.classList.remove('hidden');
+        else mobClear.classList.add('hidden');
     }
 
     let debounceTimer;
@@ -987,6 +1024,39 @@ function updateURL() {
     if (state.search)            params.set('q', state.search);
     const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
     window.history.replaceState({}, '', newUrl);
+}
+
+function applyStateFromCurrentUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const urlCat = params.get('c');
+    const urlQ = params.get('q');
+    const urlS = params.get('s');
+
+    state.search = urlQ || '';
+    state.filter = (urlCat && urlCat !== 'all') ? urlCat : 'all';
+    state.page = 1;
+
+    // Back from stacked search -> base shop should exit shared-selection mode.
+    if (!urlS) {
+        state.selectionId = null;
+        state.selected = [];
+    }
+
+    const deskInput = document.getElementById('shop-search');
+    const mobInput = document.getElementById('mob-shop-search');
+    const deskClear = document.getElementById('shop-clear-btn');
+    const mobClear = document.getElementById('mob-clear-btn');
+    if (deskInput) deskInput.value = state.search;
+    if (mobInput) mobInput.value = state.search;
+    const hasVal = !!state.search.trim();
+    if (deskClear) deskClear.style.display = hasVal ? 'flex' : 'none';
+    if (mobClear) mobClear.classList.toggle('hidden', !hasVal);
+
+    syncChipUI();
+    syncMobCatUI();
+    renderFilterBanner();
+    renderProducts();
+    setMobileCategorySearchVisibility();
 }
 
 // ─── View Toggle ─────────────────────────────────────────────────
@@ -1231,6 +1301,11 @@ document.addEventListener('click', (e) => {
         dd.classList.add('hidden');
         trigger.classList.remove('open');
     }
+});
+
+window.addEventListener('popstate', () => {
+    // Make browser back update UI immediately (search clear + category state)
+    applyStateFromCurrentUrl();
 });
 
 // ─── Restore scroll position if coming back from PDP ─────────────
