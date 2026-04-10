@@ -131,8 +131,8 @@ window.saveProduct = async () => {
         name: document.getElementById('p-name')?.value || "",
         price: document.getElementById('p-price')?.value || "",
         originalPrice: document.getElementById('p-original-price')?.value || "",
-        size: document.getElementById('p-size')?.value || "",
-        material: document.getElementById('p-material')?.value || "",
+        size: "",
+        material: "",
         inStock: document.getElementById('p-stock')?.checked ?? true,
         img: primaryImg || "img/",
         images: images || [],
@@ -140,6 +140,7 @@ window.saveProduct = async () => {
         badge: document.getElementById('p-badge')?.value || "",
         isFeatured: document.getElementById('p-featured')?.value === 'true',
         desc: document.getElementById('p-desc')?.value || "",
+        details: document.getElementById('p-details')?.value || "",
         keywords: document.getElementById('p-keywords')?.value || "",
         isPinned: document.getElementById('p-pinned')?.checked || false,
         variations: variations || [],
@@ -279,22 +280,19 @@ window.editProduct = (id) => {
     const editId = document.getElementById('edit-id');
     const pName = document.getElementById('p-name');
     const pPrice = document.getElementById('p-price');
-    const pSize = document.getElementById('p-size');
-    const pMaterial = document.getElementById('p-material');
     const pStock = document.getElementById('p-stock');
     const pPinned = document.getElementById('p-pinned');
     const pCatId = document.getElementById('p-cat-id');
     const pBadge = document.getElementById('p-badge'); // Added
     const pFeatured = document.getElementById('p-featured');
     const pDesc = document.getElementById('p-desc');
+    const pDetails = document.getElementById('p-details');
     const pKeywords = document.getElementById('p-keywords');
     const pFormTitle = document.getElementById('p-form-title');
 
     if (editId) editId.value = item.id;
     if (pName) pName.value = item.name;
     if (pPrice) pPrice.value = item.price;
-    if (pSize) pSize.value = item.size || "";
-    if (pMaterial) pMaterial.value = item.material || "";
     if (pStock) pStock.checked = item.inStock !== false;
     if (pPinned) pPinned.checked = item.isPinned || false;
     if (pCatId) pCatId.value = item.catId || "";
@@ -304,6 +302,7 @@ window.editProduct = (id) => {
     if (pOriginalPrice) pOriginalPrice.value = item.originalPrice || "";
 
     if (pDesc) pDesc.value = item.desc;
+    if (pDetails) pDetails.value = item.details || "";
     if (pKeywords) pKeywords.value = item.keywords || "";
     if (pFormTitle) pFormTitle.innerText = "Editing: " + item.name;
 
@@ -1141,7 +1140,7 @@ function populateAdminCatFilter() {
 
 window.resetForm = () => {
     // Basic fields
-    const fields = ['edit-id', 'p-name', 'p-price', 'p-size', 'p-material', 'p-desc', 'p-keywords', 'c-name', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Added 'p-badge' and 'm-name'
+    const fields = ['edit-id', 'p-name', 'p-price', 'p-desc', 'p-details', 'p-keywords', 'c-name', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Added 'p-badge' and 'm-name'
     fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) el.value = "";

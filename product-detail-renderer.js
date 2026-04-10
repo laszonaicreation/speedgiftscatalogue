@@ -30,7 +30,11 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         <div class="flex flex-col h-full justify-between detail-info-pane">
             <div class="space-y-6">
                 <div>
-                    ${product.badge ? `<span class="detail-badge badge-${product.badge}" style="display:inline-flex;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:400;letter-spacing:0.04em;margin-bottom:8px;color:#111111;">${getBadgeLabel(product.badge)}</span>` : ''}
+                    ${(() => {
+            const badgeKey = product.badge || 'best';
+            const badgeText = product.badge ? getBadgeLabel(product.badge) : 'Top Selection';
+            return `<span class="detail-badge badge-${badgeKey}" style="display:inline-flex;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:400;letter-spacing:0.04em;margin-bottom:8px;color:#111111;">${badgeText}</span>`;
+        })()}
                     <div class="flex items-center gap-3 mb-6">
                         <h2 class="detail-product-name capitalize !mb-0">${product.name}</h2>
                     </div>
@@ -49,6 +53,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         })()}
                 </div>
 
+                ${((product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0)) ? `
                 <div class="space-y-6 pt-4 border-t border-gray-50">
                     ${product.colorVariations && product.colorVariations.length > 0 ? `
                     <div class="variation-section">
@@ -78,25 +83,52 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     </div>
                     ` : ''}
 
-                    <div class="flex flex-wrap gap-3 pt-2">
-                        ${product.size && (!product.variations || product.variations.length === 0) ? `<div class="spec-badge"><i class="fa-solid fa-maximize text-[10px] text-gray-400"></i><span>${product.size}</span></div>` : ''}
-                        ${product.material ? `<div class="spec-badge"><i class="fa-solid fa-layer-group text-[10px] text-gray-400"></i><span>${product.material}</span></div>` : ''}
-                    </div>
                 </div>
+                ` : ''}
 
-                <div class="pt-6 border-t border-gray-50">
-                    <span class="detail-label mb-3">Product Story</span>
-                    <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600 space-y-4 overflow-hidden relative" id="desc-container">
-                        ${(() => {
+                <div class="${(product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0) ? 'pt-6' : '-mt-2 pt-0'}">
+                    <div class="detail-accordion">
+                        <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
+                            <span class="detail-accordion-title">Product Discription</span>
+                            <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
+                        </button>
+                        <div class="detail-accordion-content hidden">
+                            <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600 space-y-4 overflow-hidden relative" id="desc-container">
+                                ${(() => {
             const desc = product.desc || 'Premium handcrafted selection curated specifically for our collection.';
             const paragraphs = desc.split('\n').filter(line => line.trim());
-            const fullHtml = paragraphs.map(p => `<p>${p}</p>`).join('');
-            if (desc.length > 280) {
-                return `<div class="desc-content line-clamp-4 transition-all duration-500">${fullHtml}</div>
-                        <button onclick="window.toggleDescription(this)" class="text-[10px] font-black uppercase tracking-widest text-black mt-2 hover:underline">Read More</button>`;
-            }
-            return fullHtml;
+            return paragraphs.map(p => `<p>${p}</p>`).join('') || `<p>${desc}</p>`;
         })()}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-accordion">
+                        <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
+                            <span class="detail-accordion-title">Product Details</span>
+                            <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
+                        </button>
+                        <div class="detail-accordion-content hidden">
+                            <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600">
+                                ${(() => {
+            const detailsRaw = product.details || '';
+            if (!detailsRaw.trim()) return '<p>Details will be updated soon.</p>';
+            const lines = detailsRaw.split('\n').filter(line => line.trim());
+            return lines.map(line => `<p>${line}</p>`).join('');
+        })()}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-accordion">
+                        <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
+                            <span class="detail-accordion-title">Shipping Details</span>
+                            <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
+                        </button>
+                        <div class="detail-accordion-content hidden">
+                            <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600">
+                                <p>Standard delivery across UAE within 1-3 business days. Custom or bulk orders may take additional processing time.</p>
+                                <p>For urgent requirements, please contact us on WhatsApp and our team will assist with the fastest available delivery option.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

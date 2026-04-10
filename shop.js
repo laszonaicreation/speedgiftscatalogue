@@ -63,6 +63,7 @@ const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
     ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
     : null;
 mountSharedShell('shop');
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 function setupSearchBackNavigationStep() {
     try {
@@ -275,7 +276,7 @@ function startWishlistRealtimeSync() {
         const cloudIds = normalizeWishlistEntries(snap.exists() ? (snap.data().ids || []) : []);
         state.wishlist = cloudIds;
         saveWishlist();
-        renderProducts();
+        syncWishlistVisualState();
         if (document.getElementById('favorites-sidebar')?.classList.contains('open')) {
             renderFavoritesSidebarLikeMain();
         }
@@ -287,6 +288,13 @@ function startWishlistRealtimeSync() {
 
 function isWishlisted(id) {
     return state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);
+}
+
+function syncWishlistVisualState() {
+    document.querySelectorAll('.product-card[data-id]').forEach((card) => {
+        const pid = card.getAttribute('data-id');
+        card.classList.toggle('wish-active', isWishlisted(pid));
+    });
 }
 
 window.toggleCardWish = (e, id) => {
@@ -314,7 +322,7 @@ window.addEventListener('storage', (event) => {
     } catch {
         state.wishlist = [];
     }
-    renderProducts();
+    syncWishlistVisualState();
     if (document.getElementById('favorites-sidebar')?.classList.contains('open')) {
         renderFavoritesSidebarLikeMain();
     }
@@ -325,7 +333,7 @@ wishlistChannel?.addEventListener('message', (event) => {
     const incoming = normalizeWishlistEntries(event?.data?.wishlist || []);
     state.wishlist = incoming;
     localStorage.setItem(SHOP_WISHLIST_KEY, JSON.stringify(state.wishlist));
-    renderProducts();
+    syncWishlistVisualState();
     if (document.getElementById('favorites-sidebar')?.classList.contains('open')) {
         renderFavoritesSidebarLikeMain();
     }
@@ -496,6 +504,7 @@ function renderProducts(append = false) {
 
     items.forEach((p, i) => {
         const card = buildCard(p, append ? startIdx + i : i);
+        if (append) card.classList.add('fade-in');
         grid.appendChild(card);
     });
 
@@ -521,6 +530,9 @@ function renderProducts(append = false) {
         // Keep visible at list end to show "Show Less"
         loadMoreWrap.classList.remove('hidden');
     }
+
+    // Keep trying after each render cycle; mobile back often needs post-render restore.
+    restoreShopReturnPosition();
 }
 
 function buildCard(p, index) {
@@ -551,7 +563,7 @@ function buildCard(p, index) {
     const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${badgeLabels[p.badge] || p.badge}</div>` : '';
 
     const card = document.createElement('div');
-    card.className = `product-card group fade-in cursor-pointer ${isWish ? 'wish-active' : ''} ${state.selected.includes(p.id) ? 'selected' : ''}`;
+    card.className = `product-card group cursor-pointer ${isWish ? 'wish-active' : ''} ${state.selected.includes(p.id) ? 'selected' : ''}`;
     card.dataset.id = p.id;
     card.style.animationDelay = `${Math.min(index * 0.04, 0.5)}s`;
     card.onclick = () => goToProduct(p.id);
@@ -674,9 +686,11 @@ window.shareSelection = async () => {
 
 
 window.goToProduct = (id) => {
-    // Save scroll position for back navigation
+    // Save scroll + product anchor for precise back navigation restore.
     sessionStorage.setItem('speedgifts_shop_scroll', window.scrollY);
     sessionStorage.setItem('speedgifts_shop_url', window.location.href);
+    sessionStorage.setItem('speedgifts_shop_return_product', id || '');
+    sessionStorage.setItem('speedgifts_shop_return_page', String(state.page || 1));
     window.location.href = getProductDetailUrl(id);
 };
 
@@ -1308,13 +1322,49 @@ window.addEventListener('popstate', () => {
     applyStateFromCurrentUrl();
 });
 
-// ─── Restore scroll position if coming back from PDP ─────────────
-window.addEventListener('pageshow', (e) => {
-    if (e.persisted || (window.performance?.navigation?.type === 2)) {
-        const savedY = sessionStorage.getItem('speedgifts_shop_scroll');
-        if (savedY) {
-            setTimeout(() => { window.scrollTo({ top: parseInt(savedY), behavior: 'instant' }); }, 80);
-            sessionStorage.removeItem('speedgifts_shop_scroll');
-        }
+// ─── Restore exact product position when returning from PDP ───────
+function restoreShopReturnPosition() {
+    const returnPid = sessionStorage.getItem('speedgifts_shop_return_product');
+    const savedY = sessionStorage.getItem('speedgifts_shop_scroll');
+    const returnPage = parseInt(sessionStorage.getItem('speedgifts_shop_return_page') || '1', 10);
+    if (!returnPid && !savedY) return;
+
+    if (Number.isFinite(returnPage) && returnPage > 1 && state.page < returnPage) {
+        state.page = returnPage;
+        renderProducts(false);
+        return;
     }
+
+    let tries = 0;
+    const maxTries = 40;
+    const attempt = () => {
+        const card = returnPid ? document.querySelector(`.product-card[data-id="${returnPid}"]`) : null;
+        if (card) {
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            if (isMobile) {
+                card.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
+            } else {
+                const y = card.getBoundingClientRect().top + window.pageYOffset - 140;
+                window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+            }
+            sessionStorage.removeItem('speedgifts_shop_return_product');
+            sessionStorage.removeItem('speedgifts_shop_scroll');
+            sessionStorage.removeItem('speedgifts_shop_return_page');
+            return;
+        }
+        if (!card && tries >= maxTries) {
+            if (savedY) window.scrollTo({ top: parseInt(savedY, 10) || 0, behavior: 'auto' });
+            sessionStorage.removeItem('speedgifts_shop_return_product');
+            sessionStorage.removeItem('speedgifts_shop_scroll');
+            sessionStorage.removeItem('speedgifts_shop_return_page');
+            return;
+        }
+        tries += 1;
+        setTimeout(attempt, 120);
+    };
+    setTimeout(attempt, 60);
+}
+
+window.addEventListener('pageshow', () => {
+    restoreShopReturnPosition();
 });

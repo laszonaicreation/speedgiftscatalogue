@@ -135,15 +135,19 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         }
     };
 
-    window.toggleDescription = (btn) => {
-        const content = btn.parentElement.querySelector('.desc-content');
-        if (content.classList.contains('line-clamp-4')) {
-            content.classList.remove('line-clamp-4');
-            btn.innerText = 'Read Less';
+    window.toggleDetailSection = (btn) => {
+        const wrap = btn.closest('.detail-accordion');
+        if (!wrap) return;
+        const content = wrap.querySelector('.detail-accordion-content');
+        const arrow = wrap.querySelector('.detail-accordion-arrow');
+        if (!content) return;
+        const isOpen = !content.classList.contains('hidden');
+        if (isOpen) {
+            content.classList.add('hidden');
+            arrow?.classList.remove('open');
         } else {
-            content.classList.add('line-clamp-4');
-            btn.innerText = 'Read More';
-            btn.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            content.classList.remove('hidden');
+            arrow?.classList.add('open');
         }
     };
 
