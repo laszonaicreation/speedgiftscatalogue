@@ -4,7 +4,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassw
 import { renderProductDetailView } from "./product-detail-renderer.js";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
 import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
-import { mountSharedShell } from "./shared-shell.js?v=2";
+import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initSharedAuth } from "./shared-auth.js";
 
@@ -309,7 +309,7 @@ window.closeCategoriesSidebar = () => {
 };
 function updateAuthUserUI() {
     const user = auth.currentUser;
-    state.authUser = user || null;
+    state.authUser = (user && !user.isAnonymous) ? user : null;
 
     const deskIcon = document.getElementById('desk-user-icon');
     const mobIcon = document.getElementById('mob-user-icon');
@@ -317,12 +317,12 @@ function updateAuthUserUI() {
     const accountName = document.getElementById('account-user-name');
     const accountEmail = document.getElementById('account-user-email');
 
-    const signedIn = !!user;
+    const signedIn = !!state.authUser;
     if (deskIcon) deskIcon.className = 'fa-solid fa-user text-[18px]';
     if (mobIcon) mobIcon.className = 'fa-solid fa-user';
     if (mobText) mobText.innerText = signedIn ? 'Account' : 'Login';
-    if (accountName) accountName.innerText = user?.displayName || 'User';
-    if (accountEmail) accountEmail.innerText = user?.email || 'Signed in';
+    if (accountName) accountName.innerText = state.authUser?.displayName || 'User';
+    if (accountEmail) accountEmail.innerText = state.authUser?.email || '';
 }
 
 window.shareProduct = async (id, name) => {
@@ -387,7 +387,7 @@ function readDetailCache(id) {
 }
 
 async function bootstrap() {
-    mountSharedShell('home');
+    mountSharedShell('shop');
     wireDetailShellSearch();
     initSharedAuth({
         auth,

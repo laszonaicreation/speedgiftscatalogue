@@ -40,7 +40,7 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
     window.initDetailMobileSwipe = bindMobileImageSwipe;
     const preloadedMainUrls = new Set();
     const getDetailMainImageUrl = (src) => {
-        const width = window.innerWidth < 768 ? 520 : 1200;
+        const width = window.innerWidth < 768 ? 1200 : 1600;
         return getOptimizedUrl(src, width);
     };
     const getDetailPreviewUrl = (src) => getOptimizedUrl(src, 260);
