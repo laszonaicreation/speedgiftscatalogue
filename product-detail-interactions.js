@@ -1,12 +1,111 @@
 export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    const SWIPE_THRESHOLD = 40;
+
+    const bindMobileImageSwipe = () => {
+        const mediaContainer = document.querySelector('.zoom-img-container');
+        if (!mediaContainer) return;
+        if (mediaContainer.dataset.swipeBound === '1') return;
+        mediaContainer.dataset.swipeBound = '1';
+
+        mediaContainer.addEventListener('touchstart', (e) => {
+            const t = e.changedTouches?.[0];
+            if (!t) return;
+            swipeStartX = t.clientX;
+            swipeStartY = t.clientY;
+        }, { passive: true });
+
+        mediaContainer.addEventListener('touchend', (e) => {
+            const t = e.changedTouches?.[0];
+            if (!t) return;
+            const dx = t.clientX - swipeStartX;
+            const dy = t.clientY - swipeStartY;
+            if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
+
+            const dots = Array.from(document.querySelectorAll('#detail-image-dots .detail-image-dot'));
+            if (!dots.length) return;
+            const currentIndex = Math.max(0, dots.findIndex((d) => d.classList.contains('active')));
+            const nextIndex = dx < 0
+                ? Math.min(dots.length - 1, currentIndex + 1)
+                : Math.max(0, currentIndex - 1);
+            if (nextIndex === currentIndex) return;
+
+            const nextSrc = dots[nextIndex]?.dataset?.src;
+            if (!nextSrc) return;
+            window.switchImg(nextSrc, null);
+        }, { passive: true });
+    };
+
+    window.initDetailMobileSwipe = bindMobileImageSwipe;
+    const preloadedMainUrls = new Set();
+    const getDetailMainImageUrl = (src) => {
+        const width = window.innerWidth < 768 ? 520 : 1200;
+        return getOptimizedUrl(src, width);
+    };
+    const getDetailPreviewUrl = (src) => getOptimizedUrl(src, 260);
+    const preloadDetailImages = (images = []) => {
+        images.forEach((src) => {
+            if (!src) return;
+            const mainUrl = getDetailMainImageUrl(src);
+            const previewUrl = getDetailPreviewUrl(src);
+
+            const pImg = new Image();
+            pImg.decoding = 'async';
+            pImg.src = previewUrl;
+
+            const img = new Image();
+            img.decoding = 'async';
+            img.onload = () => preloadedMainUrls.add(mainUrl);
+            img.src = mainUrl;
+        });
+    };
+    window.preloadDetailImages = preloadDetailImages;
+
+    const renderMediaSelectors = (images = []) => {
+        const thumbGrid = document.getElementById('detail-thumb-grid');
+        if (thumbGrid) {
+            thumbGrid.innerHTML = images.map((img, i) => `
+                <div class="thumb-box ${i === 0 ? 'active' : ''}" onclick="switchImg('${img}', this)">
+                    <img src="${getOptimizedUrl(img, 300)}">
+                </div>
+            `).join('');
+        }
+        const dots = document.getElementById('detail-image-dots');
+        if (dots) {
+            dots.innerHTML = images.map((img, i) => `
+                <button type="button" class="detail-image-dot ${i === 0 ? 'active' : ''}" data-src="${img}" onclick="switchImg('${img}', this)" aria-label="View image ${i + 1}"></button>
+            `).join('');
+        }
+        bindMobileImageSwipe();
+    };
+
     window.switchImg = (src, el) => {
         const main = document.getElementById('main-detail-img');
         if (main) {
-            main.src = getOptimizedUrl(src, 1200);
+            const mainUrl = getDetailMainImageUrl(src);
+            const previewUrl = getDetailPreviewUrl(src);
+            // Perceived-speed path: paint a tiny preview instantly, then upgrade to main image.
+            main.src = previewUrl;
+            if (preloadedMainUrls.has(mainUrl)) {
+                main.src = mainUrl;
+            } else {
+                const hi = new Image();
+                hi.decoding = 'async';
+                hi.onload = () => {
+                    preloadedMainUrls.add(mainUrl);
+                    if ((main.dataset.targetSrc || '') === src) main.src = mainUrl;
+                };
+                hi.src = mainUrl;
+            }
+            main.dataset.targetSrc = src;
             main.closest('.zoom-img-container')?.setAttribute('onclick', `openFullScreen('${src}')`);
         }
         document.querySelectorAll('.thumb-box').forEach(x => x.classList.remove('active'));
-        if (el) el.classList.add('active');
+        if (el && el.classList.contains('thumb-box')) el.classList.add('active');
+        document.querySelectorAll('.detail-image-dot').forEach((dot) => {
+            dot.classList.toggle('active', dot.dataset.src === src);
+        });
     };
 
     window.handleZoom = (e, container) => {
@@ -79,20 +178,14 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         if (priceDisplay) priceDisplay.innerText = `${price} AED`;
 
         const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
+        preloadDetailImages(images);
         if (images.length > 0) {
             const mainImg = document.getElementById('main-detail-img');
             if (mainImg) {
-                mainImg.src = getOptimizedUrl(images[0], 1200);
+                mainImg.src = getDetailMainImageUrl(images[0]);
                 mainImg.closest('.zoom-img-container')?.setAttribute('onclick', `openFullScreen('${images[0]}')`);
             }
-            const thumbGrid = document.getElementById('detail-thumb-grid');
-            if (thumbGrid) {
-                thumbGrid.innerHTML = images.map((img, i) => `
-                <div class="thumb-box ${i === 0 ? 'active' : ''}" onclick="switchImg('${img}', this)">
-                    <img src="${getOptimizedUrl(img, 300)}">
-                </div>
-            `).join('');
-            }
+            renderMediaSelectors(images);
         }
 
         document.querySelectorAll('.size-badge').forEach(b => {
@@ -116,20 +209,14 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         if (priceDisplay) priceDisplay.innerText = `${price} AED`;
 
         const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
+        preloadDetailImages(images);
         if (images.length > 0) {
             const mainImg = document.getElementById('main-detail-img');
             if (mainImg) {
-                mainImg.src = getOptimizedUrl(images[0], 1200);
+                mainImg.src = getDetailMainImageUrl(images[0]);
                 mainImg.closest('.zoom-img-container')?.setAttribute('onclick', `openFullScreen('${images[0]}')`);
             }
-            const thumbGrid = document.getElementById('detail-thumb-grid');
-            if (thumbGrid) {
-                thumbGrid.innerHTML = images.map((img, i) => `
-                <div class="thumb-box ${i === 0 ? 'active' : ''}" onclick="switchImg('${img}', this)">
-                    <img src="${getOptimizedUrl(img, 300)}">
-                </div>
-            `).join('');
-            }
+            renderMediaSelectors(images);
         }
 
         document.querySelectorAll('.color-swatch').forEach(b => {

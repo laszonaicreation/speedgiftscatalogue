@@ -8,9 +8,9 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     });
 
     appMain.innerHTML = `
-<div class="max-w-5xl mx-auto py-8 md:py-16 px-4 pb-20 detail-view-container text-left">
+<div class="max-w-5xl mx-auto pt-0 pb-20 md:py-16 px-4 detail-view-container text-left">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
-        <div>
+        <div class="detail-media-pane">
             <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
                 <img src="${getOptimizedUrl(allImages[0] || product.img, window.innerWidth < 768 ? 600 : 1200)}" id="main-detail-img" class="w-full h-full object-cover no-animation" fetchpriority="high" loading="eager">
             </div>
@@ -21,8 +21,13 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     </div>
                 `).join('')}
             </div>
+            <div class="detail-image-dots" id="detail-image-dots">
+                ${allImages.map((img, i) => `
+                    <button type="button" class="detail-image-dot ${i === 0 ? 'active' : ''}" data-src="${img}" onclick="switchImg('${img}', this)" aria-label="View image ${i + 1}"></button>
+                `).join('')}
+            </div>
         </div>
-        <div class="flex flex-col h-full justify-between">
+        <div class="flex flex-col h-full justify-between detail-info-pane">
             <div class="space-y-6">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
@@ -170,5 +175,12 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 });
             }
         }, 100);
+    }
+
+    if (typeof window.initDetailMobileSwipe === 'function') {
+        window.initDetailMobileSwipe();
+    }
+    if (typeof window.preloadDetailImages === 'function') {
+        window.preloadDetailImages(allImages);
     }
 }
