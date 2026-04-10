@@ -2907,14 +2907,27 @@ function renderAdminMegaMenus() {
         const tickIcon = tickBox ? tickBox.querySelector('.mega-tick-icon') : null;
         const updateTick = () => {
             if (cb.checked) {
-                tickBox.style.borderColor = '#111';
-                tickBox.style.background = '#111';
-                if (tickIcon) tickIcon.classList.remove('hidden');
-                if (tickIcon) tickIcon.querySelector('path').setAttribute('stroke', '#fff');
+                if (tickBox) {
+                    tickBox.style.setProperty('border-color', '#111', 'important');
+                    tickBox.style.setProperty('background', '#111', 'important');
+                }
+                if (tickIcon) {
+                    tickIcon.classList.remove('hidden');
+                    tickIcon.style.display = 'block';
+                    tickIcon.style.opacity = '1';
+                    const path = tickIcon.querySelector('path');
+                    if (path) path.setAttribute('stroke', '#fff');
+                }
             } else {
-                tickBox.style.borderColor = '';
-                tickBox.style.background = '';
-                if (tickIcon) tickIcon.classList.add('hidden');
+                if (tickBox) {
+                    tickBox.style.removeProperty('border-color');
+                    tickBox.style.removeProperty('background');
+                }
+                if (tickIcon) {
+                    tickIcon.classList.add('hidden');
+                    tickIcon.style.display = 'none';
+                    tickIcon.style.opacity = '0';
+                }
             }
         };
         cb.addEventListener('change', updateTick);
