@@ -6,6 +6,7 @@ import { registerProductDetailInteractions } from "./product-detail-interactions
 import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
+import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges } from "./cart.js";
 import { initSharedAuth } from "./shared-auth.js";
 
 const firebaseConfig = {
@@ -30,6 +31,12 @@ const DATA = { p: [], c: [] };
 const state = { wishlist: [], currentVar: null };
 state.authMode = 'login';
 state.authUser = null;
+
+// ── Cart bridge: called by product-detail-interactions.js window.addToCart ──
+window.cartAddItem = ({ id, name, price, img, size, color }) => {
+    addToCart({ id, name, price, img, size, color });
+    updateCartBadges();
+};
 const WISHLIST_KEY = 'speedgifts_detail_wishlist';
 const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
 const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
@@ -163,6 +170,7 @@ function showToast(msg) {
     t.style.display = 'block';
     setTimeout(() => { t.style.display = 'none'; }, 2500);
 }
+window.showToast = showToast;
 
 function loadWishlist() {
     try {
@@ -290,6 +298,10 @@ window.closeFavoritesSidebar = () => {
     overlay.classList.remove('open');
     document.body.style.overflow = 'auto';
 };
+// Cart sidebar wired from cart.js module globals
+window.openCartSidebar = openCartSidebar;
+window.closeCartSidebar = closeCartSidebar;
+window.handleCartClick = openCartSidebar;
 window.openCategoriesSidebar = () => {
     const sidebar = document.getElementById('categories-sidebar');
     const overlay = document.getElementById('categories-sidebar-overlay');
@@ -388,6 +400,7 @@ function readDetailCache(id) {
 
 async function bootstrap() {
     mountSharedShell('shop');
+    initCart({ getProducts: () => DATA.p, getOptimizedUrl });
     wireDetailShellSearch();
     initSharedAuth({
         auth,

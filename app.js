@@ -9,6 +9,7 @@ import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from 
 import { createAdminProxyFactory } from "./home-admin-bridge.js";
 import { fetchHomeDataBundle } from "./home-data.js";
 import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, ensureHomeLoadMoreContainer, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection, renderHomeCategoryRow, getHomeBestsellerProducts, applyHomeBestsellerSeo, ensureHomeViewScaffold, getHomeRenderElements, runHomePostRenderTasks } from "./home-ui.js";
+import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges } from "./cart.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -96,7 +97,9 @@ function setupHomeSharedShell() {
         'desk-search',
         'desk-clear-btn',
         'nav-wishlist-count',
-        'nav-wishlist-count-mob'
+        'nav-wishlist-count-mob',
+        'cart-sidebar-overlay',
+        'cart-sidebar'
     ];
     duplicateIds.forEach(id => {
         const nodes = document.querySelectorAll(`#${id}`);
@@ -113,6 +116,15 @@ function setupHomeSharedShell() {
 }
 
 setupHomeSharedShell();
+initCart({ getProducts: () => DATA.p, getOptimizedUrl });
+
+// Wire cart globals for home page
+window.handleCartClick = () => { window.location.href = 'cart.html'; };
+window.openCartSidebar = openCartSidebar;
+window.closeCartSidebar = closeCartSidebar;
+window.cartCheckoutWhatsApp = () => {
+    import('./cart.js').then(m => m.checkoutViaWhatsApp());
+};
 
 // Format Date to YYYY-MM-DD (Robust)
 const getTodayStr = () => {

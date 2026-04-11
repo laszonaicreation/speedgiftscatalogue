@@ -241,4 +241,39 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
             if (container) window.scrollTo({ top: container.offsetTop, behavior: 'smooth' });
         }
     };
+
+    window.addToCart = (productId) => {
+        // Collect current variation state
+        const currentVar = state.currentVar || {};
+        const price = currentVar.price || null;
+        const size = currentVar.size || null;
+        const color = currentVar.color || null;
+        const img = currentVar.img || null;
+
+        // Read name and base price from DOM
+        const nameEl = document.querySelector('.detail-product-name');
+        const priceEl = document.querySelector('.detail-price-text');
+        const imgEl = document.getElementById('main-detail-img');
+
+        const name = nameEl?.innerText || productId;
+        const displayPrice = price || (priceEl?.innerText?.replace(' AED', '').trim()) || '0';
+        const displayImg = img || imgEl?.src || '';
+
+        if (typeof window.cartAddItem === 'function') {
+            window.cartAddItem({ id: productId, name, price: displayPrice, img: displayImg, size, color });
+        }
+
+        // Visual feedback: pulse the button → green "Added!"
+        const btn = document.getElementById('main-add-to-cart-btn');
+        if (btn) {
+            btn.classList.add('scale-95');
+            btn.style.background = '#16a34a';
+            btn.innerHTML = `<i class="fa-solid fa-check text-2xl"></i><div class="flex flex-col items-start leading-tight"><span class="text-[8px] font-bold opacity-70 uppercase tracking-[0.2em]">Added to</span><span class="text-[13px] font-black uppercase tracking-widest leading-none mt-0.5">Cart!</span></div>`;
+            setTimeout(() => {
+                btn.classList.remove('scale-95');
+                btn.style.background = '';
+                btn.innerHTML = `<i class="fa-solid fa-cart-shopping text-2xl"></i><div class="flex flex-col items-start leading-tight"><span class="text-[8px] font-bold opacity-60 uppercase tracking-[0.2em]">Add to</span><span class="text-[13px] font-black uppercase tracking-widest leading-none mt-0.5">Cart</span></div>`;
+            }, 2000);
+        }
+    };
 }

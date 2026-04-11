@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Your Cart | Speed Gifts</title>
+    <meta name="description" content="Review your cart and checkout via WhatsApp at Speed Gifts — Premium personalized gifts in UAE.">
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <link rel="canonical" href="https://speedgifts.ae/cart.html">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind + Site CSS -->
+    <link rel="stylesheet" href="tailwind-compiled.css">
+    <link rel="stylesheet" href="style.min.css?v=2.6">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+
+    <!-- Cloudinary -->
+    <link rel="preconnect" href="https://res.cloudinary.com">
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
+
+    <!-- Cart Page CSS -->
+    <link rel="stylesheet" href="cart.css">
+</head>
+<body>
+    <!-- Toast -->
+    <div id="toast"></div>
+
+    <!-- Shared Shell (nav + sidebars) -->
+    <div id="shared-shell-root"></div>
+
+    <div class="cart-page-wrap">
+        <!-- Main Content -->
+        <div class="cart-container" id="cart-container">
+
+            <!-- LEFT: Items -->
+            <div class="cart-items-panel" id="cart-items-panel">
+                <div class="cart-items-header">
+                    <div class="cart-section-title">
+                        Your Cart
+                        <span class="count-pill" id="cart-count-pill">0</span>
+                    </div>
+                </div>
+
+                <!-- Loading shimmer -->
+                <div class="cart-items-body" id="cart-loading-state">
+                    <div class="shimmer-card">
+                        <div class="shimmer-box" style="width:100px;height:100px;border-radius:14px;"></div>
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            <div class="shimmer-box" style="height:14px;width:70%;border-radius:6px;"></div>
+                            <div class="shimmer-box" style="height:10px;width:40%;border-radius:6px;"></div>
+                            <div class="shimmer-box" style="height:30px;width:100px;border-radius:10px;"></div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+                            <div class="shimmer-box" style="height:18px;width:70px;border-radius:6px;"></div>
+                            <div class="shimmer-box" style="width:32px;height:32px;border-radius:10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items list (rendered by JS) -->
+                <div class="cart-items-body" id="cart-items-body" style="display:none;"></div>
+
+                <!-- Empty state -->
+                <div class="cart-empty-state" id="cart-empty-state">
+                    <div class="empty-icon-wrap">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                    </div>
+                    <h2 class="empty-title">Your cart is empty</h2>
+                    <p class="empty-sub">Looks like you haven't added anything yet. Explore our premium collection!</p>
+                    <a href="shop.html" class="empty-cta">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        Browse Products
+                    </a>
+                </div>
+            </div>
+
+            <!-- RIGHT: Order Summary -->
+            <div class="cart-summary-panel" id="cart-summary-panel">
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <div class="cart-section-title" style="margin-bottom:0;">Order Summary</div>
+                    </div>
+                    <div class="summary-body">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal</span>
+                            <span class="summary-value" id="summary-subtotal">0.00 AED</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Delivery</span>
+                            <span class="summary-value green">
+                                <i class="fa-solid fa-truck" style="font-size:9px;margin-right:4px;"></i>
+                                Confirmed on WhatsApp
+                            </span>
+                        </div>
+
+                        <div class="summary-divider"></div>
+                        <div class="summary-total-row">
+                            <span class="total-label">Total</span>
+                            <span class="total-amount" id="summary-total">0.00 AED</span>
+                        </div>
+
+                        <button id="checkout-btn" class="checkout-btn" onclick="window.cartPageCheckout()">
+                            <i class="fa-brands fa-whatsapp wa-icon"></i>
+                            <div>
+                                Checkout via WhatsApp
+                                <span class="checkout-btn-sub">Instant confirmation · Free enquiry</span>
+                            </div>
+                        </button>
+
+                        <!-- Trust badges -->
+                        <div class="trust-row">
+                            <div class="trust-item">
+                                <div class="trust-icon">
+                                    <i class="fa-solid fa-truck-fast"></i>
+                                </div>
+                                <div class="trust-text">
+                                    Fast Delivery
+                                    <span>Within UAE — same or next day</span>
+                                </div>
+                            </div>
+                            <div class="trust-item">
+                                <div class="trust-icon">
+                                    <i class="fa-brands fa-whatsapp" style="color:#25D366;"></i>
+                                </div>
+                                <div class="trust-text">
+                                    WhatsApp Support
+                                    <span>Real-time order confirmation</span>
+                                </div>
+                            </div>
+                            <div class="trust-item">
+                                <div class="trust-icon">
+                                    <i class="fa-solid fa-star" style="color:#FFBF00;"></i>
+                                </div>
+                                <div class="trust-text">
+                                    Premium Quality
+                                    <span>Curated gifts, guaranteed</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Promo note -->
+                <div class="promo-note">
+                    <i class="fa-solid fa-tag" style="margin-right:6px;"></i>
+                    Discount codes &amp; special offers applied at checkout via WhatsApp
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Sticky Checkout Bar -->
+    <div class="mobile-checkout-bar" id="mobile-checkout-bar">
+        <div class="mob-checkout-row">
+            <div class="mob-total-wrap">
+                <div class="mob-total-label">Total</div>
+                <div class="mob-total-amount" id="mob-total">0.00 AED</div>
+            </div>
+            <button class="mob-checkout-btn" id="mob-checkout-btn" onclick="window.cartPageCheckout()">
+                <i class="fa-brands fa-whatsapp wa-icon"></i>
+                Checkout
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer — identical structure to main site -->
+    <footer class="cart-footer">
+        <div class="cart-footer-inner">
+            <div class="cart-footer-grid">
+
+                <!-- Brand -->
+                <div>
+                    <h2 class="cart-footer-brand-name">Speed Gifts</h2>
+                    <p class="cart-footer-tagline">Instant Gifting</p>
+                    <p class="cart-footer-col-title">Follow Us</p>
+                    <div class="cart-footer-social">
+                        <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&utm_source=qr" target="_blank" aria-label="Instagram">
+                            <i class="fa-brands fa-instagram"></i>
+                        </a>
+                        <a href="https://wa.me/971561010387" target="_blank" aria-label="WhatsApp">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="cart-footer-col-title">Quick Links</h4>
+                    <ul class="cart-footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/shop.html">Shop</a></li>
+                        <li><a href="/cart.html">Cart</a></li>
+                        <li><a href="/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Support -->
+                <div>
+                    <h4 class="cart-footer-col-title">Support</h4>
+                    <ul class="cart-footer-links">
+                        <li class="with-icon">
+                            <span><i class="fa-solid fa-truck" style="color:#4b5563;width:14px;"></i></span>
+                            <span>Fast Delivery</span>
+                        </li>
+                        <li class="with-icon">
+                            <span><i class="fa-solid fa-star" style="color:#4b5563;width:14px;"></i></span>
+                            <span>Premium Quality</span>
+                        </li>
+                        <li class="with-icon">
+                            <span><i class="fa-solid fa-pen-nib" style="color:#4b5563;width:14px;"></i></span>
+                            <span>Custom Designs</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div>
+                    <h4 class="cart-footer-col-title">Contact Us</h4>
+                    <ul class="cart-footer-links">
+                        <li class="with-icon">
+                            <a href="https://wa.me/971561010387" target="_blank">
+                                <span class="cart-footer-icon-wrap"><i class="fa-brands fa-whatsapp"></i></span>
+                                +971 56 101 0387
+                            </a>
+                        </li>
+                        <li class="with-icon">
+                            <span class="cart-footer-icon-wrap"><i class="fa-solid fa-location-dot" style="color:#6b7280;"></i></span>
+                            <span>WTC Mall, Abu Dhabi, UAE</span>
+                        </li>
+                        <li class="with-icon">
+                            <a href="mailto:speedgiftsuae@gmail.com">
+                                <span class="cart-footer-icon-wrap"><i class="fa-regular fa-envelope"></i></span>
+                                speedgiftsuae@gmail.com
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+            <div class="cart-footer-bottom">
+                &copy; <span id="year"></span> Speed Gifts. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>if (document.getElementById('year')) document.getElementById('year').innerText = new Date().getFullYear();</script>
+    <script type="module" src="cart-page.js"></script>
+</body>
+</html>

@@ -14,6 +14,7 @@ import { initSharedAuth } from "./shared-auth.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
+import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges } from "./cart.js";
 
 // ─── Firebase Setup ──────────────────────────────────────────────
 const firebaseConfig = {
@@ -63,6 +64,12 @@ const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
     ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
     : null;
 mountSharedShell('shop');
+window.handleCartClick = openCartSidebar;
+window.openCartSidebar = openCartSidebar;
+window.closeCartSidebar = closeCartSidebar;
+
+// Initialize cart synchronously so badges update immediately after shell mount
+initCart({ getProducts: () => DATA.products, getOptimizedUrl });
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 function setupSearchBackNavigationStep() {
