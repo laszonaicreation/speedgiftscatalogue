@@ -28,95 +28,72 @@
             <div class="h-[320px] bg-gray-100 rounded-2xl w-full"></div>
         </div>
     </main>
-    <footer class="bg-black text-white border-t border-gray-900"
-        style="margin-top: 6rem; padding-top: 6rem; padding-bottom: 3rem;">
+                                                    <footer class="bg-black text-white border-t border-gray-900" style="font-family: 'Poppins', sans-serif; margin-top:6rem;padding-top:6rem;padding-bottom:3rem">
         <div class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-5 lg:px-0">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16"
-                style="margin-bottom: 4rem; gap: 2.5rem;">
-
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-8 mb-16" style="margin-bottom:4rem;gap:2.5rem">
                 <div class="lg:col-span-2">
-                    <h2 class="text-xl font-black tracking-tight mb-2 text-white"
-                        style="margin-bottom: 0.75rem;">Speed Gifts</h2>
-                    <p class="text-[12px] text-gray-500 font-semibold tracking-wide mb-3"
-                        style="margin-bottom: 0.75rem;">Instant Gifting</p>
-                    <p class="text-[12px] text-gray-400 font-normal leading-relaxed mb-8"
-                        style="margin-bottom: 2.5rem; max-width: 280px; line-height: 1.7;">Speed Gifts is a leading personalized gift shop in Abu Dhabi, offering custom engraving, photo gifts, and unique creations for every occasion.</p>
+                    
+                    <div class="flex gap-5 mb-5">
+                        <a href="javascript:void(0)" target="_blank" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-facebook"></i></a>
+                        <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&amp;utm_source=qr" target="_blank" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="javascript:void(0)" target="_blank" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-youtube"></i></a>
+                        <a href="https://wa.me/971561010387" target="_blank" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-whatsapp"></i></a>
+                    </div>
 
-                    <div>
-                        <h4 class="text-[11px] font-semibold tracking-wide text-gray-500 mb-4"
-                            style="margin-bottom: 1.5rem;">Follow Us</h4>
-                        <div class="flex gap-4">
-                            <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&amp;utm_source=qr"
-                                target="_blank"
-                                class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i
-                                    class="fa-brands fa-instagram"></i></a>
-                            <a href="https://wa.me/971561010387" target="_blank"
-                                class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-white hover:text-black transition-all text-sm"><i
-                                    class="fa-brands fa-whatsapp"></i></a>
+                    <h2 class="text-3xl font-black tracking-tight mb-4 text-white">Speed Gifts</h2>
+                    <p class="text-[14px] text-gray-400 font-normal leading-relaxed mb-6 md:max-w-[320px]">Speed Gifts is a leading personalized gift shop in Abu Dhabi, offering custom engraving, photo gifts, and unique creations for every occasion.</p>
+                    
+                    <div class="mb-10 md:max-w-[320px] border-t border-gray-800">
+                        <div class="border-b border-gray-800">
+                            <button onclick="const c = document.getElementById('footer-faq-content'); const i = document.getElementById('footer-faq-icon'); if(c.style.maxHeight==='0px'||c.style.maxHeight==='0'){c.style.maxHeight=c.scrollHeight+'px'; i.style.transform='rotate(180deg)';}else{c.style.maxHeight='0px'; i.style.transform='rotate(0deg)';}" class="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-widest text-white py-4 transition-colors hover:text-gray-300 cursor-pointer focus:outline-none">
+                                <span>Help &amp; FAQ</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" id="footer-faq-icon"></i>
+                            </button>
+                            <div id="footer-faq-content" class="overflow-hidden transition-all duration-300" style="max-height: 0px;">
+                                <div class="text-[14px] text-gray-400 font-medium pb-5 pt-2 leading-relaxed">Content will be added here later.</div>
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-800">
+                            <button onclick="const c = document.getElementById('footer-ship-content'); const i = document.getElementById('footer-ship-icon'); if(c.style.maxHeight==='0px'||c.style.maxHeight==='0'){c.style.maxHeight=c.scrollHeight+'px'; i.style.transform='rotate(180deg)';}else{c.style.maxHeight='0px'; i.style.transform='rotate(0deg)';}" class="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-widest text-white py-4 transition-colors hover:text-gray-300 cursor-pointer focus:outline-none">
+                                <span>Shipping &amp; Returns</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" id="footer-ship-icon"></i>
+                            </button>
+                            <div id="footer-ship-content" class="overflow-hidden transition-all duration-300" style="max-height: 0px;">
+                                <div class="text-[14px] text-gray-400 font-medium pb-5 pt-2 leading-relaxed">Content will be added here later.</div>
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-800">
+                            <button onclick="const c = document.getElementById('footer-priv-content'); const i = document.getElementById('footer-priv-icon'); if(c.style.maxHeight==='0px'||c.style.maxHeight==='0'){c.style.maxHeight=c.scrollHeight+'px'; i.style.transform='rotate(180deg)';}else{c.style.maxHeight='0px'; i.style.transform='rotate(0deg)';}" class="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-widest text-white py-4 transition-colors hover:text-gray-300 cursor-pointer focus:outline-none">
+                                <span>Privacy Policy</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" id="footer-priv-icon"></i>
+                            </button>
+                            <div id="footer-priv-content" class="overflow-hidden transition-all duration-300" style="max-height: 0px;">
+                                <div class="text-[14px] text-gray-400 font-medium pb-5 pt-2 leading-relaxed">Content will be added here later.</div>
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-800">
+                            <button onclick="const c = document.getElementById('footer-terms-content'); const i = document.getElementById('footer-terms-icon'); if(c.style.maxHeight==='0px'||c.style.maxHeight==='0'){c.style.maxHeight=c.scrollHeight+'px'; i.style.transform='rotate(180deg)';}else{c.style.maxHeight='0px'; i.style.transform='rotate(0deg)';}" class="w-full flex items-center justify-between text-[13px] font-bold uppercase tracking-widest text-white py-4 transition-colors hover:text-gray-300 cursor-pointer focus:outline-none">
+                                <span>Terms of Service</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" id="footer-terms-icon"></i>
+                            </button>
+                            <div id="footer-terms-content" class="overflow-hidden transition-all duration-300" style="max-height: 0px;">
+                                <div class="text-[14px] text-gray-400 font-medium pb-5 pt-2 leading-relaxed">Content will be added here later.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <h4 class="text-[11px] font-semibold tracking-wide text-gray-500 mb-6"
-                        style="margin-bottom: 1.5rem;">Quick Links</h4>
-                    <ul class="space-y-3 text-[13px] text-gray-400 font-medium">
+                    <h4 class="text-[13px] font-bold uppercase tracking-widest text-white mb-6">Quick Links</h4>
+                    <ul class="space-y-4 text-[14px] text-gray-400 font-medium">
                         <li><a href="/" class="hover:text-white transition-colors block">Home</a></li>
                         <li><a href="/shop.html" class="hover:text-white transition-colors block">Shop</a></li>
                         <li><a href="/" class="hover:text-white transition-colors block">Categories</a></li>
                         <li><a href="/contact.html" class="hover:text-white transition-colors block">Contact</a></li>
                     </ul>
                 </div>
-
-                <div>
-                    <h4 class="text-[11px] font-semibold tracking-wide text-gray-500 mb-6"
-                        style="margin-bottom: 1.5rem;">Support</h4>
-                    <ul class="space-y-3 text-[13px] text-gray-400 font-medium">
-                        <li class="flex items-center gap-2">
-                            <img src="FAST DELIVERY.svg" style="filter: brightness(0) saturate(100%) invert(72%) sepia(10%) saturate(301%) hue-rotate(182deg) brightness(87%) contrast(85%); width: 17px; height: 17px;" class="inline-block mr-1 opacity-70"> Fast Delivery
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <img src="PREMIUM QUALITY ICON.svg" style="filter: brightness(0) saturate(100%) invert(72%) sepia(10%) saturate(301%) hue-rotate(182deg) brightness(87%) contrast(85%);" class="w-3.5 h-3.5 inline-block mr-1 opacity-70"> High Quality Products
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <img src="custom design 01.svg" style="filter: brightness(0) saturate(100%) invert(72%) sepia(10%) saturate(301%) hue-rotate(182deg) brightness(87%) contrast(85%);" class="w-3.5 h-3.5 inline-block mr-1 opacity-70"> Custom Designs
-                        </li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="text-[11px] font-semibold tracking-wide text-gray-500 mb-6"
-                        style="margin-bottom: 1.5rem;">Contact Us</h4>
-                    <ul class="space-y-4 text-[13px] text-gray-400 font-medium">
-                        <li>
-                            <a href="https://wa.me/971561010387" target="_blank"
-                                class="hover:text-white transition-colors flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i
-                                        class="fa-brands fa-whatsapp text-sm"></i></div>
-                                <span>+971 56 101 0387</span>
-                            </a>
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i
-                                    class="fa-solid fa-location-dot text-sm text-gray-500"></i></div>
-                            <span>Speed Gifts, WTC Mall, Abu Dhabi, UAE</span>
-                        </li>
-                        <li>
-                            <a href="mailto:speedgiftsuae@gmail.com"
-                                class="hover:text-white transition-colors flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center"><i
-                                        class="fa-regular fa-envelope text-sm"></i></div>
-                                <span>speedgiftsuae@gmail.com</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
             </div>
-
-            <div class="text-[12px] font-medium tracking-wide text-gray-500 border-t border-gray-900 pt-8 text-left md:text-center block"
-                style="padding-top: 2rem; margin-top: 2rem;">
-                &copy; <span id="year"></span> Speed Gifts. All Rights Reserved.
-            </div>
+            <div class="text-[11px] font-bold tracking-widest uppercase text-gray-600 border-t border-gray-900 pt-8 text-left md:text-center block mt-12">&copy; <span id="year"></span> Speed Gifts. All Rights Reserved.</div>
         </div>
     </footer>
     <script>if (document.getElementById('year')) document.getElementById('year').innerText = new Date().getFullYear();</script>
