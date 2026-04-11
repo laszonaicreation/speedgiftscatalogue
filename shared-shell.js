@@ -68,3 +68,29 @@ export function mountSharedShell(page = 'shop') {
     <div id="auth-reset-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[2001] opacity-0 pointer-events-none transition-all duration-500 scale-95 flex flex-col auth-premium-modal"><button onclick="window.closeAuthModals()" class="auth-close-btn"><i class="fa-solid fa-xmark text-sm"></i></button><div class="text-center mb-6 mt-4"><div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-gray-100"><i class="fa-solid fa-lock text-2xl text-black"></i></div><h2 class="text-2xl font-black text-black tracking-tight" style="font-family:Poppins,sans-serif">New Password</h2><p class="text-[11px] text-gray-500 font-medium mt-1 uppercase tracking-widest px-4">Create a new secure password</p></div><form id="auth-reset-form" onsubmit="window.handlePasswordResetFormSubmit && window.handlePasswordResetFormSubmit(event)" class="auth-form-container"><input type="hidden" id="auth-reset-oobCode"><div><input type="password" id="auth-reset-new-password" required placeholder="Enter new password" class="auth-premium-input"></div><button type="submit" id="auth-reset-submit-btn" class="auth-solid-btn">Save Password <i class="fa-solid fa-check text-[12px]"></i></button></form></div>
     `;
 }
+
+// Smart Mobile Nav Scroll Behavior for shared pages
+let sharedNavScrollTimeout;
+let sharedLastScrollPos = window.pageYOffset || document.documentElement.scrollTop;
+
+window.addEventListener('scroll', () => {
+    const nav = document.getElementById('mobile-bottom-nav');
+    if (!nav || window.innerWidth >= 768) return;
+
+    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Hide on down-scroll, show on up-scroll
+    if (currentScroll > sharedLastScrollPos && currentScroll > 60) {
+        nav.classList.add('nav-hidden');
+    } else {
+        nav.classList.remove('nav-hidden');
+    }
+
+    sharedLastScrollPos = currentScroll;
+
+    // Always show when scrolling stops for a moment
+    clearTimeout(sharedNavScrollTimeout);
+    sharedNavScrollTimeout = setTimeout(() => {
+        if (nav) nav.classList.remove('nav-hidden');
+    }, 1000);
+}, { passive: true });
