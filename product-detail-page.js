@@ -211,11 +211,23 @@ window.toggleWishlist = async (event, id) => {
     saveWishlist();
     await persistWishlistToCloud();
     renderFavoritesSidebar();
-    const icon = document.querySelector('#detail-wish-btn i');
-    if (icon) {
-        const active = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);
-        icon.className = `${active ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl`;
+    
+    const active = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);
+
+    // Update main detail heart icon only if it matches the toggled id
+    const detailBtn = document.getElementById('detail-wish-btn');
+    if (detailBtn && detailBtn.getAttribute('data-id') === id) {
+        const icon = detailBtn.querySelector('i');
+        if (icon) {
+            icon.className = `${active ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl`;
+        }
     }
+
+    // Update any recommendation product cards on the screen
+    const gridCards = document.querySelectorAll(`.product-card[data-id="${id}"]`);
+    gridCards.forEach(card => {
+        card.classList.toggle('wish-active', active);
+    });
 };
 
 function updateWishlistBadges() {

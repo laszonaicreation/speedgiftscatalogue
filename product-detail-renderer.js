@@ -175,14 +175,33 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     <div class="related-grid px-1">
                         ${related.map(rp => {
                 const rpImg = [rp.img, ...(rp.images || []), rp.img2, rp.img3].find(u => u && u !== 'img/') || 'https://placehold.co/400x500?text=Gift';
+                const badgeHtml = rp.badge && window.getBadgeLabel ? `<div class="p-badge-card badge-${rp.badge}">${window.getBadgeLabel(rp.badge)}</div>` : '';
+                const isWished = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === rp.id);
                 return `
-                            <div class="product-card group flex-shrink-0 w-[160px] md:w-[220px]" data-id="${rp.id}" onclick="viewDetail('${rp.id}')">
-                                <div class="img-container mb-4 shadow-sm aspect-[4/5] rounded-xl overflow-hidden bg-gray-50 relative">
-                                    <img src="${getOptimizedUrl(rpImg, 400)}" alt="${rp.name}" class="w-full h-full object-cover transition-opacity duration-300 opacity-0" onload="this.style.opacity='1'" onerror="this.src='https://placehold.co/400x500?text=Image+Error'">
+                            <div class="product-card group flex-shrink-0 w-[160px] md:w-[220px] ${isWished ? 'wish-active' : ''}" data-id="${rp.id}" onclick="viewDetail('${rp.id}')">
+                                <div class="img-container mb-4 relative">
+                                    ${badgeHtml}
+                                    <div class="wish-btn shadow-sm hidden-desktop" onclick="window.toggleWishlist(event, '${rp.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
+                                    <img src="${getOptimizedUrl(rpImg, 600)}" alt="${rp.name}" decoding="async" onload="this.classList.add('loaded')" onerror="this.src='https://placehold.co/400x500?text=Image+Error'">
                                 </div>
-                                <div class="px-1 text-left">
-                                    <h3 class="capitalize truncate leading-none text-gray-900 font-semibold text-[11px] md:text-[13px]">${rp.name}</h3>
-                                    <p class="mt-2 font-bold text-[10px] text-gray-400">${rp.price} AED</p>
+                                <div class="px-1 text-left flex justify-between items-start mt-4">
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${rp.name}</h3>
+                                        ${(() => {
+                        const origPrice = parseFloat(rp.originalPrice); const salePrice = parseFloat(rp.price);
+                        if (rp.originalPrice && origPrice > salePrice) {
+                            const disc = Math.round((1 - salePrice / origPrice) * 100);
+                            return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
+                                '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + rp.originalPrice + ' AED</span>' +
+                                '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + rp.price + ' AED</span>' +
+                                '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span></div>';
+                        }
+                        return '<p class="price-tag mt-2 font-bold">' + rp.price + ' AED</p>';
+                    })()}
+                                    </div>
+                                    <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="window.toggleWishlist(event, '${rp.id}')">
+                                        <i class="fa-solid fa-heart"></i>
+                                    </div>
                                 </div>
                             </div>`;
             }).join('')}
