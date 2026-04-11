@@ -2,6 +2,12 @@
    cart.css — Speed Gifts Cart Page Styles
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Hide blank mega-menu bar on cart page (no categories loaded on desktop) ── */
+#desktop-mega-menu-wrapper:has(ul:empty),
+#desktop-mega-menu-wrapper:not(:has(li)) {
+    display: none !important;
+}
+
 /* ── Reset (scoped so footer Tailwind isn't broken) ── */
 .cart-page-wrap *,
 .cart-breadcrumb *,

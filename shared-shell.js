@@ -11,18 +11,10 @@ export function mountSharedShell(page = 'shop') {
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
-    const mobileNavHtml = isHome
-        ? `
-            <button onclick="window.goBackToHome && window.goBackToHome(true)" class="mobile-nav-btn active"><i class="fa-solid fa-house"></i> <span>Home</span></button>
+    const mobileNavHtml = `
+            <button onclick="${isHome ? 'window.goBackToHome && window.goBackToHome(true)' : 'window.location.href=\'index.html\''}" class="mobile-nav-btn ${isHome ? 'active' : ''}"><i class="fa-solid fa-house"></i> <span>Home</span></button>
             <button onclick="window.focusSearch()" class="mobile-nav-btn"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></button>
-            <a href="cart.html" class="mobile-nav-btn relative" style="text-decoration:none;"><i class="fa-solid fa-cart-shopping"></i> <span>Cart</span><span id="nav-cart-count-mob" class="absolute -top-1 right-0 bg-black text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white hidden">0</span></a>
-            <button onclick="window.handleFavoritesClick()" class="mobile-nav-btn relative"><i class="fa-solid fa-heart"></i> <span>Saved</span><span id="nav-wishlist-count-mob" class="absolute -top-1 right-0 bg-red-500 text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white hidden">0</span></button>
-            <button onclick="window.handleUserAuthClick()" class="mobile-nav-btn"><i class="fa-solid fa-user" id="mob-user-icon"></i> <span id="mob-user-text">Account</span></button>
-        `
-        : `
-            <a href="index.html" class="mobile-nav-btn"><i class="fa-solid fa-house"></i> <span>Home</span></a>
-            <button onclick="window.focusSearch()" class="mobile-nav-btn"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></button>
-            <a href="cart.html" class="mobile-nav-btn relative" style="text-decoration:none;"><i class="fa-solid fa-cart-shopping"></i> <span>Cart</span><span id="nav-cart-count-mob" class="absolute -top-1 right-0 bg-black text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white hidden">0</span></a>
+            <button onclick="window.openCategoriesSidebar()" class="mobile-nav-btn"><i class="fa-solid fa-table-cells"></i> <span>Categories</span></button>
             <button onclick="window.handleFavoritesClick()" class="mobile-nav-btn relative"><i class="fa-solid fa-heart"></i> <span>Saved</span><span id="nav-wishlist-count-mob" class="absolute -top-1 right-0 bg-red-500 text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white hidden">0</span></button>
             <button onclick="window.handleUserAuthClick()" class="mobile-nav-btn"><i class="fa-solid fa-user" id="mob-user-icon"></i> <span id="mob-user-text">Account</span></button>
         `;

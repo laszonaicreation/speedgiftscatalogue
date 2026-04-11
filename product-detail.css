@@ -5,6 +5,13 @@ html, body {
     background: #ffffff;
 }
 
+/* ── Hide blank mega-menu bar on product-detail page (when no categories loaded) ── */
+#desktop-mega-menu-wrapper:has(ul:empty),
+#desktop-mega-menu-wrapper:not(:has(li)) {
+    display: none !important;
+}
+
+
 .detail-topbar {
     position: sticky;
     top: 0;
