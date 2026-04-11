@@ -307,9 +307,14 @@ html, body {
         background: #6b7280;
     }
 
+    #app {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
     .detail-info-pane {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
     }
 }
 

@@ -665,27 +665,24 @@ body {
 .cart-footer-brand-name {
     font-size: 20px;
     font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.02em;
     color: #fff;
     margin-bottom: 0.75rem;
 }
 
 .cart-footer-tagline {
-    font-size: 10px;
-    color: #4b5563;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 2.5rem;
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.75rem;
 }
 
 .cart-footer-col-title {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    color: #4b5563;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #6b7280;
     margin-bottom: 1.5rem;
 }
 
@@ -700,7 +697,7 @@ body {
 
 .cart-footer-links li a,
 .cart-footer-links li span {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: #9ca3af;
     text-decoration: none;
@@ -728,7 +725,7 @@ body {
     gap: 0.75rem;
     color: #9ca3af;
     text-decoration: none;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     transition: color 0.2s;
     flex: 1;
@@ -774,11 +771,10 @@ body {
 }
 
 .cart-footer-bottom {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    color: #4b5563;
-    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: #6b7280;
     border-top: 1px solid #111827;
     padding-top: 2rem;
     margin-top: 2rem;
