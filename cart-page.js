@@ -1,34 +1,200 @@
 // ─── Speed Gifts — Cart Page Script ──────────────────────────────────────────
 // Drives cart.html — reads from the shared cart.js module.
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import {
+    initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+    collection, getDocs
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import {
+    getAuth,
+    signInAnonymously,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    GoogleAuthProvider,
+    signInWithPopup,
+    sendPasswordResetEmail,
+    signOut,
+    updateProfile
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
 import {
     initCart, loadCart, getCartItems, getCartCount, getCartTotal,
     removeFromCart, updateQty, updateCartBadges, checkoutViaWhatsApp
 } from './cart.js';
 
 import { mountSharedShell } from './shared-shell.js?v=4';
+import { initSharedAuth } from './shared-auth.js';
+import { renderFavoritesSidebarMainLike } from './shared-sidebar-renderers.js';
 
-// ── Boot shared shell (nav + sidebars) ───────────────────────────────────────
+// ── Firebase ──────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+    apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
+    authDomain: "speed-catalogue.firebaseapp.com",
+    projectId: "speed-catalogue",
+    storageBucket: "speed-catalogue.firebasestorage.app",
+    messagingSenderId: "84589409246",
+    appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
+};
+const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+const auth = getAuth(app);
+const appId = firebaseConfig.projectId;
+const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+    authUser: null,
+    authMode: 'login',
+    wishlist: [],
+    products: []      // cached for favorites sidebar
+};
+
+const WISHLIST_KEY = 'speedgifts_detail_wishlist';
+const BLOCKED_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'];
+
+// ── Products (lazy load for favorites sidebar) ────────────────────────────────
+let productsLoading = false;
+async function ensureProducts() {
+    if (state.products.length > 0 || productsLoading) return;
+    productsLoading = true;
+    try {
+        const snap = await getDocs(prodCol);
+        state.products = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(p => !BLOCKED_IDS.includes(p.id));
+    } catch (e) {
+        console.warn('[CartPage] products load failed:', e);
+    } finally {
+        productsLoading = false;
+    }
+}
+
+// ── Boot shared shell (nav + sidebars) ────────────────────────────────────────
 mountSharedShell('cart');
 
-// ── Minimal window globals expected by shared-shell ───────────────────────────
-window.handleCartClick = () => { window.location.href = 'cart.html'; };
-window.openCartSidebar = () => { window.location.href = 'cart.html'; };
-window.closeCartSidebar = () => { };
-window.handleUserAuthClick = () => { window.location.href = 'index.html'; };
-window.handleFavoritesClick = () => { };
-window.openFavoritesSidebar = () => { };
-window.closeFavoritesSidebar = () => { };
-window.openCategoriesSidebar = () => { };
-window.closeCategoriesSidebar = () => { };
-window.focusSearch = () => { };
-window.showToast = (msg) => {
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
     const t = document.getElementById('toast');
     if (!t) return;
+    clearTimeout(toastTimer);
     t.textContent = msg;
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 2500);
+    toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+window.showToast = showToast;
+
+// ── Wishlist ──────────────────────────────────────────────────────────────────
+function loadWishlist() {
+    try {
+        const raw = localStorage.getItem(WISHLIST_KEY);
+        state.wishlist = raw ? JSON.parse(raw) : [];
+    } catch {
+        state.wishlist = [];
+    }
+}
+
+function updateWishlistBadges() {
+    const count = (state.wishlist || []).length;
+    ['nav-wishlist-count', 'nav-wishlist-count-mob'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = String(count);
+        el.classList.toggle('hidden', count === 0);
+    });
+}
+
+function renderFavoritesSidebar() {
+    renderFavoritesSidebarMainLike({
+        wishlist: state.wishlist || [],
+        products: state.products || [],
+        getOptimizedUrl: (url, w) => {
+            if (!url || !url.includes('res.cloudinary.com') || !w) return url || '';
+            return url.replace('/upload/', `/upload/f_auto,q_auto,w_${w},c_limit/`);
+        },
+        onItemClickJs: (p) => `window.location.href='product-detail.html?p=${p.originalId}'`,
+        onRemoveClickJs: (p) => `window.__cartPageRemoveWish('${p.originalId}')`
+    });
+}
+
+window.__cartPageRemoveWish = (id) => {
+    const idx = state.wishlist.findIndex(x => (typeof x === 'string' ? x : x.id) === id);
+    if (idx >= 0) state.wishlist.splice(idx, 1);
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist));
+    updateWishlistBadges();
+    renderFavoritesSidebar();
 };
+
+// ── Favorites Sidebar wiring ──────────────────────────────────────────────────
+window.handleFavoritesClick = async () => {
+    loadWishlist();
+    const side = document.getElementById('favorites-sidebar');
+    const over = document.getElementById('favorites-sidebar-overlay');
+    if (!side || !over) return;
+    side.classList.add('open');
+    over.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Show immediately (may be empty), then re-render with product data
+    renderFavoritesSidebar();
+    await ensureProducts();
+    renderFavoritesSidebar();  // re-render with full product details
+};
+
+window.openFavoritesSidebar = window.handleFavoritesClick;
+
+window.closeFavoritesSidebar = () => {
+    const side = document.getElementById('favorites-sidebar');
+    const over = document.getElementById('favorites-sidebar-overlay');
+    if (!side || !over) return;
+    side.classList.remove('open');
+    over.classList.remove('open');
+    document.body.style.overflow = 'auto';
+};
+
+// ── Auth User UI ──────────────────────────────────────────────────────────────
+function updateAuthUserUI() {
+    const user = auth.currentUser;
+    state.authUser = (user && !user.isAnonymous) ? user : null;
+
+    const mobText = document.getElementById('mob-user-text');
+    const accountName = document.getElementById('account-user-name');
+    const accountEmail = document.getElementById('account-user-email');
+
+    if (mobText) mobText.innerText = state.authUser ? 'Account' : 'Login';
+    if (accountName) accountName.innerText = state.authUser?.displayName || 'User';
+    if (accountEmail) accountEmail.innerText = state.authUser?.email || '';
+}
+
+// ── Cart sidebar — no-ops on cart page (already ON the cart page) ─────────────
+window.handleCartClick = () => { };
+window.openCartSidebar = () => { };
+window.closeCartSidebar = () => { };
+window.openCategoriesSidebar = () => { };
+window.closeCategoriesSidebar = () => { };
+window.focusSearch = () => { window.location.href = 'shop.html'; };
+
+// ── Init Auth (login modal) ───────────────────────────────────────────────────
+initSharedAuth({
+    auth,
+    firebaseAuth: {
+        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
+        GoogleAuthProvider,
+        signInWithPopup,
+        sendPasswordResetEmail,
+        signOut,
+        updateProfile
+    },
+    getAuthUser: () => state.authUser,
+    setAuthMode: (mode) => { state.authMode = mode; },
+    getAuthMode: () => state.authMode,
+    updateAuthUserUI,
+    showToast
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getOptimizedUrl(url, size = 400) {
@@ -37,10 +203,6 @@ function getOptimizedUrl(url, size = 400) {
         return url.replace('/upload/', `/upload/w_${size},c_fill,f_auto,q_auto/`);
     }
     return url;
-}
-
-function makeKey(id, size, color) {
-    return `${id}__${size || ''}__${color || ''}`;
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -65,7 +227,6 @@ function renderCartPage() {
 
     // Checkout buttons
     const checkoutBtn = document.getElementById('checkout-btn');
-    const mobBtn = document.getElementById('mob-checkout-btn');
     const summaryPanel = document.getElementById('cart-summary-panel');
     const mobBar = document.getElementById('mobile-checkout-bar');
 
@@ -142,7 +303,6 @@ window.cpUpdateQty = (id, size, color, delta) => {
 };
 
 window.cpRemoveItem = (id, size, color, idx) => {
-    // Animate out
     const card = document.getElementById(`item-${idx}`);
     if (card) {
         card.classList.add('removing');
@@ -160,7 +320,6 @@ window.cartPageCheckout = () => {
     const items = getCartItems();
     if (items.length === 0) return;
 
-    // Animate checkout button briefly
     const btn = document.getElementById('checkout-btn');
     const mobBtn = document.getElementById('mob-checkout-btn');
     [btn, mobBtn].forEach(b => {
@@ -174,14 +333,38 @@ window.cartPageCheckout = () => {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 initCart({ getProducts: () => [], getOptimizedUrl });
+loadWishlist();
+updateWishlistBadges();
 renderCartPage();
 updateCartBadges();
 
-// Listen for cart changes from other tabs
+// ── Firebase Auth listener ────────────────────────────────────────────────────
+onAuthStateChanged(auth, (user) => {
+    updateAuthUserUI();
+    if (!user) {
+        signInAnonymously(auth).catch(() => { /* no-op */ });
+    }
+});
+
+// ── Listen for cart/wishlist changes from other tabs ──────────────────────────
 window.addEventListener('storage', (e) => {
     if (e.key === 'speedgifts_cart') {
         loadCart();
         renderCartPage();
         updateCartBadges();
+    }
+    if (e.key === WISHLIST_KEY) {
+        loadWishlist();
+        updateWishlistBadges();
+        const side = document.getElementById('favorites-sidebar');
+        if (side?.classList.contains('open')) renderFavoritesSidebar();
+    }
+});
+
+// ── Keyboard: Escape closes modals/sidebars ───────────────────────────────────
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        window.closeFavoritesSidebar?.();
+        window.closeAuthModals?.();
     }
 });
