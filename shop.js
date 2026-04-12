@@ -14,7 +14,7 @@ import { initSharedAuth } from "./shared-auth.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
-import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges } from "./cart.js";
+import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
 
 // ─── Firebase Setup ──────────────────────────────────────────────
 const firebaseConfig = {
@@ -32,20 +32,24 @@ const db = initializeFirestore(fbApp, {
 });
 const auth = getAuth(fbApp);
 const appId = firebaseConfig.projectId;
+
+window._sgAuth = auth;
+window._sgDb = db;
+window._sgAppId = appId;
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-const catCol  = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
+const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 const megaCol = collection(db, 'artifacts', appId, 'public', 'data', 'mega_menus');
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 
 // ─── State ───────────────────────────────────────────────────────
 const INTERNAL_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'];
-const SHOP_WISHLIST_KEY = 'speedgifts_detail_wishlist';
+const SHOP_WISHLIST_KEY = 'speedgifts_wishlist';
 const PAGE_SIZE = 20;
 const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
 const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 
-const DATA   = { products: [], categories: [], megaMenus: [] };
-const state  = {
+const DATA = { products: [], categories: [], megaMenus: [] };
+const state = {
     filter: 'all',
     sort: 'default',
     search: '',
@@ -119,12 +123,29 @@ function refreshAuthUI() {
 // ─── Boot ────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
-        await signInAnonymously(auth).catch(() => {});
+        await signInAnonymously(auth).catch(() => { });
         return;
     }
     state.user = user;
     state.authUser = user.isAnonymous ? null : user;
     refreshAuthUI();
+
+    // INSTANT badge refresh from localStorage — before any async Firebase calls
+    try {
+        const localWish = localStorage.getItem(SHOP_WISHLIST_KEY);
+        if (localWish) {
+            const parsed = JSON.parse(localWish);
+            if (Array.isArray(parsed)) {
+                state.wishlist = normalizeWishlistEntries(parsed);
+                syncWishlistVisualState();
+            }
+        }
+    } catch(_) {}
+    updateCartBadges();
+
+    if (!user.isAnonymous) {
+        mergeCartOnLogin(user.uid);
+    }
     await fetchData();
 });
 
@@ -148,10 +169,10 @@ async function fetchData() {
         // Read URL params for deep linking
         const params = new URLSearchParams(window.location.search);
         const urlCat = params.get('c');
-        const urlQ   = params.get('q');
+        const urlQ = params.get('q');
         const shareId = params.get('s');
         if (urlCat && urlCat !== 'all') state.filter = urlCat;
-        if (urlQ)                       state.search  = urlQ;
+        if (urlQ) state.search = urlQ;
 
         // Better first load UX: start with all products unless URL/search forces a filter.
         if ((!urlCat || urlCat === 'all') && !state.search) {
@@ -191,7 +212,7 @@ async function fetchData() {
                 const src = item?.images?.[0] || item?.img || getFirstImage(item);
                 return getOptimizedUrl(src, 140);
             },
-            onWishlistToggle: (id) => window.toggleCardWish({ stopPropagation() {} }, id),
+            onWishlistToggle: (id) => window.toggleCardWish({ stopPropagation() { } }, id),
             onCategorySelect: (catId) => window.applyFilter(catId),
             onSearchFocus: () => window.focusMobSearch(),
             onAccountClick: () => window.openAuthModal(),
@@ -219,8 +240,12 @@ async function loadWishlist() {
         const raw = localStorage.getItem(SHOP_WISHLIST_KEY);
         state.wishlist = normalizeWishlistEntries(raw ? JSON.parse(raw) : []);
     } catch { state.wishlist = []; }
-    await syncWishlistWithCloud();
-    startWishlistRealtimeSync();
+
+    // Only sync with cloud for real signed-in users, not anonymous
+    if (state.user && !state.user.isAnonymous) {
+        await syncWishlistWithCloud();
+        startWishlistRealtimeSync();
+    }
 }
 
 function saveWishlist() {
@@ -252,14 +277,26 @@ async function syncWishlistWithCloud() {
     try {
         const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
         const wishDoc = await getDoc(wishRef);
+
+        const localIds = new Set(state.wishlist.map(x => typeof x === 'string' ? x : x.id));
+
         if (wishDoc.exists()) {
-            state.wishlist = normalizeWishlistEntries(wishDoc.data().ids || []);
-            saveWishlist();
+            const cloudIds = normalizeWishlistEntries(wishDoc.data().ids || []);
+            // Merge: keep cloud + add any local guest items not already there
+            const merged = [...cloudIds];
+            for (const entry of state.wishlist) {
+                const id = typeof entry === 'string' ? entry : entry.id;
+                if (id && !cloudIds.some(c => (typeof c === 'string' ? c : c.id) === id)) {
+                    merged.push(entry);
+                }
+            }
+            state.wishlist = normalizeWishlistEntries(merged);
         } else {
             state.wishlist = normalizeWishlistEntries(state.wishlist);
-            saveWishlist();
-            await setDoc(wishRef, { ids: state.wishlist });
         }
+
+        saveWishlist();
+        await setDoc(wishRef, { ids: state.wishlist });
     } catch (err) {
         console.error('[ShopPage] wishlist sync error:', err);
     }
@@ -279,8 +316,20 @@ function startWishlistRealtimeSync() {
     if (!state.user) return;
     const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
     wishlistUnsub?.();
+
+    let isFirstFire = true; // skip the immediate echo from our own setDoc
+
     wishlistUnsub = onSnapshot(wishRef, (snap) => {
+        // Skip the very first fire — it just echoes the data we already synced
+        if (isFirstFire) { isFirstFire = false; return; }
+
         const cloudIds = normalizeWishlistEntries(snap.exists() ? (snap.data().ids || []) : []);
+
+        // Only update if data genuinely changed (another device/tab)
+        const currentKeys = state.wishlist.map(x => (typeof x === 'string' ? x : x.id)).sort().join(',');
+        const cloudKeys = cloudIds.map(x => (typeof x === 'string' ? x : x.id)).sort().join(',');
+        if (currentKeys === cloudKeys) return; // no real change, skip blink
+
         state.wishlist = cloudIds;
         saveWishlist();
         syncWishlistVisualState();
@@ -450,8 +499,8 @@ function getFilteredSorted() {
     // Search
     if (q) {
         list = list.filter(p =>
-            (p.name  || '').toLowerCase().includes(q) ||
-            (p.desc  || '').toLowerCase().includes(q) ||
+            (p.name || '').toLowerCase().includes(q) ||
+            (p.desc || '').toLowerCase().includes(q) ||
             (p.material || '').toLowerCase().includes(q)
         );
     }
@@ -583,7 +632,7 @@ function buildCard(p, index) {
             </div>
             ${canUseSelectionControls() ? `<div class="select-btn shadow-sm" onclick="event.stopPropagation(); toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
             ${imgUrl
-                ? `<img
+            ? `<img
                     src="${imgUrl}"
                     alt="${(p.name || '').replace(/"/g, '&quot;')}"
                     loading="${index < 8 ? 'eager' : 'lazy'}"
@@ -592,8 +641,8 @@ function buildCard(p, index) {
                     onload="this.classList.add('loaded')"
                     onerror="this.src='https://placehold.co/400x500?text=Speed+Gifts'"
                 >`
-                : `<div style="width:100%;height:100%;background:#f3f4f6;"></div>`
-            }
+            : `<div style="width:100%;height:100%;background:#f3f4f6;"></div>`
+        }
         </div>
         <div class="px-1 text-left flex justify-between items-start shop-card-meta">
             <div class="flex-1 min-w-0">
@@ -911,9 +960,9 @@ function syncMobCatUI() {
 
 // ─── Filter Banner ────────────────────────────────────────────────
 function renderFilterBanner() {
-    const banner    = document.getElementById('filter-banner');
-    const titleEl   = document.getElementById('filter-title');
-    const subEl     = document.getElementById('filter-subtitle');
+    const banner = document.getElementById('filter-banner');
+    const titleEl = document.getElementById('filter-title');
+    const subEl = document.getElementById('filter-subtitle');
 
     if (!banner) return;
 
@@ -956,15 +1005,15 @@ function setMobileCategorySearchVisibility() {
 
 function bindSearchInputs() {
     const deskInput = document.getElementById('shop-search');
-    const mobInput  = document.getElementById('mob-shop-search');
+    const mobInput = document.getElementById('mob-shop-search');
     const deskClear = document.getElementById('shop-clear-btn');
-    const mobClear  = document.getElementById('mob-clear-btn');
+    const mobClear = document.getElementById('mob-clear-btn');
 
     // Always sync from URL/state so search text remains visible after redirect from home.
     const urlQ = new URLSearchParams(window.location.search).get('q') || '';
     if (urlQ && !state.search) state.search = urlQ;
     if (deskInput) deskInput.value = state.search || '';
-    if (mobInput)  mobInput.value  = state.search || '';
+    if (mobInput) mobInput.value = state.search || '';
     const hasInitialVal = !!(state.search && state.search.trim().length > 0);
     if (deskClear) deskClear.style.display = hasInitialVal ? 'flex' : 'none';
     if (mobClear) {
@@ -985,20 +1034,20 @@ function bindSearchInputs() {
 
             // Sync both inputs
             if (deskInput && deskInput.value !== val) deskInput.value = val;
-            if (mobInput  && mobInput.value  !== val) mobInput.value  = val;
+            if (mobInput && mobInput.value !== val) mobInput.value = val;
 
             // Clear buttons
             const hasVal = val.length > 0;
             if (deskClear) deskClear.style.display = hasVal ? 'flex' : 'none';
             if (mobClear) {
                 if (hasVal) mobClear.classList.remove('hidden');
-                else        mobClear.classList.add('hidden');
+                else mobClear.classList.add('hidden');
             }
         }, 280);
     };
 
     if (deskInput) deskInput.addEventListener('input', e => handleInput(e.target.value));
-    if (mobInput)  mobInput.addEventListener('input',  e => handleInput(e.target.value));
+    if (mobInput) mobInput.addEventListener('input', e => handleInput(e.target.value));
 
     if (mobInput) {
         mobInput.addEventListener('focus', () => {
@@ -1015,13 +1064,13 @@ window.clearSearch = () => {
     state.search = '';
     state.page = 1;
     const deskInput = document.getElementById('shop-search');
-    const mobInput  = document.getElementById('mob-shop-search');
+    const mobInput = document.getElementById('mob-shop-search');
     const deskClear = document.getElementById('shop-clear-btn');
-    const mobClear  = document.getElementById('mob-clear-btn');
+    const mobClear = document.getElementById('mob-clear-btn');
     if (deskInput) deskInput.value = '';
-    if (mobInput)  mobInput.value  = '';
+    if (mobInput) mobInput.value = '';
     if (deskClear) deskClear.style.display = 'none';
-    if (mobClear)  mobClear.classList.add('hidden');
+    if (mobClear) mobClear.classList.add('hidden');
     updateURL();
     renderFilterBanner();
     renderProducts();
@@ -1040,9 +1089,9 @@ window.focusMobSearch = () => {
 // ─── URL sync ─────────────────────────────────────────────────────
 function updateURL() {
     const params = new URLSearchParams();
-    if (state.selectionId)       params.set('s', state.selectionId);
-    if (state.filter !== 'all')  params.set('c', state.filter);
-    if (state.search)            params.set('q', state.search);
+    if (state.selectionId) params.set('s', state.selectionId);
+    if (state.filter !== 'all') params.set('c', state.filter);
+    if (state.search) params.set('q', state.search);
     const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
     window.history.replaceState({}, '', newUrl);
 }
@@ -1118,7 +1167,7 @@ window.closeFullScreen = () => {
 
 // ─── Filter Panel (Mobile) ────────────────────────────────────────
 window.openFilterPanel = () => {
-    const panel   = document.getElementById('filter-panel');
+    const panel = document.getElementById('filter-panel');
     const overlay = document.getElementById('filter-overlay');
     if (!panel || !overlay) return;
     panel.classList.add('open');
@@ -1127,7 +1176,7 @@ window.openFilterPanel = () => {
 };
 
 window.closeFilterPanel = () => {
-    const panel   = document.getElementById('filter-panel');
+    const panel = document.getElementById('filter-panel');
     const overlay = document.getElementById('filter-overlay');
     if (!panel || !overlay) return;
     panel.classList.remove('open');
@@ -1270,6 +1319,10 @@ window.handleSignOut = async () => {
     try {
         await signOut(auth);
         window.closeAuthModals();
+        state.wishlist = [];
+        localStorage.removeItem(SHOP_WISHLIST_KEY);
+        syncWishlistVisualState();
+        clearCart();
         showToast('Signed Out Successfully');
     } catch {
         showToast('Error signing out');

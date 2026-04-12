@@ -11,11 +11,22 @@ export function mountSharedShell(page = 'shop') {
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+    let initialWishlistCount = 0;
+    try {
+        const wRaw = localStorage.getItem('speedgifts_wishlist');
+        if (wRaw) {
+            const parsed = JSON.parse(wRaw);
+            const wIds = new Set();
+            parsed.forEach(e => { const id = typeof e === 'string' ? e : e?.id; if (id) wIds.add(id); });
+            initialWishlistCount = wIds.size;
+        }
+    } catch(e) {}
+
     const mobileNavHtml = `
             <button onclick="${isHome ? 'window.goBackToHome && window.goBackToHome(true)' : 'window.location.href=\'index.html\''}" class="mobile-nav-btn ${isHome ? 'active' : ''}"><i class="fa-solid fa-house"></i> <span>Home</span></button>
             <button onclick="window.focusSearch()" class="mobile-nav-btn"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></button>
             <button onclick="window.openCategoriesSidebar()" class="mobile-nav-btn"><i class="fa-solid fa-table-cells"></i> <span>Categories</span></button>
-            <button onclick="window.handleFavoritesClick()" class="mobile-nav-btn relative"><i class="fa-solid fa-heart"></i> <span>Saved</span><span id="nav-wishlist-count-mob" class="absolute -top-1 right-0 bg-red-500 text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white hidden">0</span></button>
+            <button onclick="window.handleFavoritesClick()" class="mobile-nav-btn relative"><i class="fa-solid fa-heart"></i> <span>Saved</span><span id="nav-wishlist-count-mob" class="absolute -top-1 right-0 bg-red-500 text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white ${initialWishlistCount > 0 ? '' : 'hidden'}">${initialWishlistCount}</span></button>
             <button onclick="window.handleUserAuthClick()" class="mobile-nav-btn"><i class="fa-solid fa-user" id="mob-user-icon"></i> <span id="mob-user-text">Account</span></button>
         `;
     const desktopMenuHtml = isHome
@@ -23,18 +34,22 @@ export function mountSharedShell(page = 'shop') {
         : `<div id="desktop-mega-menu-wrapper" class="hidden md:block w-full border-t border-gray-50 bg-white/95 backdrop-blur-xl transition-all duration-300">
                 <ul id="desk-mega-menu" class="max-w-[1536px] mx-auto flex items-center justify-center gap-8 xl:gap-12 h-12" style="padding-left:clamp(20px,5vw,96px);padding-right:clamp(20px,5vw,96px)"></ul>
            </div>`;
-    const desktopBackIconHtml = (page === 'shop' || page === 'cart')
-        ? `<a href="${page === 'cart' ? 'javascript:history.back()' : 'index.html'}" id="nav-home-back-icon" class="flex items-center justify-center gap-2 px-3 py-2 rounded-full hover:bg-gray-50 transition-all" style="position:absolute;left:clamp(10px,4vw,96px);top:50%;transform:translateY(-50%);z-index:2;color:#9ca3af;text-decoration:none;" aria-label="Back">
-            <i class="fa-solid fa-arrow-left text-[14px]"></i>
-            ${page === 'cart' ? '<span class="text-[10px] font-black uppercase tracking-widest hidden md:inline">Back</span>' : ''}
-          </a>`
-        : '';
+
+
+    let initialCartCount = 0;
+    try {
+        const cRaw = localStorage.getItem('speedgifts_cart');
+        if (cRaw) {
+            const parsed = JSON.parse(cRaw);
+            parsed.forEach(e => { initialCartCount += (e.quantity || 1); });
+        }
+    } catch(e) {}
 
     root.innerHTML = `
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-50" id="shop-header">
         <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between relative" style="padding-left:clamp(20px,5vw,96px);padding-right:clamp(20px,5vw,96px)">
             <div class="w-1/4 md:w-auto flex items-center gap-2">
-                ${desktopBackIconHtml}
+
                 <h1 class="brand-logo cursor-pointer select-none hidden md:block" id="desk-logo" style="position:absolute;left:50%;transform:translateX(-50%);margin:0;z-index:1;"><a href="index.html"><img src="img/speed-logo.svg" alt="Speed Gifts" class="h-8 md:h-10 w-auto inline-block"></a></h1>
             </div>
             <div class="flex-1 md:hidden text-center flex justify-center items-center">
@@ -48,8 +63,8 @@ export function mountSharedShell(page = 'shop') {
                 </div>
                 <div class="flex items-center gap-0">
                     <button id="nav-user-btn" onclick="window.handleUserAuthClick()" class="relative flex items-center text-gray-400 hover:text-black transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-gray-50"><i class="fa-solid fa-user text-[18px] text-gray-400 group-hover:text-black transition-colors" id="desk-user-icon"></i></button>
-                    <a href="cart.html" style="margin-left:-8px" class="relative flex items-center text-gray-400 hover:text-black transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-gray-50"><div class="relative"><i class="fa-solid fa-cart-shopping text-[18px] text-gray-400 group-hover:text-black transition-colors"></i><span id="nav-cart-count" class="absolute -top-1.5 -right-1.5 bg-black text-white text-[7px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white hidden">0</span></div></a>
-                    <button onclick="window.handleFavoritesClick()" style="margin-left:-8px" class="relative flex items-center text-gray-400 hover:text-red-500 transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-red-50"><div class="relative"><i class="fa-solid fa-heart text-[18px] text-gray-400 group-hover:text-red-500 transition-colors"></i><span id="nav-wishlist-count" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[7px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white hidden">0</span></div></button>
+                    <a href="cart.html" style="margin-left:-8px" class="relative flex items-center text-gray-400 hover:text-black transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-gray-50"><div class="relative"><i class="fa-solid fa-cart-shopping text-[18px] text-gray-400 group-hover:text-black transition-colors"></i><span id="nav-cart-count" class="absolute -top-1.5 -right-1.5 bg-black text-white text-[7px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white ${initialCartCount > 0 ? '' : 'hidden'}">${initialCartCount}</span></div></a>
+                    <button onclick="window.handleFavoritesClick()" style="margin-left:-8px" class="relative flex items-center text-gray-400 hover:text-red-500 transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-red-50"><div class="relative"><i class="fa-solid fa-heart text-[18px] text-gray-400 group-hover:text-red-500 transition-colors"></i><span id="nav-wishlist-count" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[7px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white ${initialWishlistCount > 0 ? '' : 'hidden'}">${initialWishlistCount}</span></div></button>
                 </div>
             </div>
         </div>
@@ -77,7 +92,7 @@ export function mountSharedShell(page = 'shop') {
         <div style="padding:0.5rem 0;">
             <a href="/account.html" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;text-decoration:none;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i class="fa-solid fa-user" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> My Account</a>
             <a href="/account.html#orders" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;text-decoration:none;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i class="fa-solid fa-box" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> My Orders</a>
-            <button onclick="window.closeAccountDropdown&&window.closeAccountDropdown();window.handleFavoritesClick&&window.handleFavoritesClick();" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:'Poppins',sans-serif;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i class="fa-solid fa-heart" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> Favourites</button>
+            <button onclick="window.location.href='/favourites.html';" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:'Poppins',sans-serif;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i class="fa-solid fa-heart" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> Favourites</button>
         </div>
         <div style="padding:0.5rem 0;border-top:1px solid #f5f5f5;">
             <button onclick="window.handleSignOut&&window.handleSignOut();window.closeAccountDropdown&&window.closeAccountDropdown();" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#ef4444;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:'Poppins',sans-serif;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'"><i class="fa-solid fa-arrow-right-from-bracket" style="width:14px;font-size:0.75rem;"></i> Sign Out</button>

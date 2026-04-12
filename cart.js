@@ -13,7 +13,7 @@ let _getOptimizedUrlRef = (url) => url;
 export function initCart({ getProducts, getOptimizedUrl }) {
     if (getProducts) _getProductsRef = getProducts;
     if (getOptimizedUrl) _getOptimizedUrlRef = getOptimizedUrl;
-    
+
     // Always load and update immediately when initialized
     loadCart();
     updateCartBadges();
@@ -54,6 +54,25 @@ function saveCart() {
     if (document.getElementById('cart-sidebar')?.classList.contains('open')) {
         renderCartSidebar();
     }
+    // Auto-sync to Firestore if user is logged in
+    syncCartToCloud();
+}
+
+function syncCartToCloud() {
+    try {
+        // Access Firebase auth via global (set by app.js)
+        const auth = window._sgAuth;
+        const db = window._sgDb;
+        const appId = window._sgAppId;
+        if (!auth || !db || !appId) return;
+        const user = auth.currentUser;
+        if (!user || user.isAnonymous) return;
+        // Lazy import to avoid circular deps
+        import('https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js').then(({ doc, setDoc }) => {
+            const cartRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'cart');
+            setDoc(cartRef, { items: _cartItems }).catch(e => console.error('[Cart] Cloud sync failed:', e));
+        });
+    } catch (_) { }
 }
 
 // ── Cart Operations ───────────────────────────────────────────────────────────
@@ -107,6 +126,12 @@ export function updateCartBadges() {
         el.textContent = count > 99 ? '99+' : String(count);
         el.classList.toggle('hidden', count === 0);
     });
+}
+
+export function clearCart() {
+    _cartItems = [];
+    saveCart();
+    updateCartBadges();
 }
 
 // ── Sidebar Open/Close ────────────────────────────────────────────────────────
@@ -192,14 +217,16 @@ export function renderCartSidebar() {
 export function checkoutViaWhatsApp() {
     if (_cartItems.length === 0) return;
 
-    const lines = _cartItems.map(item => {
+    const lines = _cartItems.map((item, index) => {
         const varLabel = [item.size ? `Size: ${item.size}` : '', item.color ? `Color: ${item.color}` : ''].filter(Boolean).join(', ');
         const lineTotal = ((parseFloat(item.price) || 0) * (item.qty || 1)).toFixed(2);
-        return `• *${item.name}* x${item.qty} — ${lineTotal} AED${varLabel ? ` (${varLabel})` : ''}`;
+        const link = `https://speedgifts.net/product-detail.html?id=${item.id}`;
+        return `${index + 1}. ${item.name} (Qty: ${item.qty})\n   Price: ${lineTotal} AED\n   ${varLabel ? `Details: ${varLabel}\n   ` : ''}Link: ${link}`;
     });
 
     const total = getCartTotal().toFixed(2);
-    const msg = `🛒 *Order Inquiry from Speed Gifts*\n\n${lines.join('\n')}\n\n*Total: ${total} AED*\n\nPlease confirm availability and delivery details. Thank you!`;
+    const msg = `Hi Speed Gifts Team,\n\nI would like to place an order for the following items:\n\n${lines.join('\n\n')}\n\nTotal Order Value: ${total} AED\n\nPlease let me know the availability and delivery process.\n\nThank you.`;
+    
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 }
 
@@ -219,3 +246,41 @@ window.cartUpdateQty = (id, size, color, delta) => {
 };
 
 window.cartCheckoutWhatsApp = checkoutViaWhatsApp;
+// -- Merge on Login ------------------------------------------------------------
+export async function mergeCartOnLogin(uid) {
+    const CART_KEY = 'speedgifts_cart';
+    try {
+        const auth = window._sgAuth;
+        const db = window._sgDb;
+        const appId = window._sgAppId;
+        if (!auth || !db || !appId) return;
+
+        const { doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js');
+        const cartRef = doc(db, 'artifacts', appId, 'users', uid, 'data', 'cart');
+        const cartDoc = await getDoc(cartRef);
+
+        let localCart = [];
+        try { localCart = JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch (_) { }
+
+        let cloudCart = [];
+        if (cartDoc.exists()) cloudCart = cartDoc.data().items || [];
+
+        const key = item => `${item.id}_${item.size || ''}_${item.color || ''}`;
+        const merged = [...cloudCart];
+        const cloudKeys = new Set(cloudCart.map(key));
+        for (const item of localCart) {
+            if (!cloudKeys.has(key(item))) merged.push(item);
+        }
+
+        if (merged.length > 0) {
+            localStorage.setItem(CART_KEY, JSON.stringify(merged));
+            await setDoc(cartRef, { items: merged });
+            window.dispatchEvent(new StorageEvent('storage', { key: CART_KEY }));
+        } else if (cloudCart.length > 0) {
+            localStorage.setItem(CART_KEY, JSON.stringify(cloudCart));
+            window.dispatchEvent(new StorageEvent('storage', { key: CART_KEY }));
+        }
+    } catch (e) {
+        console.error('[Cart] Merge failed:', e);
+    }
+}

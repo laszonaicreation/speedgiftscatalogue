@@ -9,7 +9,7 @@ import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from 
 import { createAdminProxyFactory } from "./home-admin-bridge.js";
 import { fetchHomeDataBundle } from "./home-data.js";
 import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, ensureHomeLoadMoreContainer, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection, renderHomeCategoryRow, getHomeBestsellerProducts, applyHomeBestsellerSeo, ensureHomeViewScaffold, getHomeRenderElements, runHomePostRenderTasks } from "./home-ui.js";
-import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges } from "./cart.js";
+import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -28,6 +28,11 @@ const db = initializeFirestore(app, {
 const auth = getAuth(app);
 const appId = firebaseConfig.projectId;
 
+// Expose to cart.js and other modules for cloud sync
+window._sgAuth = auth;
+window._sgDb = db;
+window._sgAppId = appId;
+
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 const sliderCol = collection(db, 'artifacts', appId, 'public', 'data', 'sliders');
@@ -42,7 +47,7 @@ let sharedNavMain = null;
 let wishlistRealtimeUnsub = null;
 const PAGE_SIZE = 16;
 const HOME_SNAPSHOT_KEY = 'speedgifts_home_snapshot';
-const WISHLIST_LOCAL_KEY = 'speedgifts_detail_wishlist';
+const WISHLIST_LOCAL_KEY = 'speedgifts_wishlist';
 const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
 const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 const INITIAL_EAGER_IMAGES = 4;
@@ -108,6 +113,8 @@ function setupHomeSharedShell() {
         });
     });
 
+
+
     const legacyTopNav = document.querySelector('body > nav.sticky');
     const sharedTopNav = document.querySelector('#shared-shell-root nav.sticky');
     if (legacyTopNav && sharedTopNav) {
@@ -117,6 +124,29 @@ function setupHomeSharedShell() {
 
 setupHomeSharedShell();
 initCart({ getProducts: () => DATA.p, getOptimizedUrl });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSTANT CACHE RENDER — runs at module level after DOM is fully parsed
+// Provides zero-flash product display before Firebase auth resolves
+// ─────────────────────────────────────────────────────────────────────────────
+window._sgTryInstantCacheRender = function() {
+    try {
+        if (DATA.p && DATA.p.length > 0) return; // Firebase already loaded — skip
+        const raw = localStorage.getItem('speedgifts_home_cache');
+        if (!raw) return;
+        const cache = JSON.parse(raw);
+        if (!cache || !Array.isArray(cache.p) || cache.p.length === 0) return;
+        DATA = cache;
+        console.log('[Cache] Instant render from cache — products:', DATA.p.length);
+        if (typeof renderAnnouncementBar === 'function') renderAnnouncementBar();
+        if (typeof window.renderDesktopMegaMenu === 'function') window.renderDesktopMegaMenu();
+        if (typeof renderHome === 'function') renderHome();
+    } catch(e) {
+        console.warn('[Cache] Render failed:', e);
+    }
+};
+// Fire after one event-loop tick so the DOM template is fully parsed & available
+setTimeout(window._sgTryInstantCacheRender, 0);
 
 // Wire cart globals for home page
 window.handleCartClick = () => { window.location.href = 'cart.html'; };
@@ -411,11 +441,28 @@ onAuthStateChanged(auth, async (u) => {
         const accountEmail = document.getElementById('account-user-email');
         if (accountName) accountName.innerText = u.displayName || "User";
         if (accountEmail) accountEmail.innerText = u.email || "";
+
+        // Merge guest cart + cloud cart on login
+        mergeCartOnLogin(u.uid);
     } else {
         state.authUser = null;
         const navBtn = document.getElementById('nav-user-btn');
         if (navBtn) navBtn.classList.remove('text-black');
     }
+
+    // INSTANT badge refresh from localStorage — no Firebase wait needed
+    // This runs synchronously so badges update immediately on every auth state change
+    try {
+        const localWish = localStorage.getItem(WISHLIST_LOCAL_KEY);
+        if (localWish) {
+            const parsed = JSON.parse(localWish);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                state.wishlist = parsed;
+                updateWishlistBadge();
+            }
+        }
+    } catch(_) {}
+    updateCartBadges(); // Cart is always in localStorage, update instantly
 
     if (u) {
         console.log("[Auth] Session active. Updating data...");
@@ -424,13 +471,17 @@ onAuthStateChanged(auth, async (u) => {
 
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
             trackAdHop();
-            trackAdVisit(); // Fix: Track immediately so visits aren't lost if they bounce quickly or click WhatsApp
+            trackAdVisit();
         } else {
             trackNormalVisit();
         }
         await loadWishlist();
     }
 });
+
+// ============================================================================
+// CART MERGE ON LOGIN
+// ============================================================================
 
 const handleReentry = () => {
     if (DATA.p.length > 0) {
@@ -491,23 +542,31 @@ async function loadWishlist() {
     try {
         const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
         const wishDoc = await getDoc(wishRef);
+
+        // Get local (guest) wishlist
+        const localIds = state.wishlist.map(e => typeof e === 'string' ? e : e?.id).filter(Boolean);
+
         if (wishDoc.exists()) {
-            const cloudIds = normalizeWishlistEntries(wishDoc.data().ids || []);
-            state.wishlist = cloudIds;
-            localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
-            updateWishlistBadge();
-            updateAllWishlistUI();
-        } else {
-            // First-time cloud doc: push current local wishlist.
-            if (state.wishlist.length > 0) {
-                state.wishlist = normalizeWishlistEntries(state.wishlist);
-                localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
-                setDoc(wishRef, { ids: state.wishlist }).catch(e => console.error);
+            const cloudIds = normalizeWishlistEntries(wishDoc.data().ids || [])
+                .map(e => typeof e === 'string' ? e : e?.id).filter(Boolean);
+            // MERGE: combine cloud + local, deduplicate by id
+            const merged = [...cloudIds];
+            for (const id of localIds) {
+                if (!merged.includes(id)) merged.push(id);
             }
-            updateAllWishlistUI();
+            state.wishlist = normalizeWishlistEntries(merged);
+        } else {
+            // First login: use local data as base
+            state.wishlist = normalizeWishlistEntries(localIds);
         }
+
+        // Save merged result to both localStorage and Firestore
+        localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
+        setDoc(wishRef, { ids: state.wishlist }).catch(e => console.error('[Wishlist] Cloud save failed:', e));
+        updateWishlistBadge();
+        updateAllWishlistUI();
         startWishlistRealtimeSync();
-    } catch (err) { console.error("Wishlist Load Error"); }
+    } catch (err) { console.error("Wishlist Load Error", err); }
 }
 
 function startWishlistRealtimeSync() {
@@ -850,6 +909,12 @@ async function refreshData(isNavigationOnly = false) {
             DATA.landingSettings = bundle.landingSettings;
             DATA.homeSettings = bundle.homeSettings;
             DATA.stats = bundle.stats;
+            
+            // Save cache for next lightning-fast load
+            try {
+                localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
+            } catch(e) {}
+            
             primeHomeCriticalAssets();
 
             renderAnnouncementBar();
@@ -1349,8 +1414,6 @@ window.handleFloatingWhatsAppClick = () => {
     const source = sessionStorage.getItem('traffic_source');
     if (source === 'Google Ads') {
         msg += `\n\n*Note: Customer joined via Google Ads* 🔍`;
-    } else if (source) {
-        msg += `\n\n[Source: ${source}]`;
     }
 
     // Tracking the inquiry specifically from the floating button
@@ -2430,7 +2493,6 @@ window.addAnnouncementRow = createAdminProxy('addAnnouncementRow');
 window.saveAnnouncements = createAdminProxy('saveAnnouncements');
 
 // Auth state and data fetching are handled by onAuthStateChanged.
-refreshData();
 
 // Responsive Slider Refresh
 let resizeTimer;

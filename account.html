@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account – Speed Gifts</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png"
+        href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f7f7f7;
+            color: #111;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .sg-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #f0f0f0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1.5rem;
+        }
+
+        .sg-nav a {
+            text-decoration: none;
+            color: #111;
+        }
+
+        .sg-nav-logo {
+            flex: 1;
+            text-align: center;
+        }
+
+        .sg-nav-logo img {
+            height: 28px;
+            width: auto;
+        }
+
+        .sg-nav-side {
+            width: 60px;
+        }
+
+        .sg-nav-back {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #9ca3af;
+            width: 60px;
+        }
+
+        .sg-nav-back:hover {
+            color: #111;
+        }
+
+        .sg-page {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 8rem;
+        }
+
+        /* Profile Card */
+        .sg-profile-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 1.5rem 1rem 2.5rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .sg-avatar-wrapper {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .sg-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: #f4f4f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+
+        .sg-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sg-profile-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sg-profile-name {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 0.2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sg-profile-email {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+        }
+
+        .sg-profile-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 0.35rem 0.85rem;
+            border-radius: 100px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Edit Modal */
+        .sg-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+
+        .sg-modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .sg-modal {
+            background: #fff;
+            border-radius: 28px 28px 0 0;
+            padding: 1.5rem 1.5rem 2.5rem;
+            width: 100%;
+            max-width: 680px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        @media(min-width:640px) {
+            .sg-modal {
+                border-radius: 28px;
+                margin-bottom: 2rem;
+                transform: translateY(40px);
+            }
+        }
+
+        .sg-modal-overlay.open .sg-modal {
+            transform: translateY(0);
+        }
+
+        .sg-modal-handle {
+            width: 36px;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .sg-modal h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+        }
+
+        .sg-modal-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.875rem;
+            color: #111;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        .sg-modal-input:focus {
+            border-color: #111;
+        }
+
+        .sg-modal-save {
+            width: 100%;
+            background: #111;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 700;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sg-modal-save:hover {
+            background: #222;
+        }
+
+        .sg-modal-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Section Title */
+        .sg-section-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #9ca3af;
+            margin: 1.75rem 0 0.75rem;
+        }
+
+        /* Menu */
+        .sg-menu {
+            background: #fff;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+        }
+
+        .sg-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            text-decoration: none;
+            color: #111;
+            border-bottom: 1px solid #f7f7f7;
+            transition: background 0.15s;
+            cursor: pointer;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .sg-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .sg-menu-item:hover {
+            background: #fafafa;
+        }
+
+        .sg-menu-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #f4f4f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            color: #555;
+            flex-shrink: 0;
+        }
+
+        .sg-menu-label {
+            flex: 1;
+        }
+
+        .sg-menu-label-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .sg-menu-label-sub {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            margin-top: 0.1rem;
+        }
+
+        .sg-menu-arrow {
+            color: #d1d5db;
+            font-size: 0.7rem;
+        }
+
+        .sg-menu-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            background: #111;
+            color: #fff;
+            padding: 0.15rem 0.5rem;
+            border-radius: 100px;
+            margin-right: 0.25rem;
+        }
+
+        .sg-menu-item.danger .sg-menu-icon {
+            background: #fff0f0;
+            color: #ef4444;
+        }
+
+        .sg-menu-item.danger .sg-menu-label-title {
+            color: #ef4444;
+        }
+
+        /* Orders empty */
+        .sg-orders-empty {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid #f0f0f0;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+        }
+
+        .sg-orders-empty-icon {
+            width: 56px;
+            height: 56px;
+            background: #f4f4f4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.25rem;
+            color: #d1d5db;
+        }
+
+        .sg-orders-empty h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .sg-orders-empty p {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            line-height: 1.6;
+        }
+
+        .sg-orders-coming {
+            display: inline-block;
+            margin-top: 0.875rem;
+            background: #f4f4f4;
+            color: #9ca3af;
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.35rem 0.75rem;
+            border-radius: 100px;
+        }
+
+        /* Toast */
+        #sg-toast {
+            position: fixed;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #111;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 9999;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #sg-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Loading */
+        #sg-loading {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            transition: opacity 0.3s;
+        }
+
+        .sg-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #111;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Mobile Nav */
+        .mob-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #f0f0f0;
+            padding: 0.75rem 1.5rem calc(0.75rem + env(safe-area-inset-bottom));
+            justify-content: space-around;
+            z-index: 50;
+        }
+
+        @media(max-width:767px) {
+            .mob-nav {
+                display: flex;
+            }
+        }
+
+        .mob-nav a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            text-decoration: none;
+        }
+
+        .mob-nav a.active {
+            color: #111;
+        }
+
+        .mob-nav i {
+            font-size: 1.05rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sg-loading">
+        <div class="sg-spinner"></div>
+    </div>
+
+    <!-- Edit Name Modal -->
+    <div class="sg-modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+        <div class="sg-modal">
+            <div class="sg-modal-handle"></div>
+            <h3>Edit Your Name</h3>
+            <input type="text" class="sg-modal-input" id="edit-name-input" placeholder="Enter your full name"
+                maxlength="50">
+            <button class="sg-modal-save" id="edit-save-btn" onclick="saveProfile()">Save Changes</button>
+        </div>
+    </div>
+
+    <nav class="sg-nav">
+        <div class="sg-nav-logo">
+            <a href="/"><img src="img/speed-logo.svg" alt="Speed Gifts"></a>
+        </div>
+
+    </nav>
+
+    <div class="sg-page" id="sg-page" style="display:none;">
+
+        <!-- Profile Card -->
+        <div class="sg-profile-card">
+            <div class="sg-avatar-wrapper">
+                <div class="sg-avatar" id="acc-avatar">
+                    <i class="fa-solid fa-user" style="font-size:2.5rem;color:#ccc;"></i>
+                </div>
+            </div>
+            <div class="sg-profile-info">
+                <div class="sg-profile-name" id="acc-name">Loading...</div>
+                <div class="sg-profile-email" id="acc-email"></div>
+                <div class="sg-profile-badge"><i class="fa-solid fa-check-circle"></i> Verified Member</div>
+            </div>
+        </div>
+
+        <!-- My Orders -->
+        <p class="sg-section-title" id="orders">My Orders</p>
+        <div class="sg-orders-empty">
+            <div class="sg-orders-empty-icon"><i class="fa-solid fa-box-open"></i></div>
+            <h3>No orders yet</h3>
+            <p>Your order history will appear here once you place an order through our website.</p>
+            <span class="sg-orders-coming">⚙️ Online ordering coming soon</span>
+        </div>
+
+        <!-- My Items -->
+        <p class="sg-section-title">My Items</p>
+        <div class="sg-menu">
+            <a href="/cart.html" class="sg-menu-item" id="cart-link">
+                <div class="sg-menu-icon" style="background:#e0f2fe;color:#0ea5e9;"><i class="fa-solid fa-cart-shopping"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">My Cart</div>
+                    <div class="sg-menu-label-sub" id="cart-count-sub">View items in cart</div>
+                </div>
+                <i class="fa-solid fa-chevron-right sg-menu-arrow"></i>
+            </a>
+            <a href="/favourites.html" class="sg-menu-item" id="fav-link">
+                <div class="sg-menu-icon" style="background:#fff0f3;color:#ef4444;"><i class="fa-solid fa-heart"></i>
+                </div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">My Saved Items</div>
+                    <div class="sg-menu-label-sub" id="fav-count-sub">Loading...</div>
+                </div>
+                <i class="fa-solid fa-chevron-right sg-menu-arrow"></i>
+            </a>
+        </div>
+
+        <!-- Account Settings -->
+        <p class="sg-section-title">Account Settings</p>
+        <div class="sg-menu">
+            <button class="sg-menu-item" onclick="openEditModal()">
+                <div class="sg-menu-icon"><i class="fa-solid fa-pen"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">Edit Profile</div>
+                    <div class="sg-menu-label-sub">Update your display name</div>
+                </div>
+                <i class="fa-solid fa-chevron-right sg-menu-arrow"></i>
+            </button>
+            <button class="sg-menu-item" onclick="changePassword()">
+                <div class="sg-menu-icon"><i class="fa-solid fa-lock"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">Change Password</div>
+                    <div class="sg-menu-label-sub">Send reset link to email</div>
+                </div>
+                <i class="fa-solid fa-chevron-right sg-menu-arrow"></i>
+            </button>
+        </div>
+
+        <!-- Support -->
+        <p class="sg-section-title">Support</p>
+        <div class="sg-menu">
+            <a href="https://wa.me/971561010387" target="_blank" class="sg-menu-item">
+                <div class="sg-menu-icon" style="background:#f0fff4;color:#22c55e;"><i
+                        class="fa-brands fa-whatsapp"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">Contact Us</div>
+                    <div class="sg-menu-label-sub">Chat on WhatsApp</div>
+                </div>
+                <i class="fa-solid fa-chevron-right sg-menu-arrow"></i>
+            </a>
+        </div>
+
+        <!-- Sign Out -->
+        <p class="sg-section-title">Session</p>
+        <div class="sg-menu">
+            <button class="sg-menu-item danger" onclick="handleSignOut()">
+                <div class="sg-menu-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">Sign Out</div>
+                </div>
+            </button>
+        </div>
+
+    </div>
+
+    <nav class="mob-nav">
+        <a href="/"><i class="fa-solid fa-house"></i><span>Home</span></a>
+        <a href="/shop.html"><i class="fa-solid fa-bag-shopping"></i><span>Shop</span></a>
+        <a href="/cart.html"><i class="fa-solid fa-cart-shopping"></i><span>Cart</span></a>
+        <a href="/account.html" class="active"><i class="fa-solid fa-user"></i><span>Account</span></a>
+    </nav>
+
+    <div id="sg-toast"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile }
+            from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
+            authDomain: "speed-catalogue.firebaseapp.com",
+            projectId: "speed-catalogue",
+            storageBucket: "speed-catalogue.firebasestorage.app",
+            messagingSenderId: "84589409246",
+            appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        let currentUser = null;
+
+        // Load favourites count from localStorage
+        function loadFavouritesCount() {
+            try {
+                const raw = localStorage.getItem('speedgifts_wishlist');
+                const list = raw ? JSON.parse(raw) : [];
+                const count = Array.isArray(list) ? list.length : 0;
+                const sub = document.getElementById('fav-count-sub');
+                if (sub) sub.textContent = count > 0 ? `${count} item${count > 1 ? 's' : ''} saved` : 'No saved items yet';
+                // Add badge to menu item if count > 0
+                const link = document.getElementById('fav-link');
+                if (link && count > 0) {
+                    const arrow = link.querySelector('.sg-menu-arrow');
+                    if (arrow && !link.querySelector('.sg-menu-badge')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'sg-menu-badge';
+                        badge.textContent = count;
+                        link.insertBefore(badge, arrow);
+                    }
+                }
+            } catch (e) { /* no-op */ }
+        }
+
+        function loadCartCount() {
+            try {
+                const raw = localStorage.getItem('speedgifts_cart');
+                const list = raw ? JSON.parse(raw) : [];
+                const count = Array.isArray(list) ? list.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+                const sub = document.getElementById('cart-count-sub');
+                if (sub) sub.textContent = count > 0 ? `${count} item${count > 1 ? 's' : ''} in cart` : 'View items in cart';
+                
+                const link = document.getElementById('cart-link');
+                if (link && count > 0) {
+                    const arrow = link.querySelector('.sg-menu-arrow');
+                    if (arrow && !link.querySelector('.sg-menu-badge')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'sg-menu-badge';
+                        badge.textContent = count;
+                        link.insertBefore(badge, arrow);
+                    }
+                }
+            } catch (e) { /* no-op */ }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            const loading = document.getElementById('sg-loading');
+            const page = document.getElementById('sg-page');
+
+            if (user && !user.isAnonymous) {
+                currentUser = user;
+                document.getElementById('acc-name').textContent = user.displayName || 'Speed Gifts User';
+                document.getElementById('acc-email').textContent = user.email || '';
+                // Avatar
+                const av = document.getElementById('acc-avatar');
+                if (user.photoURL) {
+                    av.innerHTML = `<img src="${user.photoURL}" alt="${user.displayName || ''}">`;
+                } else {
+                    const initials = (user.displayName || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                    av.innerHTML = `<span style="font-size:1.75rem;font-weight:800;color:#111;">${initials}</span>`;
+                }
+                loadFavouritesCount();
+                loadCartCount();
+                loading.style.opacity = '0';
+                setTimeout(() => { loading.style.display = 'none'; page.style.display = 'block'; }, 300);
+                if (window.location.hash === '#orders') {
+                    setTimeout(() => document.getElementById('orders')?.scrollIntoView({ behavior: 'smooth' }), 400);
+                }
+            } else {
+                sessionStorage.setItem('sg_login_redirect', '/account.html');
+                window.location.href = '/login.html';
+            }
+        });
+
+        // Edit Profile Modal
+        window.openEditModal = () => {
+            const input = document.getElementById('edit-name-input');
+            if (input) input.value = currentUser?.displayName || '';
+            document.getElementById('edit-modal').classList.add('open');
+            setTimeout(() => input?.focus(), 350);
+        };
+
+        window.closeEditModal = (e) => {
+            if (e.target === document.getElementById('edit-modal')) {
+                document.getElementById('edit-modal').classList.remove('open');
+            }
+        };
+
+        window.saveProfile = async () => {
+            const input = document.getElementById('edit-name-input');
+            const btn = document.getElementById('edit-save-btn');
+            const newName = input?.value?.trim();
+            if (!newName) return showToast('Name cannot be empty');
+            if (newName === currentUser?.displayName) {
+                document.getElementById('edit-modal').classList.remove('open');
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            try {
+                await updateProfile(currentUser, { displayName: newName });
+                document.getElementById('acc-name').textContent = newName;
+                document.getElementById('edit-modal').classList.remove('open');
+                showToast('Name updated successfully!');
+            } catch (err) {
+                showToast(err.message?.replace('Firebase:', '').trim() || 'Update failed');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+            }
+        };
+
+        // Allow Enter key in name input
+        document.getElementById('edit-name-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') window.saveProfile();
+        });
+
+        window.changePassword = async () => {
+            if (!currentUser?.email) return showToast('No email found');
+            try {
+                await sendPasswordResetEmail(auth, currentUser.email);
+                showToast('Password reset email sent to ' + currentUser.email);
+            } catch (err) {
+                showToast(err.message?.replace('Firebase:', '').trim() || 'Error sending email');
+            }
+        };
+
+        window.handleSignOut = async () => {
+            try {
+                await signOut(auth);
+                showToast('Signed out successfully');
+                setTimeout(() => window.location.href = '/', 800);
+            } catch { showToast('Error signing out'); }
+        };
+
+        function showToast(msg) {
+            const t = document.getElementById('sg-toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+
+</html>

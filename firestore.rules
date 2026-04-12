@@ -41,8 +41,11 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // 3. Wishlists: Only the owner can read/write their own wishlist (Perfectly secure)
+    // 3. Wishlists & Cart: Only the owner can read/write their own data
     match /artifacts/{anyAppId}/users/{userId}/data/wishlist {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    match /artifacts/{anyAppId}/users/{userId}/data/cart {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
 

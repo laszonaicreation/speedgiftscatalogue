@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Favourites – Speed Gifts</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png"
+        href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f7f7f7;
+            color: #111;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* NAV */
+        .sg-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #f0f0f0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1.25rem;
+        }
+
+        .sg-nav-back {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #9ca3af;
+            text-decoration: none;
+            width: 60px;
+        }
+
+        .sg-nav-back:hover {
+            color: #111;
+        }
+
+        .sg-nav-logo {
+            flex: 1;
+            text-align: center;
+        }
+
+        .sg-nav-logo img {
+            height: 28px;
+            width: auto;
+        }
+
+        .sg-nav-side {
+            width: 60px;
+        }
+
+        /* PAGE */
+        .sg-page {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 8rem;
+        }
+
+        /* HEADER */
+        .sg-header {
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sg-header-left {
+            text-align: center;
+            flex: 1;
+        }
+
+        .sg-header-left h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+        }
+
+        .sg-header-left h1 i {
+            color: #ef4444;
+        }
+
+        .sg-header-count {
+            font-size: 0.72rem;
+            font-weight: 400;
+            text-transform: capitalize;
+            letter-spacing: 0;
+            color: #9ca3af;
+            margin-top: 0.2rem;
+        }
+
+        /* WhatsApp All Button */
+        .sg-wa-all-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 100px;
+            padding: 0.5rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            text-decoration: none;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .sg-wa-all-btn:hover {
+            background: #25D366;
+        }
+
+        .sg-wa-all-btn i {
+            font-size: 1rem;
+        }
+
+        /* ITEMS LIST */
+        .sg-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        /* FAV ITEM — matches account.html sg-menu-item style */
+        .fav-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 18px;
+            transition: background 0.15s;
+            align-items: center;
+        }
+
+        .fav-item:hover {
+            background: #fafafa;
+        }
+
+        .fav-img {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #f4f4f4;
+            cursor: pointer;
+        }
+
+        .fav-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.25s;
+        }
+
+        .fav-img:hover img {
+            transform: scale(1.06);
+        }
+
+        .fav-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fav-name {
+            font-size: 0.875rem;
+            font-weight: 400;
+            color: #111;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+            cursor: pointer;
+            margin-bottom: 0.1rem;
+        }
+
+        .fav-name:hover {
+            color: #555;
+        }
+
+        .fav-price {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .fav-price strong {
+            color: #111;
+            font-weight: 700;
+        }
+
+        .fav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .fav-wa-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .fav-wa-btn:hover {
+            background: #25D366;
+        }
+
+        .fav-wa-btn i {
+            font-size: 0.875rem;
+        }
+
+        .fav-view-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #f4f4f4;
+            color: #555;
+            text-decoration: none;
+            font-size: 0.7rem;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+
+        .fav-view-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .fav-remove {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            background: #fff0f0;
+            color: #ef4444;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .fav-remove:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        /* SKELETON */
+        .fav-skel {
+            background: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            padding: 14px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .fav-skel-img {
+            width: 76px;
+            height: 76px;
+            border-radius: 16px;
+            flex-shrink: 0;
+        }
+
+        .fav-skel-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .fav-skel-line {
+            height: 10px;
+            border-radius: 5px;
+        }
+
+        .sg-skeleton {
+            background: linear-gradient(90deg, #f4f4f4 25%, #ececec 50%, #f4f4f4 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
+
+        /* EMPTY */
+        .sg-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: #fff;
+            border-radius: 24px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .sg-empty {
+            padding: 2.5rem 1.5rem;
+        }
+
+        .sg-empty i {
+            font-size: 2rem;
+            color: #e5e7eb;
+            display: block;
+            margin-bottom: 0.875rem;
+        }
+
+        .sg-empty h2 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .sg-empty p {
+            font-size: 0.73rem;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+
+        .sg-empty-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            background: #111;
+            color: #fff;
+            border-radius: 100px;
+            padding: 0.6rem 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .sg-empty-btn i {
+            display: none;
+        }
+
+        .sg-empty-btn:hover {
+            background: #333;
+        }
+
+        /* TOAST */
+        #sg-toast {
+            position: fixed;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #111;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 9999;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #sg-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* LOADING */
+        #sg-loading {
+            position: fixed;
+            inset: 0;
+            background: #f7f7f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .sg-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #111;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* MOBILE NAV */
+        .mob-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #f0f0f0;
+            padding: 0.75rem 1.5rem calc(0.75rem + env(safe-area-inset-bottom));
+            justify-content: space-around;
+            z-index: 50;
+        }
+
+        @media(max-width:767px) {
+            .mob-nav {
+                display: flex;
+            }
+        }
+
+        .mob-nav a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            text-decoration: none;
+        }
+
+        .mob-nav a.active {
+            color: #ef4444;
+        }
+
+        .mob-nav i {
+            font-size: 1.05rem;
+        }
+
+        /* Transition for removing items */
+        .fav-item.removing {
+            opacity: 0;
+            transform: translateX(20px) scale(0.96);
+            transition: all 0.25s ease;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sg-loading">
+        <div class="sg-spinner"></div>
+    </div>
+
+    <nav class="sg-nav">
+        <div class="sg-nav-logo">
+            <a href="/"><img src="img/speed-logo.svg" alt="Speed Gifts"></a>
+        </div>
+
+    </nav>
+
+    <main class="sg-page" id="sg-page" style="display:none;">
+
+        <div class="sg-header">
+            <div class="sg-header-left">
+                <h1><i class="fa-solid fa-heart"></i> My Favourites</h1>
+                <p class="sg-header-count" id="fav-count-text">Loading...</p>
+            </div>
+            <a href="#" id="wa-all-btn" class="sg-wa-all-btn" style="display:none;" onclick="inquireAll(event)">
+                <i class="fa-brands fa-whatsapp"></i> Inquire All
+            </a>
+        </div>
+
+        <div id="sg-list-container"></div>
+
+    </main>
+
+    <nav class="mob-nav">
+        <a href="/"><i class="fa-solid fa-house"></i><span>Home</span></a>
+        <a href="/shop.html"><i class="fa-solid fa-bag-shopping"></i><span>Shop</span></a>
+        <a href="/cart.html"><i class="fa-solid fa-cart-shopping"></i><span>Cart</span></a>
+        <a href="/account.html"><i class="fa-solid fa-user"></i><span>Account</span></a>
+    </nav>
+
+    <div id="sg-toast"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, documentId }
+            from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
+            authDomain: "speed-catalogue.firebaseapp.com",
+            projectId: "speed-catalogue",
+            storageBucket: "speed-catalogue.firebasestorage.app",
+            messagingSenderId: "84589409246",
+            appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'speed-catalogue';
+        const WISHLIST_KEY = 'speedgifts_wishlist';
+        let wishlistIds = [];
+        let loadedProducts = [];
+
+        function getOptimizedUrl(url, w = 300) {
+            if (!url) return 'https://placehold.co/300x300?text=?';
+            if (url.includes('cloudinary.com')) return url.replace('/upload/', `/upload/w_${w},f_auto,q_auto/`);
+            return url;
+        }
+
+        function loadIds() {
+            try {
+                const raw = localStorage.getItem(WISHLIST_KEY);
+                const list = raw ? JSON.parse(raw) : [];
+                return list.map(e => typeof e === 'string' ? e : e?.id).filter(Boolean);
+            } catch { return []; }
+        }
+
+        function saveIds(ids) {
+            try { localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids.map(id => ({ id })))); } catch { }
+        }
+
+        async function fetchProducts(ids) {
+            if (!ids.length) return [];
+            const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
+            const results = [];
+            for (let i = 0; i < ids.length; i += 30) {
+                const chunk = ids.slice(i, i + 30);
+                const snap = await getDocs(query(prodCol, where(documentId(), 'in', chunk)));
+                snap.forEach(d => results.push({ id: d.id, ...d.data() }));
+            }
+            return results;
+        }
+
+        function getWaLink(p) {
+            const link = `https://speedgifts.net/product-detail.html?id=${p.id}`;
+            const txt = `Hi Speed Gifts Team,\n\nI would like to inquire about this product:\n\n1. ${p.name || 'Product'}\n   Price: ${p.price ? p.price + ' AED' : 'TBD'}\n   Link: ${link}\n\nPlease let me know the availability.`;
+            return `https://wa.me/971561010387?text=${encodeURIComponent(txt)}`;
+        }
+
+        function renderSkeletons(n) {
+            return Array.from({ length: n }, () => `
+        <div class="fav-skel">
+            <div class="fav-skel-img sg-skeleton"></div>
+            <div class="fav-skel-body">
+                <div class="fav-skel-line sg-skeleton" style="width:75%"></div>
+                <div class="fav-skel-line sg-skeleton" style="width:40%"></div>
+                <div class="fav-skel-line sg-skeleton" style="width:55%;height:28px;border-radius:8px;margin-top:4px;"></div>
+            </div>
+        </div>`).join('');
+        }
+
+        function renderEmpty() {
+            return `
+    <div class="sg-empty">
+        <i class="fa-regular fa-heart"></i>
+        <h2>No favourites yet</h2>
+        <p>Tap the ❤️ heart icon on any product to save it here and find it easily later.</p>
+        <a href="/shop.html" class="sg-empty-btn">Browse Products &rarr;</a>
+    </div>`;
+        }
+
+        function renderItems(products) {
+            // Order by wishlist order
+            const ordered = wishlistIds.map(id => products.find(p => p.id === id)).filter(Boolean);
+            if (!ordered.length) return renderEmpty();
+
+            // Show "Inquire All" button
+            document.getElementById('wa-all-btn').style.display = 'flex';
+
+            return `<div class="sg-items-list">${ordered.map(p => {
+                const img = getOptimizedUrl(Array.isArray(p.images) ? p.images[0] : p.img, 300);
+                const price = p.price ? `<div class="fav-price"><strong>${parseFloat(p.price).toFixed(2)}</strong> AED</div>` : '';
+                return `
+        <div class="fav-item" data-id="${p.id}">
+            <div class="fav-img" onclick="window.location.href='product-detail.html?id=${p.id}'">
+                <img src="${img}" alt="${(p.name || '').replace(/"/g, '&quot;')}" loading="lazy"
+                     onerror="this.src='https://placehold.co/300x300?text=?'">
+            </div>
+            <div class="fav-info">
+                <div class="fav-name" onclick="window.location.href='product-detail.html?id=${p.id}'">${p.name || 'Product'}</div>
+                ${price}
+                <div class="fav-actions">
+                    <a href="${getWaLink(p)}" target="_blank" class="fav-wa-btn">
+                        <i class="fa-brands fa-whatsapp"></i> Inquire
+                    </a>
+                    <a href="product-detail.html?id=${p.id}" class="fav-view-btn" title="View product">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <button class="fav-remove" onclick="removeItem('${p.id}')" title="Remove from favourites">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </div>`;
+            }).join('')}</div>`;
+        }
+
+        window.removeItem = (id) => {
+            wishlistIds = wishlistIds.filter(i => i !== id);
+            saveIds(wishlistIds);
+            const el = document.querySelector(`.fav-item[data-id="${id}"]`);
+            if (el) {
+                el.classList.add('removing');
+                setTimeout(() => {
+                    el.remove();
+                    updateCount();
+                }, 250);
+            }
+            showToast('Removed from favourites');
+        };
+
+        window.inquireAll = (e) => {
+            e.preventDefault();
+            if (!loadedProducts.length) return;
+            const items = wishlistIds.map(id => loadedProducts.find(p => p.id === id)).filter(Boolean);
+            if (!items.length) return;
+            const list = items.map((p, i) => `${i + 1}. ${p.name || 'Product'}\n   Price: ${p.price ? p.price + ' AED' : 'TBD'}\n   Link: https://speedgifts.net/product-detail.html?id=${p.id}`).join('\n\n');
+            const txt = `Hi Speed Gifts Team,\n\nI would like to inquire about the following items from my favourites:\n\n${list}\n\nPlease let me know the availability.\n\nThank you.`;
+            window.open(`https://wa.me/971561010387?text=${encodeURIComponent(txt)}`, '_blank');
+        };
+
+        function updateCount() {
+            const items = document.querySelectorAll('.fav-item').length;
+            const countEl = document.getElementById('fav-count-text');
+            if (countEl) countEl.textContent = items === 0 ? 'No saved items' : `${items} saved item${items !== 1 ? 's' : ''}`;
+            if (items === 0) {
+                document.getElementById('sg-list-container').innerHTML = renderEmpty();
+                document.getElementById('wa-all-btn').style.display = 'none';
+            }
+        }
+
+        async function init() {
+            wishlistIds = loadIds();
+            const loading = document.getElementById('sg-loading');
+            const page = document.getElementById('sg-page');
+            const container = document.getElementById('sg-list-container');
+            const countEl = document.getElementById('fav-count-text');
+
+            page.style.display = 'block';
+            loading.style.opacity = '0';
+            setTimeout(() => loading.style.display = 'none', 300);
+
+            if (!wishlistIds.length) {
+                countEl.textContent = 'No saved items yet';
+                container.innerHTML = renderEmpty();
+                return;
+            }
+
+            container.innerHTML = renderSkeletons(Math.min(wishlistIds.length, 5));
+            countEl.textContent = `Loading ${wishlistIds.length} item${wishlistIds.length !== 1 ? 's' : ''}...`;
+
+            try {
+                loadedProducts = await fetchProducts(wishlistIds);
+                container.innerHTML = renderItems(loadedProducts);
+                const count = wishlistIds.length;
+                countEl.textContent = `${count} saved item${count !== 1 ? 's' : ''}`;
+            } catch (err) {
+                console.error('Favourites error:', err);
+                container.innerHTML = `<div class="sg-empty"><i class="fa-solid fa-triangle-exclamation"></i><h2>Could not load items</h2><p>Check your connection and try again.</p><a href="/" class="sg-empty-btn">Go Home</a></div>`;
+            }
+        }
+
+        onAuthStateChanged(auth, () => init());
+
+        function showToast(msg) {
+            const t = document.getElementById('sg-toast');
+            t.textContent = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+
+</html>

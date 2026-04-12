@@ -21,7 +21,7 @@ import {
 
 import {
     initCart, loadCart, getCartItems, getCartCount, getCartTotal,
-    removeFromCart, updateQty, updateCartBadges, checkoutViaWhatsApp
+    removeFromCart, updateQty, updateCartBadges, checkoutViaWhatsApp, mergeCartOnLogin
 } from './cart.js';
 
 import { mountSharedShell } from './shared-shell.js?v=4';
@@ -43,6 +43,11 @@ const db = initializeFirestore(app, {
 });
 const auth = getAuth(app);
 const appId = firebaseConfig.projectId;
+
+window._sgAuth = auth;
+window._sgDb = db;
+window._sgAppId = appId;
+
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -53,7 +58,7 @@ const state = {
     products: []      // cached for favorites sidebar
 };
 
-const WISHLIST_KEY = 'speedgifts_detail_wishlist';
+const WISHLIST_KEY = 'speedgifts_wishlist';
 const BLOCKED_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'];
 
 // ── Products (lazy load for favorites sidebar) ────────────────────────────────
@@ -255,7 +260,7 @@ function renderCartPage() {
 
     if (!body) return;
 
-    body.innerHTML = items.map((item, idx) => {
+    const newHtml = items.map((item, idx) => {
         const imgUrl = getOptimizedUrl(item.img, 300);
         const safeName = (item.name || 'Product').replace(/"/g, '&quot;');
         const varLabel = [item.size, item.color].filter(Boolean).join(' · ');
@@ -294,6 +299,11 @@ function renderCartPage() {
             </div>
         </div>`;
     }).join('');
+
+    if (window._sgLastCartHtml !== newHtml) {
+        body.innerHTML = newHtml;
+        window._sgLastCartHtml = newHtml;
+    }
 }
 
 // ── Global interactions (called from inline HTML) ─────────────────────────────
@@ -339,10 +349,14 @@ renderCartPage();
 updateCartBadges();
 
 // ── Firebase Auth listener ────────────────────────────────────────────────────
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     updateAuthUserUI();
     if (!user) {
         signInAnonymously(auth).catch(() => { /* no-op */ });
+    } else if (!user.isAnonymous) {
+        await mergeCartOnLogin(user.uid);
+        renderCartPage();
+        updateCartBadges();
     }
 });
 

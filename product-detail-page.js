@@ -6,7 +6,7 @@ import { registerProductDetailInteractions } from "./product-detail-interactions
 import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
-import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges } from "./cart.js";
+import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges, mergeCartOnLogin } from "./cart.js";
 import { initSharedAuth } from "./shared-auth.js";
 
 const firebaseConfig = {
@@ -24,6 +24,10 @@ const db = initializeFirestore(app, {
 });
 const auth = getAuth(app);
 const appId = firebaseConfig.projectId;
+
+window._sgAuth = auth;
+window._sgDb = db;
+window._sgAppId = appId;
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 
@@ -37,7 +41,7 @@ window.cartAddItem = ({ id, name, price, img, size, color }) => {
     addToCart({ id, name, price, img, size, color });
     updateCartBadges();
 };
-const WISHLIST_KEY = 'speedgifts_detail_wishlist';
+const WISHLIST_KEY = 'speedgifts_wishlist';
 const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
 const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 const DETAIL_CACHE_KEY = 'speedgifts_detail_cache';
@@ -211,7 +215,7 @@ window.toggleWishlist = async (event, id) => {
     saveWishlist();
     await persistWishlistToCloud();
     renderFavoritesSidebar();
-    
+
     const active = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);
 
     // Update main detail heart icon only if it matches the toggled id
@@ -370,11 +374,11 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
     if (!p) return;
     const price = selectedPrice || p.price;
     let details = "";
-    if (selectedSize) details += `\n*Size:* ${selectedSize}`;
-    if (selectedColor) details += `\n*Color:* ${selectedColor}`;
-    if (!selectedSize && !selectedColor && p.size) details += `\n*Size:* ${p.size}`;
+    if (selectedSize) details += `\n   Size: ${selectedSize}`;
+    if (selectedColor) details += `\n   Color: ${selectedColor}`;
+    if (!selectedSize && !selectedColor && p.size) details += `\n   Size: ${p.size}`;
     const pUrl = getProductDetailUrl(id);
-    const msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${price} AED${details}\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
+    const msg = `Hi Speed Gifts Team,\n\nI would like to inquire about this product:\n\n1. ${p.name}\n   Price: ${price} AED${details}\n   Link: ${pUrl}\n\nPlease let me know the availability.\n\nThank you.`;
     window.trackWhatsAppInquiry(id);
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
@@ -436,6 +440,8 @@ async function bootstrap() {
         if (!u) {
             await signInAnonymously(auth).catch(() => { /* no-op */ });
             return;
+        } else if (!u.isAnonymous) {
+            mergeCartOnLogin(u.uid);
         }
         await initTrafficTracking();
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {

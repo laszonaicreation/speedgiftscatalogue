@@ -30,6 +30,13 @@ export function initSharedAuth(config) {
         if (email) email.textContent = user?.email || '';
         dd.style.display = 'block';
         dd.style.animation = 'sgDdFade .18s ease';
+        // Close if a link inside it is clicked
+        dd.onclick = (e) => {
+            if (e.target.closest('a') || e.target.closest('button')) {
+                window.closeAccountDropdown?.();
+            }
+        };
+
         // Close on outside click
         setTimeout(() => {
             document.addEventListener('click', window._sgDdOutsideClick = (e) => {
@@ -47,13 +54,19 @@ export function initSharedAuth(config) {
     };
 
     window.openAuthModal = () => {
+        const isMobile = window.innerWidth < 768;
         if (getAuthUser?.()) {
-            // Logged in → toggle dropdown
-            const dd = document.getElementById('sg-account-dropdown');
-            if (dd && dd.style.display === 'block') {
-                window.closeAccountDropdown();
+            if (isMobile) {
+                // Mobile: go to account page directly
+                window.location.href = '/account.html';
             } else {
-                window.openAccountDropdown();
+                // Desktop: toggle dropdown
+                const dd = document.getElementById('sg-account-dropdown');
+                if (dd && dd.style.display === 'block') {
+                    window.closeAccountDropdown();
+                } else {
+                    window.openAccountDropdown();
+                }
             }
         } else {
             // Not logged in → go to login page
