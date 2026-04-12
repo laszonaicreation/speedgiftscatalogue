@@ -20,18 +20,17 @@ export function initSharedAuth(config) {
     } = firebaseAuth;
 
     window.openAuthModal = () => {
-        const overlay = document.getElementById('auth-modal-overlay');
-        if (!overlay) return;
-        overlay.classList.add('opacity-100', 'pointer-events-auto');
-
+        // If user is logged in → show account dropdown (existing popup still used for account panel)
         if (getAuthUser?.()) {
+            const overlay = document.getElementById('auth-modal-overlay');
+            if (overlay) overlay.classList.add('opacity-100', 'pointer-events-auto');
             document.getElementById('auth-account-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            document.body.style.overflow = 'hidden';
         } else {
-            setAuthMode?.('login');
-            window.updateAuthUI?.();
-            document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            // Not logged in → redirect to dedicated login page
+            sessionStorage.setItem('sg_login_redirect', window.location.href);
+            window.location.href = '/login.html';
         }
-        document.body.style.overflow = 'hidden';
     };
 
     window.closeAuthModals = () => {
