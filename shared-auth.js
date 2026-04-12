@@ -19,15 +19,44 @@ export function initSharedAuth(config) {
         updateProfile
     } = firebaseAuth;
 
+    // Populate and show account dropdown for logged-in users
+    window.openAccountDropdown = () => {
+        const user = getAuthUser?.();
+        const dd = document.getElementById('sg-account-dropdown');
+        if (!dd) return;
+        const name = document.getElementById('dd-user-name');
+        const email = document.getElementById('dd-user-email');
+        if (name) name.textContent = user?.displayName ? `Hi, ${user.displayName.split(' ')[0]}!` : 'Hi there!';
+        if (email) email.textContent = user?.email || '';
+        dd.style.display = 'block';
+        dd.style.animation = 'sgDdFade .18s ease';
+        // Close on outside click
+        setTimeout(() => {
+            document.addEventListener('click', window._sgDdOutsideClick = (e) => {
+                if (!dd.contains(e.target) && e.target.id !== 'nav-user-btn' && !e.target.closest('#nav-user-btn')) {
+                    window.closeAccountDropdown?.();
+                }
+            }, { once: true });
+        }, 0);
+    };
+
+    window.closeAccountDropdown = () => {
+        const dd = document.getElementById('sg-account-dropdown');
+        if (dd) dd.style.display = 'none';
+        document.removeEventListener('click', window._sgDdOutsideClick);
+    };
+
     window.openAuthModal = () => {
-        // If user is logged in → show account dropdown (existing popup still used for account panel)
         if (getAuthUser?.()) {
-            const overlay = document.getElementById('auth-modal-overlay');
-            if (overlay) overlay.classList.add('opacity-100', 'pointer-events-auto');
-            document.getElementById('auth-account-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
-            document.body.style.overflow = 'hidden';
+            // Logged in → toggle dropdown
+            const dd = document.getElementById('sg-account-dropdown');
+            if (dd && dd.style.display === 'block') {
+                window.closeAccountDropdown();
+            } else {
+                window.openAccountDropdown();
+            }
         } else {
-            // Not logged in → redirect to dedicated login page
+            // Not logged in → go to login page
             sessionStorage.setItem('sg_login_redirect', window.location.href);
             window.location.href = '/login.html';
         }
@@ -36,7 +65,6 @@ export function initSharedAuth(config) {
     window.closeAuthModals = () => {
         document.getElementById('auth-modal-overlay')?.classList.remove('opacity-100', 'pointer-events-auto');
         document.getElementById('auth-login-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
-        document.getElementById('auth-account-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
         document.getElementById('auth-reset-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
         document.body.style.overflow = 'auto';
     };

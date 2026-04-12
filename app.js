@@ -3307,6 +3307,11 @@ function refreshMainAuthUI() {
     const accountEmail = document.getElementById('account-user-email');
     if (accountName) accountName.innerText = u?.displayName || "User";
     if (accountEmail) accountEmail.innerText = u?.email || "";
+    const ddName = document.getElementById('dd-user-name');
+    const ddEmail = document.getElementById('dd-user-email');
+    if (ddName) ddName.textContent = u?.displayName ? `Hi, ${u.displayName.split(' ')[0]}!` : 'Hi there!';
+    if (ddEmail) ddEmail.textContent = u?.email || '';
+    if (!u) window.closeAccountDropdown?.();
 }
 
 initSharedAuth({
