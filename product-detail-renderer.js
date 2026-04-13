@@ -12,7 +12,12 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         <div class="detail-media-pane">
             <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
-                <img src="${getOptimizedUrl(allImages[0] || product.img, window.innerWidth < 768 ? 600 : 900)}" id="main-detail-img" class="w-full h-full object-cover no-animation" fetchpriority="high" loading="eager">
+                <img src="${getOptimizedUrl(allImages[0] || product.img, 600)}" 
+                     id="main-detail-img" 
+                     class="w-full h-full object-cover no-animation" 
+                     fetchpriority="high" 
+                     loading="eager"
+                     data-high-res="${getOptimizedUrl(allImages[0] || product.img, 1000)}">
             </div>
             <div class="thumb-grid justify-center lg:justify-start mt-4" id="detail-thumb-grid">
                 ${allImages.map((img, i) => `
@@ -238,5 +243,21 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     }
     if (typeof window.preloadDetailImages === 'function') {
         window.preloadDetailImages(allImages);
+    }
+
+    // --- Progressive Image Upgrade Logic ---
+    const mainImg = document.getElementById('main-detail-img');
+    if (mainImg && mainImg.dataset.highRes) {
+        const highResUrl = mainImg.dataset.highRes;
+        const tempImg = new Image();
+        tempImg.onload = () => {
+            // Only swap if the user hasn't already switched to a different thumbnail
+            if (mainImg.dataset.highRes === highResUrl) {
+                mainImg.src = highResUrl;
+                mainImg.style.filter = 'none'; // Ensure no blur if added
+            }
+        };
+        // Small delay to prioritize initial page rendering
+        setTimeout(() => { tempImg.src = highResUrl; }, 400);
     }
 }
