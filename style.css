@@ -768,14 +768,34 @@ img[src=""] {
 }
 
 /* ── TAILWIND MISSING ARBITRARY CLASSES (Added by Assistant) ── */
-.z-\[2000\] { z-index: 2000 !important; }
-.z-\[2001\] { z-index: 2001 !important; }
-.z-\[5000\] { z-index: 5000 !important; }
-.z-\[150\] { z-index: 150 !important; }
-.w-\[85\%\] { width: 85% !important; }
+.z-\[2000\] {
+    z-index: 2000 !important;
+}
+
+.z-\[2001\] {
+    z-index: 2001 !important;
+}
+
+.z-\[5000\] {
+    z-index: 5000 !important;
+}
+
+.z-\[150\] {
+    z-index: 150 !important;
+}
+
+.w-\[85\%\] {
+    width: 85% !important;
+}
+
 @media (min-width: 768px) {
-    .md\:w-\[400px\] { width: 400px !important; }
-    .md\:w-\[420px\] { width: 420px !important; }
+    .md\:w-\[400px\] {
+        width: 400px !important;
+    }
+
+    .md\:w-\[420px\] {
+        width: 420px !important;
+    }
 }
 
 /* ── CART ITEM ── */
@@ -3093,7 +3113,7 @@ body.search-mode #search-result-count {
 
 /* Hide skeleton loading UI completely — its layout is from old design.
    Plain white during load is cleaner than showing wrong skeleton layout. */
-#app > .animate-pulse {
+#app>.animate-pulse {
     display: none !important;
 }
 
@@ -3104,7 +3124,9 @@ body.search-mode #search-result-count {
 }
 
 /* Global: no shadow on body/html/app at any time */
-html, body, #app {
+html,
+body,
+#app {
     box-shadow: none !important;
     outline: none !important;
 }

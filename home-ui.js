@@ -80,7 +80,7 @@ export function buildHomeProductCardHtml({
             ${badgeHtml}
             <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
             <img src="${imageUrl}" 
-                 class="${idx < 4 ? 'no-animation' : ''}"
+                 class="${(idx < 4 || isEager) ? 'no-animation' : ''}"
                  ${isEager ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                  decoding="async"
                  onload="this.classList.add('loaded')"
@@ -146,6 +146,19 @@ export function renderHomeBestGridSection({
     if (currentHeight > 0) grid.style.minHeight = `${currentHeight}px`;
 
     grid.innerHTML = gridContent;
+
+    // Fallback: If an image was loaded instantly from browser cache, its onload might 
+    // never fire. We explicitly add the loaded class if it reports as complete.
+    grid.querySelectorAll('img').forEach(img => {
+        if (img.complete) {
+            img.classList.add('loaded');
+        }
+        // Also attach an extra event listener just in case
+        img.addEventListener('load', function () {
+            this.classList.add('loaded');
+        });
+    });
+
     setTimeout(() => ensureGridImagesVisible(grid), 0);
     setTimeout(() => { grid.style.minHeight = ''; }, 800);
 

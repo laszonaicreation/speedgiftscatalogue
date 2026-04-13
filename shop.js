@@ -140,7 +140,7 @@ onAuthStateChanged(auth, async (user) => {
                 syncWishlistVisualState();
             }
         }
-    } catch(_) {}
+    } catch (_) { }
     updateCartBadges();
 
     if (!user.isAnonymous) {
@@ -1399,24 +1399,13 @@ function restoreShopReturnPosition() {
     const maxTries = 40;
     const attempt = () => {
         const card = returnPid ? document.querySelector(`.product-card[data-id="${returnPid}"]`) : null;
-        if (card) {
-            const isMobile = window.matchMedia('(max-width: 767px)').matches;
-            if (isMobile) {
-                card.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
-            } else {
-                const y = card.getBoundingClientRect().top + window.pageYOffset - 140;
-                window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
-            }
-            sessionStorage.removeItem('speedgifts_shop_return_product');
-            sessionStorage.removeItem('speedgifts_shop_scroll');
-            sessionStorage.removeItem('speedgifts_shop_return_page');
-            return;
-        }
-        if (!card && tries >= maxTries) {
+        if (card || (!card && tries >= maxTries)) {
             if (savedY) window.scrollTo({ top: parseInt(savedY, 10) || 0, behavior: 'auto' });
             sessionStorage.removeItem('speedgifts_shop_return_product');
             sessionStorage.removeItem('speedgifts_shop_scroll');
             sessionStorage.removeItem('speedgifts_shop_return_page');
+            const antiJumpStyle = document.getElementById('anti-jump-style');
+            if (antiJumpStyle) antiJumpStyle.remove();
             return;
         }
         tries += 1;

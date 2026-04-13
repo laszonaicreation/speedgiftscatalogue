@@ -2,6 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function() {
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+            try {
+            var shopScroll = sessionStorage.getItem('speedgifts_shop_scroll');
+            if (shopScroll) {
+                var y = parseInt(shopScroll, 10);
+                if (y > 0) {
+                    var h = (y + window.innerHeight + 500);
+                    var style = document.createElement('style');
+                    style.id = 'anti-jump-style';
+                    style.innerHTML = '#shop-main { min-height: ' + h + 'px !important; }';
+                    document.head.appendChild(style);
+                    var attemptScroll = function() { window.scrollTo(0, y); };
+                    attemptScroll();
+                    window.addEventListener('DOMContentLoaded', attemptScroll);
+                }
+            }
+        } catch(e) {}
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>Shop All Products | Speed Gifts - Premium Gift Collection</title>
     

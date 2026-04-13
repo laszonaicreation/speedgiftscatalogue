@@ -16,11 +16,11 @@
     <!-- UI UPDATE: 2026-01-03 17:45 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Speed Gifts - Premium Gift Collection</title>
-    
+
     <meta name="keywords" content="gifts, personalized gifts, wood engraving, custom printing, Speed Gifts">
     <link rel="icon" type="image/png"
         href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
-    
+
     <link rel="preconnect" href="https://res.cloudinary.com">
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
 
@@ -75,18 +75,23 @@
 
 
     <meta name="robots" content="index, follow">
-    <meta name="description" content="Speed Gifts is Abu Dhabi's premier personalized gift shop. Shop custom engraving, photo gifts, wooden frames, and unique creations for every occasion. Visit us at WTC Mall, Abu Dhabi.">
+    <meta name="description"
+        content="Speed Gifts is Abu Dhabi's premier personalized gift shop. Shop custom engraving, photo gifts, wooden frames, and unique creations for every occasion. Visit us at WTC Mall, Abu Dhabi.">
     <link rel="canonical" href="https://speedgifts.net/">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Speed Gifts – Premium Personalized Gifts in Abu Dhabi">
-    <meta property="og:description" content="Speed Gifts is Abu Dhabi's premier personalized gift shop. Shop custom engraving, photo gifts, wooden frames, and unique creations for every occasion. Visit us at WTC Mall, Abu Dhabi.">
+    <meta property="og:description"
+        content="Speed Gifts is Abu Dhabi's premier personalized gift shop. Shop custom engraving, photo gifts, wooden frames, and unique creations for every occasion. Visit us at WTC Mall, Abu Dhabi.">
     <meta property="og:url" content="https://speedgifts.net/">
-    <meta property="og:image" content="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <meta property="og:image"
+        content="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
     <meta property="og:site_name" content="Speed Gifts">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Speed Gifts – Premium Personalized Gifts in Abu Dhabi">
-    <meta name="twitter:description" content="Speed Gifts is Abu Dhabi's premier personalized gift shop. Shop custom engraving, photo gifts, wooden frames, and unique creations for every occasion. Visit us at WTC Mall, Abu Dhabi.">
-    <meta name="twitter:image" content="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <meta name="twitter:description"
+        content="Speed Gifts is Abu Dhabi's premier personalized gift shop. Shop custom engraving, photo gifts, wooden frames, and unique creations for every occasion. Visit us at WTC Mall, Abu Dhabi.">
+    <meta name="twitter:image"
+        content="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
     <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -122,7 +127,7 @@
   ]
 }
 </script>
-<script type="application/ld+json">
+    <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
@@ -147,7 +152,7 @@
                 if (wRaw) {
                     var wList = JSON.parse(wRaw);
                     var wIds = new Set();
-                    wList.forEach(function(e) { var id = typeof e === 'string' ? e : e && e.id; if (id) wIds.add(id); });
+                    wList.forEach(function (e) { var id = typeof e === 'string' ? e : e && e.id; if (id) wIds.add(id); });
                     var wCount = wIds.size;
                     if (wCount > 0) {
                         // Inject a style that pre-shows the badge without waiting for JS
@@ -165,7 +170,7 @@
                 if (cRaw) {
                     var cList = JSON.parse(cRaw);
                     var cCount = 0;
-                    cList.forEach(function(e) { cCount += (e.quantity || 1); });
+                    cList.forEach(function (e) { cCount += (e.quantity || 1); });
                     if (cCount > 0) {
                         var cs = document.createElement('style');
                         cs.textContent = '#nav-cart-count { display: flex !important; }';
@@ -173,7 +178,7 @@
                         window._sgInitCartCount = cCount;
                     }
                 }
-            } catch(e) {}
+            } catch (e) { }
         })();
     </script>
     <!-- Google Tag Manager (noscript) -->
@@ -285,19 +290,49 @@
         </div>
     </nav>
     <!-- Account Dropdown (Home page) -->
-    <div id="sg-account-dropdown" style="display:none;position:fixed;top:68px;right:clamp(16px,4vw,80px);width:240px;background:#fff;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,0.13);border:1px solid #f0f0f0;z-index:2001;overflow:hidden;font-family:'Poppins',sans-serif;">
-        <style>@keyframes sgDdFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}</style>
+    <div id="sg-account-dropdown"
+        style="display:none;position:fixed;top:68px;right:clamp(16px,4vw,80px);width:240px;background:#fff;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,0.13);border:1px solid #f0f0f0;z-index:2001;overflow:hidden;font-family:'Poppins',sans-serif;">
+        <style>
+            @keyframes sgDdFade {
+                from {
+                    opacity: 0;
+                    transform: translateY(-6px)
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0)
+                }
+            }
+        </style>
         <div style="padding:1rem 1.25rem 0.75rem;border-bottom:1px solid #f5f5f5;">
-            <p style="font-size:0.8rem;font-weight:700;color:#111;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="dd-user-name">Hi!</p>
-            <p style="font-size:0.7rem;color:#9ca3af;margin:0.15rem 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="dd-user-email"></p>
+            <p style="font-size:0.8rem;font-weight:700;color:#111;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                id="dd-user-name">Hi!</p>
+            <p style="font-size:0.7rem;color:#9ca3af;margin:0.15rem 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                id="dd-user-email"></p>
         </div>
         <div style="padding:0.5rem 0;">
-            <a href="/account.html" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;text-decoration:none;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i class="fa-solid fa-user" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> My Account</a>
-            <a href="/account.html#orders" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;text-decoration:none;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i class="fa-solid fa-box" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> My Orders</a>
-            <button onclick="window.location.href='/favourites.html';" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:'Poppins',sans-serif;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i class="fa-solid fa-heart" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> Favourites</button>
+            <a href="/account.html"
+                style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;text-decoration:none;"
+                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i
+                    class="fa-solid fa-user" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> My Account</a>
+            <a href="/account.html#orders"
+                style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;text-decoration:none;"
+                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i
+                    class="fa-solid fa-box" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i> My Orders</a>
+            <button onclick="window.location.href='/favourites.html';"
+                style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#374151;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:'Poppins',sans-serif;"
+                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='none'"><i
+                    class="fa-solid fa-heart" style="width:14px;color:#9ca3af;font-size:0.75rem;"></i>
+                Favourites</button>
         </div>
         <div style="padding:0.5rem 0;border-top:1px solid #f5f5f5;">
-            <button onclick="window.handleSignOut&&window.handleSignOut();window.closeAccountDropdown&&window.closeAccountDropdown();" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#ef4444;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:'Poppins',sans-serif;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'"><i class="fa-solid fa-arrow-right-from-bracket" style="width:14px;font-size:0.75rem;"></i> Sign Out</button>
+            <button
+                onclick="window.handleSignOut&&window.handleSignOut();window.closeAccountDropdown&&window.closeAccountDropdown();"
+                style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:#ef4444;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:'Poppins',sans-serif;"
+                onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'"><i
+                    class="fa-solid fa-arrow-right-from-bracket" style="width:14px;font-size:0.75rem;"></i> Sign
+                Out</button>
         </div>
     </div>
 
@@ -491,56 +526,212 @@
 
     <!-- Product grid + footer responsive styles moved to style.css -->
     <!-- Footer -->
-                                                                                <footer id="sg-footer">
+    <footer id="sg-footer">
         <style>
-            #sg-footer{background:#0a0a0a;color:#fff;font-family:'Poppins',sans-serif;margin-top:6rem;padding:5rem 3rem 2rem;border-top:1px solid #1a1a1a;}
-            #sg-footer .sg-inner{width:100%;max-width:1400px;margin:0 auto;}
-            #sg-footer .sg-grid{display:grid;grid-template-columns:1fr;gap:3rem;margin-bottom:4rem;}
-            @media(min-width:1024px){#sg-footer .sg-grid{grid-template-columns:1.4fr 1fr 1fr;gap:4rem;}}
-            #sg-footer .sg-col1-content{max-width:300px;}
-            #sg-footer .sg-social{display:flex;gap:1rem;margin-bottom:1.5rem;}
-            #sg-footer .sg-social a{color:#6b7280;font-size:1.1rem;text-decoration:none;transition:color .2s;}
-            #sg-footer .sg-social a:hover{color:#fff;}
-            #sg-footer .sg-brand{font-size:1.75rem;font-weight:600;color:#fff;margin:0 0 0.75rem;letter-spacing:-0.01em;line-height:1.1;}
-            #sg-footer .sg-desc{font-size:0.8125rem;color:#6b7280;font-weight:400;line-height:1.8;margin:0 0 1.5rem;}
-            #sg-footer .sg-contact-block{display:flex;flex-direction:column;gap:0.625rem;}
-            #sg-footer .sg-contact-row{display:flex;align-items:flex-start;gap:0.625rem;}
-            #sg-footer .sg-contact-icon{width:1rem;font-size:0.7rem;color:#4b5563;margin-top:0.2rem;flex-shrink:0;text-align:center;}
-            #sg-footer .sg-contact-val{font-size:0.775rem;color:#9ca3af;font-weight:400;line-height:1.5;}
-            #sg-footer .sg-contact-val a{color:#9ca3af;text-decoration:none;transition:color .2s;}
-            #sg-footer .sg-contact-val a:hover{color:#fff;}
-            #sg-footer .sg-col-title{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:#fff;margin:0 0 1.25rem;padding-bottom:0.75rem;border-bottom:1px solid #1f2937;}
-            #sg-footer .sg-ql{list-style:none;padding:0;margin:0;}
-            #sg-footer .sg-ql li{margin-bottom:0.75rem;}
-            #sg-footer .sg-ql a{font-size:0.8125rem;color:#6b7280;font-weight:400;text-decoration:none;display:block;transition:color .2s;padding:0.1rem 0;}
-            #sg-footer .sg-ql a:hover{color:#fff;}
-            #sg-footer .sg-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#374151;border-top:1px solid #1a1a1a;padding-top:1.75rem;margin-top:1rem;}
-            @media(max-width:640px){#sg-footer{padding:4rem 1.25rem 2rem;}#sg-footer .sg-col1-content{max-width:100%;}#sg-footer .sg-bottom{flex-direction:column;align-items:flex-start;}}
+            #sg-footer {
+                background: #0a0a0a;
+                color: #fff;
+                font-family: 'Poppins', sans-serif;
+                margin-top: 6rem;
+                padding: 5rem 3rem 2rem;
+                border-top: 1px solid #1a1a1a;
+            }
+
+            #sg-footer .sg-inner {
+                width: 100%;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            #sg-footer .sg-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 3rem;
+                margin-bottom: 4rem;
+            }
+
+            @media(min-width:1024px) {
+                #sg-footer .sg-grid {
+                    grid-template-columns: 1.4fr 1fr 1fr;
+                    gap: 4rem;
+                }
+            }
+
+            #sg-footer .sg-col1-content {
+                max-width: 300px;
+            }
+
+            #sg-footer .sg-social {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            #sg-footer .sg-social a {
+                color: #6b7280;
+                font-size: 1.1rem;
+                text-decoration: none;
+                transition: color .2s;
+            }
+
+            #sg-footer .sg-social a:hover {
+                color: #fff;
+            }
+
+            #sg-footer .sg-brand {
+                font-size: 1.75rem;
+                font-weight: 600;
+                color: #fff;
+                margin: 0 0 0.75rem;
+                letter-spacing: -0.01em;
+                line-height: 1.1;
+            }
+
+            #sg-footer .sg-desc {
+                font-size: 0.8125rem;
+                color: #6b7280;
+                font-weight: 400;
+                line-height: 1.8;
+                margin: 0 0 1.5rem;
+            }
+
+            #sg-footer .sg-contact-block {
+                display: flex;
+                flex-direction: column;
+                gap: 0.625rem;
+            }
+
+            #sg-footer .sg-contact-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.625rem;
+            }
+
+            #sg-footer .sg-contact-icon {
+                width: 1rem;
+                font-size: 0.7rem;
+                color: #4b5563;
+                margin-top: 0.2rem;
+                flex-shrink: 0;
+                text-align: center;
+            }
+
+            #sg-footer .sg-contact-val {
+                font-size: 0.775rem;
+                color: #9ca3af;
+                font-weight: 400;
+                line-height: 1.5;
+            }
+
+            #sg-footer .sg-contact-val a {
+                color: #9ca3af;
+                text-decoration: none;
+                transition: color .2s;
+            }
+
+            #sg-footer .sg-contact-val a:hover {
+                color: #fff;
+            }
+
+            #sg-footer .sg-col-title {
+                font-size: 0.7rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.14em;
+                color: #fff;
+                margin: 0 0 1.25rem;
+                padding-bottom: 0.75rem;
+                border-bottom: 1px solid #1f2937;
+            }
+
+            #sg-footer .sg-ql {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            #sg-footer .sg-ql li {
+                margin-bottom: 0.75rem;
+            }
+
+            #sg-footer .sg-ql a {
+                font-size: 0.8125rem;
+                color: #6b7280;
+                font-weight: 400;
+                text-decoration: none;
+                display: block;
+                transition: color .2s;
+                padding: 0.1rem 0;
+            }
+
+            #sg-footer .sg-ql a:hover {
+                color: #fff;
+            }
+
+            #sg-footer .sg-bottom {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 1rem;
+                font-size: 0.65rem;
+                font-weight: 600;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: #374151;
+                border-top: 1px solid #1a1a1a;
+                padding-top: 1.75rem;
+                margin-top: 1rem;
+            }
+
+            @media(max-width:640px) {
+                #sg-footer {
+                    padding: 4rem 1.25rem 2rem;
+                }
+
+                #sg-footer .sg-col1-content {
+                    max-width: 100%;
+                }
+
+                #sg-footer .sg-bottom {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+            }
         </style>
         <div class="sg-inner">
             <div class="sg-grid">
                 <div>
                     <div class="sg-col1-content">
                         <div class="sg-social">
-                            <a href="javascript:void(0)" target="_blank" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-                            <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&amp;utm_source=qr" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                            <a href="javascript:void(0)" target="_blank" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-                            <a href="https://wa.me/971561010387" target="_blank" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                            <a href="javascript:void(0)" target="_blank" aria-label="Facebook"><i
+                                    class="fa-brands fa-facebook"></i></a>
+                            <a href="https://www.instagram.com/speed_gifts?igsh=aGxsazIxb2l3amxv&amp;utm_source=qr"
+                                target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="javascript:void(0)" target="_blank" aria-label="YouTube"><i
+                                    class="fa-brands fa-youtube"></i></a>
+                            <a href="https://wa.me/971561010387" target="_blank" aria-label="WhatsApp"><i
+                                    class="fa-brands fa-whatsapp"></i></a>
                         </div>
                         <h2 class="sg-brand">Speed Gifts</h2>
-                        <p class="sg-desc">A leading personalized gift shop in Abu Dhabi offering custom engraving, photo gifts, and unique creations for every occasion.</p>
+                        <p class="sg-desc">A leading personalized gift shop in Abu Dhabi offering custom engraving,
+                            photo gifts, and unique creations for every occasion.</p>
                         <div class="sg-contact-block">
                             <div class="sg-contact-row">
                                 <i class="fa-solid fa-location-dot sg-contact-icon"></i>
-                                <div class="sg-contact-val"><a href="https://share.google/LS2p2EFm0xMeQvlME" target="_blank">World Trade Center, B2 Floor, Khalifa Bin Zayed The First St, Al Danah, Zone 1, Abu Dhabi</a></div>
+                                <div class="sg-contact-val"><a href="https://share.google/LS2p2EFm0xMeQvlME"
+                                        target="_blank">World Trade Center, B2 Floor, Khalifa Bin Zayed The First St, Al
+                                        Danah, Zone 1, Abu Dhabi</a></div>
                             </div>
                             <div class="sg-contact-row">
                                 <i class="fa-brands fa-whatsapp sg-contact-icon"></i>
-                                <div class="sg-contact-val"><a href="https://wa.me/971561010387" target="_blank">+971 56 101 0387</a></div>
+                                <div class="sg-contact-val"><a href="https://wa.me/971561010387" target="_blank">+971 56
+                                        101 0387</a></div>
                             </div>
                             <div class="sg-contact-row">
                                 <i class="fa-regular fa-envelope sg-contact-icon"></i>
-                                <div class="sg-contact-val"><a href="mailto:speedgiftsuae@gmail.com">speedgiftsuae@gmail.com</a></div>
+                                <div class="sg-contact-val"><a
+                                        href="mailto:speedgiftsuae@gmail.com">speedgiftsuae@gmail.com</a></div>
                             </div>
                         </div>
                     </div>
@@ -570,7 +761,7 @@
                 <span style="color:#1f2937;font-size:0.6rem;">speedgifts.net</span>
             </div>
         </div>
-        <script>document.querySelectorAll('.sg-year').forEach(function(el){el.innerText=new Date().getFullYear();});</script>
+        <script>document.querySelectorAll('.sg-year').forEach(function (el) { el.innerText = new Date().getFullYear(); });</script>
     </footer>
     <script>if (document.getElementById('year')) document.getElementById('year').innerText = new Date().getFullYear();</script>
 

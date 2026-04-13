@@ -129,7 +129,7 @@ initCart({ getProducts: () => DATA.p, getOptimizedUrl });
 // INSTANT CACHE RENDER — runs at module level after DOM is fully parsed
 // Provides zero-flash product display before Firebase auth resolves
 // ─────────────────────────────────────────────────────────────────────────────
-window._sgTryInstantCacheRender = function() {
+window._sgTryInstantCacheRender = function () {
     try {
         if (DATA.p && DATA.p.length > 0) return; // Firebase already loaded — skip
         const raw = localStorage.getItem('speedgifts_home_cache');
@@ -138,10 +138,23 @@ window._sgTryInstantCacheRender = function() {
         if (!cache || !Array.isArray(cache.p) || cache.p.length === 0) return;
         DATA = cache;
         console.log('[Cache] Instant render from cache — products:', DATA.p.length);
+
+        // Ensure hearts are colored immediately on first paint
+        try {
+            const wRaw = localStorage.getItem('speedgifts_wishlist');
+            if (wRaw) {
+                const parsedW = JSON.parse(wRaw);
+                state.wishlist = parsedW.map(e => typeof e === 'string' ? { id: e } : e);
+            }
+        } catch (e) { }
+
         if (typeof renderAnnouncementBar === 'function') renderAnnouncementBar();
         if (typeof window.renderDesktopMegaMenu === 'function') window.renderDesktopMegaMenu();
+        // Restore state instantly before first paint
+        if (typeof applyHomeSnapshotIfAny === 'function') applyHomeSnapshotIfAny();
+
         if (typeof renderHome === 'function') renderHome();
-    } catch(e) {
+    } catch (e) {
         console.warn('[Cache] Render failed:', e);
     }
 };
@@ -461,7 +474,7 @@ onAuthStateChanged(auth, async (u) => {
                 updateWishlistBadge();
             }
         }
-    } catch(_) {}
+    } catch (_) { }
     updateCartBadges(); // Cart is always in localStorage, update instantly
 
     if (u) {
@@ -487,9 +500,9 @@ const handleReentry = () => {
     if (DATA.p.length > 0) {
         const urlParams = new URLSearchParams(window.location.search);
         const pId = urlParams.get('p');
-        if (pId) viewDetail(pId, true, null, false); // Enable tracking for initial entry
+        if (pId) viewDetail(pId, true, null, false);
         else {
-            renderHome();
+            refreshData(true);
             updateMetaDescription("Discover premium gifts and personalized items at Speed Gifts. From engraved wood to custom cushions, find the perfect gift for every occasion.");
             updateCanonicalURL('');
         }
@@ -567,7 +580,7 @@ async function loadWishlist() {
         // from overwriting the freshly merged wishlist.
         try {
             await setDoc(wishRef, { ids: state.wishlist });
-        } catch(e) { console.error('[Wishlist] Cloud save failed:', e); }
+        } catch (e) { console.error('[Wishlist] Cloud save failed:', e); }
         updateWishlistBadge();
         updateAllWishlistUI();
         startWishlistRealtimeSync();
@@ -924,7 +937,18 @@ window.renderDesktopMegaMenu = () => {
 
 async function refreshData(isNavigationOnly = false) {
     try {
+        let visualDataChanged = false;
+
         if (!isNavigationOnly || DATA.p.length === 0) {
+            const buildSig = (p, c, m, s) => {
+                const ps = (p || []).map(x => `${x.id}-${x.price}`).sort().join('|');
+                const cs = (c || []).map(x => `${x.id}`).sort().join('|');
+                const ms = (m || []).map(x => `${x.id}`).sort().join('|');
+                const ss = (s || []).map(x => `${x.id}`).sort().join('|');
+                return `${ps}::${cs}::${ms}::${ss}`;
+            };
+            const oldVisualSig = buildSig(DATA.p, DATA.c, DATA.m, DATA.s);
+
             const bundle = await fetchHomeDataBundle({
                 db,
                 appId,
@@ -948,12 +972,15 @@ async function refreshData(isNavigationOnly = false) {
             DATA.landingSettings = bundle.landingSettings;
             DATA.homeSettings = bundle.homeSettings;
             DATA.stats = bundle.stats;
-            
+
+            const newVisualSig = buildSig(DATA.p, DATA.c, DATA.m, DATA.s);
+            visualDataChanged = (oldVisualSig !== newVisualSig);
+
             // Save cache for next lightning-fast load
             try {
                 localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
-            } catch(e) {}
-            
+            } catch (e) { }
+
             primeHomeCriticalAssets();
 
             renderAnnouncementBar();
@@ -1027,15 +1054,18 @@ async function refreshData(isNavigationOnly = false) {
             }
         }
 
+        const grid = document.getElementById('product-grid');
+        const needsRender = visualDataChanged || !grid || grid.children.length === 0;
+
         if (!isAdminOpen) {
             if (prodId && DATA.p.length > 0) {
                 viewDetail(prodId, true);
             } else {
-                renderHome();
+                if (needsRender) renderHome();
                 applyHomeSnapshotIfAny();
             }
         } else {
-            renderHome();
+            if (needsRender) renderHome();
             applyHomeSnapshotIfAny();
         }
 
@@ -1226,14 +1256,14 @@ function renderHome() {
 
         const isAdminVisible = !document.getElementById('admin-entry-btn').classList.contains('hidden');
         const categories = [...DATA.c].sort((a, b) => {
-                const pinA = a.isPinned ? 1 : 0;
-                const pinB = b.isPinned ? 1 : 0;
-                if (pinA !== pinB) return pinB - pinA;
-                if (a.isPinned && b.isPinned) {
-                    return (a.pinnedAt || 0) - (b.pinnedAt || 0);
-                }
-                return 0;
-            });
+            const pinA = a.isPinned ? 1 : 0;
+            const pinB = b.isPinned ? 1 : 0;
+            if (pinA !== pinB) return pinB - pinA;
+            if (a.isPinned && b.isPinned) {
+                return (a.pinnedAt || 0) - (b.pinnedAt || 0);
+            }
+            return 0;
+        });
         renderHomeCategoryRow({
             catRow,
             categories,
@@ -1241,7 +1271,7 @@ function renderHome() {
             getImageUrl: (c) => getOptimizedUrl(c.img, 200) || 'https://placehold.co/100x100?text=Gift',
             isAdminVisible
         });
-        
+
         const filtered = getHomeBestsellerProducts({ products: DATA.p, sort: state.sort });
         applyHomeBestsellerSeo({
             activeCatTitle,
@@ -1263,7 +1293,7 @@ function renderHome() {
                 isInWishlist,
                 getBadgeLabel,
                 getOptimizedUrl,
-                initialEagerImages: INITIAL_EAGER_IMAGES,
+                initialEagerImages: (state.homeBestExpanded || state.scrollPos > 0) ? 9999 : INITIAL_EAGER_IMAGES,
                 ensureGridImagesVisible,
                 getEmptyStateHtml: getHomeEmptyStateHtml,
                 ensureLoadMoreContainer: ensureHomeLoadMoreContainer,
@@ -1316,7 +1346,8 @@ function cacheHomeSnapshot() {
             ts: Date.now(),
             url: window.location.pathname + window.location.search,
             scrollY: window.scrollY || state.scrollPos || 0,
-            visibleChunks: state.visibleChunks || 1
+            visibleChunks: state.visibleChunks || 1,
+            homeBestExpanded: !!state.homeBestExpanded
         };
         sessionStorage.setItem(HOME_SNAPSHOT_KEY, JSON.stringify(snapshot));
     } catch (e) {
@@ -1327,23 +1358,40 @@ function cacheHomeSnapshot() {
 function applyHomeSnapshotIfAny() {
     try {
         const raw = sessionStorage.getItem(HOME_SNAPSHOT_KEY);
-        if (!raw) return;
+        const clearStyle = () => {
+            const el = document.getElementById('anti-jump-style');
+            if (el) el.remove();
+        };
+
+        if (!raw) { clearStyle(); return; }
+
         const snapshot = JSON.parse(raw);
         const isFresh = snapshot?.ts && (Date.now() - snapshot.ts) < 10 * 60 * 1000;
         const currentUrl = window.location.pathname + window.location.search;
-        if (!isFresh || !snapshot?.url || snapshot.url !== currentUrl) return;
+        if (!isFresh || !snapshot?.url || snapshot.url !== currentUrl) {
+            clearStyle(); return;
+        }
+
         if (Number.isFinite(snapshot.visibleChunks) && snapshot.visibleChunks > 1) {
             state.visibleChunks = snapshot.visibleChunks;
+        }
+        if (typeof snapshot.homeBestExpanded === 'boolean') {
+            state.homeBestExpanded = snapshot.homeBestExpanded;
         }
         if (Number.isFinite(snapshot.scrollY) && snapshot.scrollY > 0) {
             state.scrollPos = snapshot.scrollY;
             state.skipScroll = true;
             setTimeout(() => {
                 window.scrollTo({ top: snapshot.scrollY, behavior: 'auto' });
+                clearStyle();
             }, 0);
+        } else {
+            clearStyle();
         }
         sessionStorage.removeItem(HOME_SNAPSHOT_KEY);
     } catch (e) {
+        const el = document.getElementById('anti-jump-style');
+        if (el) el.remove();
         sessionStorage.removeItem(HOME_SNAPSHOT_KEY);
     }
 }
@@ -1797,6 +1845,22 @@ function ensureGridImagesVisible(gridEl) {
         }
     });
 }
+
+// Global Image Fallback for bfcache / lazy loading race conditions.
+// Ensures that images just magically restored but lacking 'load' events
+// do not stay white forever.
+setInterval(() => {
+    document.querySelectorAll('.img-container img:not(.loaded)').forEach(img => {
+        if (img.complete && img.naturalHeight > 0) {
+            img.classList.add('loaded');
+        } else if (img.complete && img.naturalHeight === 0 && img.src) {
+            // Force reload if broken
+            const src = img.src;
+            img.src = '';
+            img.src = src;
+        }
+    });
+}, 400);
 
 
 async function trackProductView(id) {
