@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
@@ -463,17 +463,36 @@ async function bootstrap() {
     // Fast-path: render from session cache immediately (if available),
     // then sync with Firestore in background.
     const cached = readDetailCache(id);
+    let initialRenderDone = false;
     if (cached) {
         DATA.p = [cached.product];
         DATA.c = Array.isArray(cached.categories) ? cached.categories : [];
         await renderById(id);
+        initialRenderDone = true;
     }
 
+    // Single-item fetch for direct visits (much faster than fetching whole collection)
+    if (!initialRenderDone) {
+        try {
+            const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+            const productSnap = await getDoc(productRef);
+            if (productSnap.exists()) {
+                DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
+                await renderById(id);
+                initialRenderDone = true;
+            }
+        } catch (e) { console.warn("Single fetch failed:", e); }
+    }
+
+    // Background fetch: load categories for sidebar and full product list for recommendations.
+    // This runs after the user has seen the main product.
     const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
     DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id));
     DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
     renderCategoriesSidebar();
+    // Final render to populate recommendations and sidebars
     await renderById(id);
 }
 

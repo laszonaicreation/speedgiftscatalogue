@@ -12,7 +12,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         <div class="detail-media-pane">
             <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
-                <img src="${getOptimizedUrl(allImages[0] || product.img, window.innerWidth < 768 ? 900 : 900)}" id="main-detail-img" class="w-full h-full object-cover no-animation" fetchpriority="high" loading="eager">
+                <img src="${getOptimizedUrl(allImages[0] || product.img, window.innerWidth < 768 ? 600 : 900)}" id="main-detail-img" class="w-full h-full object-cover no-animation" fetchpriority="high" loading="eager">
             </div>
             <div class="thumb-grid justify-center lg:justify-start mt-4" id="detail-thumb-grid">
                 ${allImages.map((img, i) => `

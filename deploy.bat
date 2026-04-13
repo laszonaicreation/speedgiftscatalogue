@@ -38,7 +38,18 @@ if %errorlevel% neq 0 (
 echo Done! shop.min.js updated.
 echo.
 
-echo [4/6] Minifying style.css...
+echo [4/7] Minifying product-detail-page.js...
+call npx terser product-detail-page.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output product-detail-page.min.js
+
+if %errorlevel% neq 0 (
+    echo ERROR: Product Detail JS Minification failed! Deploy cancelled.
+    pause
+    exit /b 1
+)
+echo Done! product-detail-page.min.js updated.
+echo.
+
+echo [5/7] Minifying style.css...
 call npx clean-css-cli -o style.min.css style.css
 
 if %errorlevel% neq 0 (
@@ -49,7 +60,7 @@ if %errorlevel% neq 0 (
 echo Done! style.min.css updated.
 echo.
 
-echo [5/6] Minifying index.dev.html...
+echo [6/7] Minifying index.dev.html...
 call npx html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true -o index.html index.dev.html
 
 if %errorlevel% neq 0 (
@@ -60,7 +71,7 @@ if %errorlevel% neq 0 (
 echo Done! index.html updated.
 echo.
 
-echo [6/6] Deploying to Firebase Hosting...
+echo [7/7] Deploying to Firebase Hosting...
 call firebase deploy --only hosting
 
 if %errorlevel% neq 0 (
