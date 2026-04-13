@@ -562,7 +562,12 @@ async function loadWishlist() {
 
         // Save merged result to both localStorage and Firestore
         localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
-        setDoc(wishRef, { ids: state.wishlist }).catch(e => console.error('[Wishlist] Cloud save failed:', e));
+        // IMPORTANT: await the cloud write BEFORE starting realtime sync.
+        // This prevents the first onSnapshot (which fires with stale pre-merge data)
+        // from overwriting the freshly merged wishlist.
+        try {
+            await setDoc(wishRef, { ids: state.wishlist });
+        } catch(e) { console.error('[Wishlist] Cloud save failed:', e); }
         updateWishlistBadge();
         updateAllWishlistUI();
         startWishlistRealtimeSync();
@@ -573,15 +578,35 @@ function startWishlistRealtimeSync() {
     if (!state.user) return;
     const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
     wishlistRealtimeUnsub?.();
+
+    // Skip the FIRST snapshot event — it fires immediately with whatever is in
+    // Firestore cache (potentially stale / pre-merge data) and would overwrite
+    // the freshly merged wishlist we just saved in loadWishlist().
+    let skipFirst = true;
+
     wishlistRealtimeUnsub = onSnapshot(wishRef, (snap) => {
+        if (skipFirst) {
+            skipFirst = false;
+            return; // Ignore the immediate-fire snapshot
+        }
         const raw = snap.exists() ? (snap.data().ids || []) : [];
         const seen = new Set();
-        state.wishlist = raw.filter((entry) => {
+        const incoming = raw.filter((entry) => {
             const wishId = typeof entry === 'string' ? entry : entry?.id;
             if (!wishId || seen.has(wishId)) return false;
             seen.add(wishId);
             return true;
         }).map((entry) => (typeof entry === 'string' ? { id: entry } : entry));
+
+        // Merge incoming cloud data with current local state to prevent data loss
+        const localIds = new Set(state.wishlist.map(e => (typeof e === 'string' ? e : e?.id)).filter(Boolean));
+        const merged = [...state.wishlist];
+        incoming.forEach(entry => {
+            const id = typeof entry === 'string' ? entry : entry?.id;
+            if (id && !localIds.has(id)) merged.push(entry);
+        });
+
+        state.wishlist = merged;
         localStorage.setItem(WISHLIST_LOCAL_KEY, JSON.stringify(state.wishlist));
         updateWishlistBadge();
         updateAllWishlistUI();
