@@ -138,6 +138,44 @@
 </head>
 
 <body class="selection:bg-black selection:text-white">
+    <!-- CRITICAL: Sync badge pre-init — runs before any module JS to prevent blink -->
+    <script>
+        (function () {
+            try {
+                // Wishlist badge
+                var wRaw = localStorage.getItem('speedgifts_wishlist');
+                if (wRaw) {
+                    var wList = JSON.parse(wRaw);
+                    var wIds = new Set();
+                    wList.forEach(function(e) { var id = typeof e === 'string' ? e : e && e.id; if (id) wIds.add(id); });
+                    var wCount = wIds.size;
+                    if (wCount > 0) {
+                        // Inject a style that pre-shows the badge without waiting for JS
+                        var style = document.createElement('style');
+                        style.textContent =
+                            '#nav-wishlist-count { display: flex !important; }' +
+                            '#nav-wishlist-count-mob { display: flex !important; }';
+                        document.head.appendChild(style);
+                        // Store for JS to pick up instantly
+                        window._sgInitWishCount = wCount;
+                    }
+                }
+                // Cart badge
+                var cRaw = localStorage.getItem('speedgifts_cart');
+                if (cRaw) {
+                    var cList = JSON.parse(cRaw);
+                    var cCount = 0;
+                    cList.forEach(function(e) { cCount += (e.quantity || 1); });
+                    if (cCount > 0) {
+                        var cs = document.createElement('style');
+                        cs.textContent = '#nav-cart-count { display: flex !important; }';
+                        document.head.appendChild(cs);
+                        window._sgInitCartCount = cCount;
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P6WMHVN6" height="0" width="0"
             style="display:none;visibility:hidden"></iframe></noscript>

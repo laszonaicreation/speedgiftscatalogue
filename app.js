@@ -659,11 +659,23 @@ function updateWishlistBadge() {
     const sidebarCount = document.getElementById('sidebar-count');
     const count = state.wishlist.length;
 
+    // Remove pre-init injected style tags so JS fully controls badge visibility
+    // (pre-init styles use !important which would block the 'hidden' class)
+    if (!window._sgPreInitStylesRemoved) {
+        window._sgPreInitStylesRemoved = true;
+        document.querySelectorAll('head style').forEach(s => {
+            if (s.textContent && s.textContent.includes('nav-wishlist-count')) s.remove();
+            if (s.textContent && s.textContent.includes('nav-cart-count')) s.remove();
+        });
+    }
+
     if (badge) {
         if (count > 0) {
             badge.innerText = count;
+            badge.style.display = 'flex';
             badge.classList.remove('hidden');
         } else {
+            badge.style.display = 'none';
             badge.classList.add('hidden');
         }
     }
@@ -676,8 +688,10 @@ function updateWishlistBadge() {
     if (mobBadge) {
         if (count > 0) {
             mobBadge.innerText = count;
+            mobBadge.style.display = 'flex';
             mobBadge.classList.remove('hidden');
         } else {
+            mobBadge.style.display = 'none';
             mobBadge.classList.add('hidden');
         }
     }
