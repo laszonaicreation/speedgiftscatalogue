@@ -140,6 +140,66 @@
   }
 }
 </script>
+    <!-- LCP PRELOAD HINT — TWO-TIER STRATEGY
+         ① Repeat visitors  → localStorage (instant, zero network, ~0ms)
+         ② First-time visitors (Google Ads) → Firestore REST API lightweight
+            XHR fetch (~200ms), fires in parallel with page load. The hero
+            image URL is stored in a tiny Firestore document by app.js.
+            No Firebase SDK needed — uses the public REST API directly.
+    -->
+    <script>
+        (function () {
+            var PROJECT = 'speed-catalogue';
+            var HERO_DOC = 'artifacts/' + PROJECT + '/public/data/products/_hero_config_';
+            var REST_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/' + HERO_DOC;
+            var isMob = window.matchMedia('(max-width:767px)').matches;
+
+            function injectPreload(url) {
+                if (!url || url.indexOf('http') !== 0) return;
+                var l = document.createElement('link');
+                l.rel = 'preload';
+                l.as = 'image';
+                l.href = url;
+                l.setAttribute('fetchpriority', 'high');
+                document.head.appendChild(l);
+            }
+
+            // ① Fast path: repeat visitors — instant, zero network cost
+            try {
+                var cached = localStorage.getItem('sg_lcp_img_url');
+                if (cached && cached.indexOf('http') === 0) {
+                    injectPreload(cached);
+                    // Skip REST call if we already have a cached URL
+                    return;
+                }
+            } catch (e) { }
+
+            // ② First-visit path (Google Ads customers): lightweight Firestore REST
+            //    call runs async and parallel with the rest of page loading.
+            //    When the URL arrives, inject the preload link immediately.
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', REST_URL, true); // async = true
+                xhr.timeout = 3000; // give up after 3s — don't block anything
+                xhr.onload = function () {
+                    if (xhr.status !== 200) return;
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        var fields = data.fields || {};
+                        var desk = (fields.desktopUrl || {}).stringValue || '';
+                        var mob  = (fields.mobileUrl  || {}).stringValue || '';
+                        var url  = isMob ? (mob || desk) : desk;
+                        if (url) {
+                            injectPreload(url);
+                            // Also cache for next visit so ① fires instantly
+                            try { localStorage.setItem('sg_lcp_img_url', url); } catch (e) { }
+                        }
+                    } catch (e) { }
+                };
+                xhr.send();
+            } catch (e) { }
+        })();
+    </script>
 </head>
 
 <body class="selection:bg-black selection:text-white">
@@ -369,7 +429,9 @@
             <div class="slider-wrapper relative overflow-hidden rounded-none shadow-none group">
                 <div id="home-slider"
                     class="flex transition-transform duration-500 ease-out no-scrollbar overflow-x-auto snap-x snap-mandatory">
-                    <!-- Slides injected here -->
+                    <!-- Skeleton shimmer — reserves space and shows while Firebase data loads.
+                         renderSlider() replaces this with real slides automatically. -->
+                    <div class="slider-skeleton-slide" id="slider-skeleton" aria-hidden="true"></div>
                 </div>
             </div>
 
