@@ -43,6 +43,9 @@ window._sgGetOptUrl = (url, w) => getOptimizedUrl(url, w);
 window._sgClearErrorTrackedUrls = () => _errorTrackedUrls.clear();
 // Expose refreshData for resetInsightsData in app-insights.js
 window.refreshData = (...args) => refreshData(...args);
+// Expose state + wishlist badge for app-auth.js
+Object.defineProperty(window, '_sgState', { get: () => state, configurable: true });
+window._sgRefreshMainAuthUI = () => refreshMainAuthUI();
 
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
@@ -2920,154 +2923,9 @@ if (document.readyState === 'loading') {
 // ============================================================================
 // CUSTOMER AUTHENTICATION & PROFILE
 // ============================================================================
-
-window.openAuthModal = () => {
-    if (state.authUser) {
-        document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
-        document.getElementById('auth-account-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
-    } else {
-        document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
-        document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
-        state.authMode = 'login';
-        window.updateAuthUI();
-    }
-    document.body.style.overflow = 'hidden';
-};
-
-window.closeAuthModals = () => {
-    document.getElementById('auth-modal-overlay')?.classList.remove('opacity-100', 'pointer-events-auto');
-    document.getElementById('auth-login-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
-    document.getElementById('auth-account-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
-    document.getElementById('auth-reset-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
-    document.body.style.overflow = 'auto';
-};
-
-window.handleUserAuthClick = () => {
-    window.openAuthModal();
-};
-
-function autoOpenAuthFromQuery() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('auth') !== '1') return;
-    window.openAuthModal();
-    params.delete('auth');
-    const clean = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash || ''}`;
-    window.history.replaceState({}, '', clean);
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', autoOpenAuthFromQuery);
-} else {
-    autoOpenAuthFromQuery();
-}
-
-window.toggleAuthMode = () => {
-    state.authMode = state.authMode === 'login' ? 'register' : 'login';
-    window.updateAuthUI();
-};
-
-window.updateAuthUI = () => {
-    const title = document.getElementById('auth-form-title');
-    const subtitle = document.getElementById('auth-form-subtitle');
-    const nameGroup = document.getElementById('auth-name-group');
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const toggleText = document.getElementById('auth-toggle-text');
-    const toggleBtn = document.getElementById('auth-toggle-btn');
-    const forgotWrap = document.getElementById('auth-forgot-wrap');
-
-    if (!title) return;
-
-    if (state.authMode === 'login') {
-        title.innerText = 'Welcome Back';
-        subtitle.innerText = 'Login to your account';
-        nameGroup.classList.add('hidden');
-        forgotWrap.classList.remove('hidden');
-        submitBtn.innerHTML = `Sign In <i class="fa-solid fa-arrow-right text-[10px]"></i>`;
-        toggleText.innerText = "Don't have an account?";
-        toggleBtn.innerText = "Sign Up";
-    } else {
-        title.innerText = 'Create Account';
-        subtitle.innerText = 'Join us today';
-        nameGroup.classList.remove('hidden');
-        forgotWrap.classList.add('hidden');
-        submitBtn.innerHTML = `Sign Up <i class="fa-solid fa-user-plus text-[10px]"></i>`;
-        toggleText.innerText = "Already have an account?";
-        toggleBtn.innerText = "Sign In";
-    }
-};
-
-window.handleAuthSubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('auth-submit-btn');
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    const name = document.getElementById('auth-name').value.trim();
-
-    if (!email || !password) return showToast("Please fill all fields");
-
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing...`;
-
-    try {
-        if (state.authMode === 'login') {
-            await signInWithEmailAndPassword(auth, email, password);
-            showToast("Welcome Back!");
-        } else {
-            if (!name) throw new Error("Please enter your name");
-            const userCred = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(userCred.user, { displayName: name });
-            showToast("Account Created!");
-        }
-        window.closeAuthModals();
-        document.getElementById('auth-form').reset();
-    } catch (err) {
-        console.error("Auth Error:", err);
-        showToast(err.message.replace("Firebase:", "").trim() || "Authentication Failed");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-};
-
-window.signInWithGoogle = async () => {
-    try {
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-        window.closeAuthModals();
-        showToast("Logged in with Google!");
-    } catch (err) {
-        console.error("Google Auth Error:", err);
-        showToast("Sign-In Failed or Cancelled");
-    }
-};
-
-window.handleForgotPassword = async () => {
-    const email = document.getElementById('auth-email').value.trim();
-    if (!email) {
-        return showToast("Enter your email address in the field to reset password");
-    }
-    try {
-        await sendPasswordResetEmail(auth, email);
-        showToast("Password reset email sent! Check your inbox.");
-    } catch (err) {
-        showToast("Error: " + err.message.replace("Firebase:", "").trim());
-    }
-};
-
-window.handleSignOut = async () => {
-    try {
-        await signOut(auth);
-        window.closeAuthModals();
-        // Since Firebase automatically signs out the real user, onAuthStateChanged 
-        // will fire. We need to fall back to an anonymous session so they can still browse.
-        // Removed redundant startSync inside auth submissions to maintain single session flow.        state.wishlist = []; // Clear for security
-        updateWishlistBadge();
-        showToast("Signed Out Successfully");
-    } catch (err) {
-        showToast("Error signing out");
-    }
-};
+// Auth UI (openAuthModal, closeAuthModals, handleAuthSubmit, signInWithGoogle,
+// handleForgotPassword, handleSignOut) is fully handled by shared-auth.js via
+// initSharedAuth() below. Only refreshMainAuthUI and the password reset flow live here.
 
 function refreshMainAuthUI() {
     const u = state.authUser;
@@ -3076,7 +2934,7 @@ function refreshMainAuthUI() {
     const accountName = document.getElementById('account-user-name');
     const accountEmail = document.getElementById('account-user-email');
     if (accountName) accountName.innerText = u?.displayName || "User";
-    if (accountEmail) accountEmail.innerText = u?.email || "";
+    if (accountEmail) accountEmail.innerText = u?.email || '';
     const ddName = document.getElementById('dd-user-name');
     const ddEmail = document.getElementById('dd-user-email');
     if (ddName) ddName.textContent = u?.displayName ? `Hi, ${u.displayName.split(' ')[0]}!` : 'Hi there!';
@@ -3108,29 +2966,22 @@ initSharedAuth({
 
 window.handlePasswordResetFlow = async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
+    const mode    = urlParams.get('mode');
     const oobCode = urlParams.get('oobCode');
-
-    if (mode === 'resetPassword' && oobCode) {
-        try {
-            // Verify link validity before showing modal to prevent confusing users with dead links
-            await verifyPasswordResetCode(auth, oobCode);
-
-            // Link is valid, show Reset Modal
-            document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
-            const resetModal = document.getElementById('auth-reset-modal');
-            if (resetModal) {
-                resetModal.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
-                document.getElementById('auth-reset-oobCode').value = oobCode;
-            }
-            document.body.style.overflow = 'hidden';
-
-        } catch (err) {
-            console.error("Reset Code Error:", err);
-            showToast("Password reset link is invalid or expired.");
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
+    if (mode !== 'resetPassword' || !oobCode) return;
+    try {
+        await verifyPasswordResetCode(auth, oobCode);
+        document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
+        const resetModal = document.getElementById('auth-reset-modal');
+        if (resetModal) {
+            resetModal.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            document.getElementById('auth-reset-oobCode').value = oobCode;
         }
+        document.body.style.overflow = 'hidden';
+    } catch (err) {
+        console.error('Reset Code Error:', err);
+        showToast('Password reset link is invalid or expired.');
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
 };
 
@@ -3138,82 +2989,32 @@ window.handlePasswordResetFormSubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('auth-reset-submit-btn');
     const newPassword = document.getElementById('auth-reset-new-password').value;
-    const oobCode = document.getElementById('auth-reset-oobCode').value;
-
-    if (!newPassword || newPassword.length < 6) return showToast("Password must be at least 6 characters");
-
+    const oobCode     = document.getElementById('auth-reset-oobCode').value;
+    if (!newPassword || newPassword.length < 6) return showToast('Password must be at least 6 characters');
     btn.disabled = true;
     const originalText = btn.innerHTML;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
-
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
     try {
         await confirmPasswordReset(auth, oobCode, newPassword);
-        showToast("Password Reset Successfully! Please login.");
-
-        // Clean up URL and UI
+        showToast('Password Reset Successfully! Please login.');
         window.history.replaceState({}, document.title, window.location.pathname);
         document.getElementById('auth-reset-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
-
-        // Open standard login window automatically
         state.authMode = 'login';
-        window.updateAuthUI();
+        window.updateAuthUI?.();
         document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
         document.getElementById('auth-reset-form').reset();
-
     } catch (err) {
-        showToast(err.message.replace("Firebase:", "").trim() || "Failed to reset password");
+        showToast(err.message.replace('Firebase:', '').trim() || 'Failed to reset password');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
 };
 
-function initMainSharedNavbar() {
-    const hasFavoritesUI = document.getElementById('favorites-sidebar') && document.getElementById('categories-sidebar');
-    if (!hasFavoritesUI) return;
-
-    const legacyBulkInquiry = window.sendBulkInquiry;
-    const legacyAccountClick = window.handleUserAuthClick;
-    const legacyFocusSearch = window.focusSearch;
-
-    if (!sharedNavMain) {
-        sharedNavMain = initSharedNavbar({
-            getWishlistIds: () => state.wishlist,
-            getProductById: (id) => DATA.p.find(p => p.id === id),
-            getCategories: () => DATA.c,
-            getProductUrl: (id) => getProductDetailUrl(id),
-            getCategoryImage: (item) => getOptimizedUrl(item?.img || item?.images?.[0], 140),
-            onWishlistToggle: (id) => window.toggleWishlist(null, id),
-            onCategorySelect: (catId) => window.applyFilter(catId),
-            onSearchFocus: () => {
-                if (typeof legacyFocusSearch === 'function') legacyFocusSearch();
-            },
-            onAccountClick: () => {
-                if (typeof legacyAccountClick === 'function') legacyAccountClick();
-            },
-            onBulkInquiry: () => {
-                if (typeof legacyBulkInquiry === 'function') legacyBulkInquiry();
-            },
-            renderFavorites: () => window.renderFavoritesSidebar?.(),
-            renderCategories: () => window.renderCategoriesSidebar?.(),
-            onSidebarStateChange: (isOpen) => {
-                document.body.style.overflow = isOpen ? 'hidden' : 'auto';
-            },
-            showToast
-        });
-    } else {
-        sharedNavMain.refresh();
-    }
-}
-
-// Check for reset links on boot
+// Check for reset links on boot (once only)
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', handlePasswordResetFlow);
+    document.addEventListener('DOMContentLoaded', window.handlePasswordResetFlow);
 } else {
-    handlePasswordResetFlow();
+    window.handlePasswordResetFlow();
 }
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', handlePasswordResetFlow);
-} else {
-    handlePasswordResetFlow();
 }
