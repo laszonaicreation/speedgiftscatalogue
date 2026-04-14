@@ -16,6 +16,17 @@ if %errorlevel% neq 0 (
 echo Done! app.min.js updated.
 echo.
 
+echo [1b] Minifying app-insights.js...
+call npx terser app-insights.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output app-insights.min.js
+
+if %errorlevel% neq 0 (
+    echo ERROR: app-insights.js Minification failed! Deploy cancelled.
+    pause
+    exit /b 1
+)
+echo Done! app-insights.min.js updated.
+echo.
+
 echo [2/6] Minifying home-ui.js...
 call npx terser home-ui.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output home-ui.min.js
 
