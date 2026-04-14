@@ -3017,4 +3017,42 @@ if (document.readyState === 'loading') {
 } else {
     window.handlePasswordResetFlow();
 }
+
+function initMainSharedNavbar() {
+    const hasFavoritesUI = document.getElementById('favorites-sidebar') && document.getElementById('categories-sidebar');
+    if (!hasFavoritesUI) return;
+
+    const legacyBulkInquiry = window.sendBulkInquiry;
+    const legacyAccountClick = window.handleUserAuthClick;
+    const legacyFocusSearch = window.focusSearch;
+
+    if (!sharedNavMain) {
+        sharedNavMain = initSharedNavbar({
+            getWishlistIds: () => state.wishlist,
+            getProductById: (id) => DATA.p.find(p => p.id === id),
+            getCategories: () => DATA.c,
+            getProductUrl: (id) => getProductDetailUrl(id),
+            getCategoryImage: (item) => getOptimizedUrl(item?.img || item?.images?.[0], 140),
+            onWishlistToggle: (id) => window.toggleWishlist(null, id),
+            onCategorySelect: (catId) => window.applyFilter(catId),
+            onSearchFocus: () => {
+                if (typeof legacyFocusSearch === 'function') legacyFocusSearch();
+            },
+            onAccountClick: () => {
+                if (typeof legacyAccountClick === 'function') legacyAccountClick();
+            },
+            onBulkInquiry: () => {
+                if (typeof legacyBulkInquiry === 'function') legacyBulkInquiry();
+            },
+            renderFavorites: () => window.renderFavoritesSidebar?.(),
+            renderCategories: () => window.renderCategoriesSidebar?.(),
+            onSidebarStateChange: (isOpen) => {
+                document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+            },
+            showToast
+        });
+    } else {
+        sharedNavMain.refresh();
+    }
 }
+
