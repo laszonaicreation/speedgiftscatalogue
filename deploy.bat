@@ -16,6 +16,28 @@ if %errorlevel% neq 0 (
 echo Done! app.min.js updated.
 echo.
 
+echo [1a] Minifying app-slider.js...
+call npx terser app-slider.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output app-slider.min.js
+
+if %errorlevel% neq 0 (
+    echo ERROR: app-slider.js Minification failed! Deploy cancelled.
+    pause
+    exit /b 1
+)
+echo Done! app-slider.min.js updated.
+echo.
+
+echo [1ab] Minifying app-spotlight.js...
+call npx terser app-spotlight.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output app-spotlight.min.js
+
+if %errorlevel% neq 0 (
+    echo ERROR: app-spotlight.js Minification failed! Deploy cancelled.
+    pause
+    exit /b 1
+)
+echo Done! app-spotlight.min.js updated.
+echo.
+
 echo [1b] Minifying app-insights.js...
 call npx terser app-insights.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output app-insights.min.js
 

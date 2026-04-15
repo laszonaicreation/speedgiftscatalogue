@@ -1170,7 +1170,11 @@
     </button>
 
     <!-- Intl-Tel-Input JS -->
-    <script type="module" src="app.min.js?v=3.2"></script>
+    <!-- Preload lazy modules — browser fetches these in parallel during HTML parse,
+         before any JS runs. Slider & spotlight will be ready by the time data arrives. -->
+    <link rel="modulepreload" href="./app-slider.min.js">
+    <link rel="modulepreload" href="./app-spotlight.min.js">
+    <script type="module" src="app.min.js?v=3.3"></script>
 </body>
 
 </html>

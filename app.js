@@ -46,6 +46,9 @@ window.refreshData = (...args) => refreshData(...args);
 // Expose state + wishlist badge for app-auth.js
 Object.defineProperty(window, '_sgState', { get: () => state, configurable: true });
 window._sgRefreshMainAuthUI = () => refreshMainAuthUI();
+// Expose helpers for lazy modules (app-spotlight.js etc.)
+window._sgGetBadgeLabel = (b) => getBadgeLabel(b);
+window._sgGetProductDetailUrl = (id) => getProductDetailUrl(id);
 // Expose Firestore refs for app-popup.js
 window._sgLeadsCol = null; // set below after leadsCol is defined
 window._sgPopupSettingsCol = null;
@@ -79,6 +82,13 @@ let clicks = 0, lastClickTime = 0;
 const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
     ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
     : null;
+
+// ── PRE-FETCH LAZY MODULES (parallel to Firebase auth + data fetch) ──────────
+// Slider module download starts immediately at page load time.
+// By the time Firebase returns data, the module is already in memory.
+const _isMinBuild = import.meta.url?.includes('.min.js');
+const _sliderModulePromise   = import(_isMinBuild ? './app-slider.min.js'   : './app-slider.js');
+const _spotlightModulePromise = import(_isMinBuild ? './app-spotlight.min.js' : './app-spotlight.js');
 
 // Legacy route support: old links used /?tab=shop.
 // Redirect them to the faster dedicated shop page while preserving filter/search/share params.
@@ -1002,6 +1012,10 @@ async function refreshData(isNavigationOnly = false) {
             } catch (e) { }
 
             primeHomeCriticalAssets();
+
+            // Lazy-load slider + spotlight modules (non-blocking, parallel to this render)
+            _loadSliderModule();
+            _loadSpotlightModule();
 
             renderAnnouncementBar();
             renderDesktopMegaMenu();
@@ -1987,305 +2001,51 @@ window.focusSearch = () => {
     }, 300);
 };
 
-// SLIDER LOGIC
-let sliderInterval;
-let currentSlide = 0;
-let sliderMarkupKey = '';
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDER + ANNOUNCEMENT — lazy-loaded from app-slider.js
+// Stubs replaced once the module resolves (parallel to Firebase data fetch).
+// ─────────────────────────────────────────────────────────────────────────────
+let renderSlider         = () => {};
+let renderAnnouncementBar = () => {};
+let _sliderModuleLoaded  = false;
 
-function renderSlider() {
-    const wrapper = document.getElementById('home-top-elements');
-    const container = document.getElementById('home-slider-container');
-    const slider = document.getElementById('home-slider');
-    const dots = document.getElementById('slider-dots');
-
-    // Safety: always hide slider when a product detail is open (?p= in URL)
-    const isProductDetail = new URLSearchParams(window.location.search).has('p');
-    if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all') {
-        if (wrapper) wrapper.classList.add('hidden');
-        sliderMarkupKey = '';
-        return;
-    }
-
-    // When search is active, only hide the slider container — keep the mobile search bar visible
-    if (state.search) {
-        if (container) container.classList.add('hidden');
-        // Keep the wrapper visible so the mobile search bar (md:hidden) stays accessible
-        if (wrapper) wrapper.classList.remove('hidden');
-        return;
-    }
-
-    if (container) container.classList.remove('hidden');
-    if (wrapper) wrapper.classList.remove('hidden');
-
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    const sortedSliders = [...DATA.s].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
-
-    // RELAXED FILTERING: Block only the default placeholder
-    const isUrl = (val) => val && typeof val === 'string' && val.trim() !== '' && val !== 'img/';
-
-    const visibleSliders = sortedSliders.filter(s => {
-        const hasMobile = isUrl(s.mobileImg);
-        const hasDesktop = isUrl(s.img);
-        return isMobile ? hasMobile : hasDesktop;
-    });
-
-    if (!visibleSliders.length) {
-        if (container) container.classList.add('hidden');
-        sliderMarkupKey = '';
-        return;
-    }
-
-    // ── LCP PRELOAD CACHE ────────────────────────────────────────────────────
-    // Save the first slide's image URL to localStorage.
-    // An inline script in <head> reads this on NEXT visit and injects a
-    // <link rel="preload"> before any JS runs → browser fetches the LCP
-    // image ~12 seconds earlier → LCP drops from 16s → ~2-3s.
-    // ─────────────────────────────────────────────────────────────────────────
+async function _loadSliderModule() {
+    if (_sliderModuleLoaded) return;
+    _sliderModuleLoaded = true;
     try {
-        const _lcpRawImg = isMobile ? visibleSliders[0].mobileImg : visibleSliders[0].img;
-        const _lcpUrl = getOptimizedUrl(_lcpRawImg, isMobile ? 1200 : 1920);
-        const _lcpUrlDesk = getOptimizedUrl(visibleSliders[0].img, 1920);
-        const _lcpUrlMob = getOptimizedUrl(visibleSliders[0].mobileImg || visibleSliders[0].img, 1200);
-        if (_lcpUrl && _lcpUrl !== 'img/') {
-            // ① Fast path for repeat visitors (no network needed)
-            localStorage.setItem('sg_lcp_img_url', _lcpUrl);
-            localStorage.setItem('sg_lcp_img_mobile', isMobile ? '1' : '0');
-
-            // ② Persist both mobile + desktop URLs to Firestore so that the
-            //    REST API preload call in <head> can serve FIRST-TIME visitors
-            //    (Google Ads customers) without waiting for the Firebase SDK.
-            //    We write asynchronously and silently — no await, no user impact.
-            try {
-                const _heroRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_hero_config_');
-                setDoc(_heroRef, {
-                    desktopUrl: _lcpUrlDesk || _lcpUrl,
-                    mobileUrl: _lcpUrlMob || _lcpUrl,
-                    updatedAt: Date.now()
-                }, { merge: true }).catch(() => { });
-            } catch (_fe) { /* Firestore write unavailable — not critical */ }
-        }
-    } catch (_e) { /* localStorage unavailable — ignore */ }
-
-    // Avoid rebuilding slider markup when data/layout is unchanged (prevents white blink on mobile).
-    const nextMarkupKey = [
-        isMobile ? 'm' : 'd',
-        ...visibleSliders.map((s) => `${s.id || ''}|${isMobile ? (s.mobileImg || '') : (s.img || '')}|${s.title || ''}|${s.link || ''}`)
-    ].join('::');
-    const canReuseMarkup = sliderMarkupKey === nextMarkupKey && slider.children.length === visibleSliders.length;
-    if (canReuseMarkup) {
-        if (container) container.classList.remove('hidden');
-        if (wrapper) wrapper.classList.remove('hidden');
-        return;
+        const { initSlider } = await _sliderModulePromise; // Already downloading since page load!
+        const ctx = initSlider({ db, appId, doc, setDoc });
+        renderSlider          = ctx.renderSlider;
+        renderAnnouncementBar = ctx.renderAnnouncementBar;
+        renderSlider();
+        renderAnnouncementBar();
+    } catch (e) {
+        console.error('[Slider] Failed to load app-slider.js:', e);
     }
-
-    slider.innerHTML = visibleSliders.map((s, i) => {
-        const displayImg = isMobile ? s.mobileImg : s.img;
-
-        // Exact original mobile overlay vs New premium desktop overlay
-        const overlayHTML = s.title ? (isMobile
-            ? `<div class="absolute bottom-12 left-8 text-white z-20">
-                 <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
-               </div>`
-            : `<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end pb-14 pl-16 z-20 pointer-events-none">
-                 <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
-               </div>`
-        ) : '';
-
-        return `
-            <div class="slider-slide relative" data-index="${i}">
-                <img src="${getOptimizedUrl(displayImg, isMobile ? 1200 : 1920)}" 
-                     class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
-                     alt="${s.title || ''}" 
-                     ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
-                     onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
-                     style="${s.link ? 'cursor:pointer' : ''}"
-                     draggable="false">
-                ${overlayHTML}
-            </div>
-        `;
-    }).join('');
-    sliderMarkupKey = nextMarkupKey;
-
-    if (dots) {
-        dots.innerHTML = visibleSliders.map((_, i) => `
-            <div class="slider-dot ${i === 0 ? 'active' : ''}" onclick="window.goToSlide(${i})"></div>
-        `).join('');
-    }
-
-    currentSlide = 0;
-    startSliderAutoPlay();
-
-    // Sync dots on manual scroll/swipe
-    slider.onscroll = () => {
-        const index = Math.round(slider.scrollLeft / slider.offsetWidth);
-        if (index !== currentSlide && !isNaN(index)) {
-            currentSlide = index;
-            const allDots = dots.querySelectorAll('.slider-dot');
-            allDots.forEach((dot, i) => {
-                dot.classList.toggle('active', i === currentSlide);
-            });
-            // Reset autoplay timer when user interacts manually
-            startSliderAutoPlay();
-        }
-    };
-
-    // Desktop Mouse Drag Support — disabled on mobile to prevent interference with vertical scrolling
-    if (!isMobile) initSliderDrag(slider);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DESKTOP SLIDER DRAG — click-and-drag for better desktop UX
-// ─────────────────────────────────────────────────────────────────────────────
-function initSliderDrag(slider) {
-    if (!slider || slider._dragInitialized) return;
-    slider._dragInitialized = true;
+// (renderSlider body moved to app-slider.js)
 
-    let isDown = false;
-    let startX = 0;
-    let moveDistance = 0;
 
-    slider.addEventListener('mousedown', (e) => {
-        isDown = true;
-        startX = e.clientX;
-        moveDistance = 0;
-        slider.style.cursor = 'grab';
-    });
-
-    slider.addEventListener('mouseup', (e) => {
-        if (!isDown) return;
-        isDown = false;
-
-        const endX = e.clientX;
-        const diff = endX - startX;
-        moveDistance = Math.abs(diff);
-
-        // TRIGGER ON RELEASE ONLY (Flick)
-        if (moveDistance > 40) { // More sensitive for easier swiping
-            if (diff > 0) {
-                window.moveSlider(-1);
-            } else {
-                window.moveSlider(1);
-            }
-        }
-    });
-
-    slider.addEventListener('mouseleave', () => {
-        isDown = false;
-    });
-
-    slider.addEventListener('mousemove', (e) => {
-        if (isDown) {
-            e.preventDefault();
-        }
-    });
-
-    slider.addEventListener('click', (e) => {
-        if (moveDistance > 15) { // Threshold to distinguish click from swipe
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    }, true);
-}
-
-window.moveSlider = (dir) => {
-    const slider = document.getElementById('home-slider');
-    if (!slider) return;
-    const slides = slider.querySelectorAll('.slider-slide');
-    currentSlide = (currentSlide + dir + slides.length) % slides.length;
-    updateSliderUI();
-};
-
-window.goToSlide = (index) => {
-    currentSlide = index;
-    updateSliderUI();
-};
-
-function updateSliderUI() {
-    const slider = document.getElementById('home-slider');
-    const dots = document.querySelectorAll('.slider-dot');
-    if (!slider) return;
-
-    slider.scrollTo({
-        left: slider.offsetWidth * currentSlide,
-        behavior: 'smooth'
-    });
-
-    dots.forEach((dot, i) => {
-        dot.classList.toggle('active', i === currentSlide);
-    });
-
-    startSliderAutoPlay(); // Reset timer
-}
-
-function startSliderAutoPlay() {
-    clearInterval(sliderInterval);
-    sliderInterval = setInterval(() => {
-        window.moveSlider(1);
-    }, 5000);
-}
-
-// ADMIN SLIDER FUNCTIONS
-window.saveSlider = createAdminProxy('saveSlider');
+// ADMIN SLIDER FUNCTIONS (proxy stubs — admin logic lives in app-admin.js)
+window.saveSlider                 = createAdminProxy('saveSlider');
 window.cloudinaryBulkSliderUpload = createAdminProxy('cloudinaryBulkSliderUpload');
-window.handleSliderBulkDrop = createAdminProxy('handleSliderBulkDrop');
-window.editSlider = createAdminProxy('editSlider');
-window.deleteSlider = createAdminProxy('deleteSlider');
+window.handleSliderBulkDrop      = createAdminProxy('handleSliderBulkDrop');
+window.editSlider                 = createAdminProxy('editSlider');
+window.deleteSlider               = createAdminProxy('deleteSlider');
 
-// ANNOUNCEMENT BAR LOGIC
-let announcementInterval;
-let currentAnnouncement = 0;
+// (Announcement bar code lives in app-slider.js — loaded lazily after data fetch)
 
-function renderAnnouncementBar() {
-    const bar = document.getElementById('announcement-bar');
-    const nav = document.querySelector('nav');
-    if (!bar) return;
-
-    let msgs = DATA.announcements || [];
-    if (msgs.length === 0 || (msgs.length === 1 && msgs[0].trim() === "")) {
-        bar.style.display = 'none';
-        if (nav) nav.style.marginTop = '10px';
-        return;
-    }
-    bar.style.display = 'flex';
-    if (nav) nav.style.marginTop = '0px';
-
-    bar.innerHTML = msgs.map((msg, idx) => `
-        <div class="announcement-item ${idx === 0 ? 'active' : ''}">
-            <span class="announcement-text">${msg}</span>
-        </div>
-    `).join('');
-
-    initAnnouncementRotation();
-}
-
-function initAnnouncementRotation() {
-    clearInterval(announcementInterval);
-    const items = document.querySelectorAll('.announcement-item');
-    if (items.length <= 1) return;
-
-    announcementInterval = setInterval(() => {
-        items[currentAnnouncement].classList.remove('active');
-        currentAnnouncement = (currentAnnouncement + 1) % items.length;
-        items[currentAnnouncement].classList.add('active');
-    }, 3000);
-}
-
-// ADMIN ANNOUNCEMENTS
+// ADMIN ANNOUNCEMENTS (proxy stubs)
 window.addAnnouncementRow = createAdminProxy('addAnnouncementRow');
-window.saveAnnouncements = createAdminProxy('saveAnnouncements');
+window.saveAnnouncements  = createAdminProxy('saveAnnouncements');
 
 // Auth state and data fetching are handled by onAuthStateChanged.
 
-// Responsive Slider Refresh
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        if (document.getElementById('home-slider-container')) {
-            renderSlider();
-        }
-    }, 250);
-});
+
+// Auth state and data fetching are handled by onAuthStateChanged.
+
+// Responsive Slider Refresh — handled inside app-slider.js after module loads.
 
 // Smart Mobile Nav Scroll Behavior
 let navScrollTimeout;
@@ -2395,151 +2155,27 @@ document.addEventListener('mousedown', (e) => {
    ============================================================================== */
 
 
-window.renderSpotlightSection = () => {
-    const appMain = document.getElementById('app');
-    const container = appMain ? appMain.querySelector('#spotlight-section') : null;
-    if (!container) return;
+// ─────────────────────────────────────────────────────────────────────────────
+// SPOTLIGHT SECTION — lazy-loaded from app-spotlight.js
+// Stub replaced once the module resolves.
+// ─────────────────────────────────────────────────────────────────────────────
+window.renderSpotlightSection = () => {}; // no-op stub until module loads
+let _spotlightModuleLoaded = false;
 
-    // Only show if we are on the main collections page (no filter, no search, no product detail open)
-    const isProductDetail = new URLSearchParams(window.location.search).has('p');
-    if (!DATA.homeSettings || !DATA.homeSettings.spotlightEnabled || state.filter !== 'all' || state.search || isProductDetail) {
-        container.classList.add('hidden');
-        container.innerHTML = '';
-        return;
+async function _loadSpotlightModule() {
+    if (_spotlightModuleLoaded) return;
+    _spotlightModuleLoaded = true;
+    try {
+        const { initSpotlight } = await _spotlightModulePromise; // Already downloading since page load!
+        initSpotlight({ getOptimizedUrl, getBadgeLabel, getProductDetailUrl });
+        window.renderSpotlightSection();
+    } catch (e) {
+        console.error('[Spotlight] Failed to load app-spotlight.js:', e);
     }
+}
 
-    const { spotlightTitle, spotlightSubtitle, spotlightCatId, spotlightLimit, spotlightProducts: selectedIds } = DATA.homeSettings;
+// (renderSpotlightSection body moved to app-spotlight.js)
 
-    // Only show if we have either a category or specific products
-    if (!spotlightCatId && (!selectedIds || selectedIds.length === 0)) {
-        container.classList.add('hidden');
-        return;
-    }
-
-    // Get products
-    const stockFilter = (items) => items.filter(p => p.inStock !== false);
-    let spotlightProducts = [];
-
-    // PRIORitize selected products
-    if (selectedIds && selectedIds.length > 0) {
-        spotlightProducts = selectedIds.map(id => DATA.p.find(p => p.id === id)).filter(Boolean);
-    } else if (spotlightCatId) {
-        spotlightProducts = stockFilter(DATA.p.filter(p => p.catId === spotlightCatId));
-        // Limit to configured amount only if we are using the category auto-feed
-        spotlightProducts = spotlightProducts.slice(0, spotlightLimit || 8);
-    }
-
-    const titleText = spotlightTitle || "Featured Spotlight";
-    const subText = spotlightSubtitle || "";
-
-    const html = `
-        <div class="mt-8 pt-8 md:mt-20 md:pt-12 border-t border-gray-50">
-            <!-- MODERN CATEGORY HEADER (Centered) -->
-            <div class="relative w-full flex items-center justify-center mb-6 md:mb-12 mt-0 fade-in min-h-0 md:min-h-[90px]">
-                <div class="text-center px-4 w-full md:px-48">
-                    <h3 class="font-black capitalize tracking-wide text-gray-900"
-                        style="font-family: 'Poppins', sans-serif; font-size: clamp(26px, 4vw, 38px); margin-top: 0; margin-bottom: 0; line-height: 1.1;">
-                        ${titleText}
-                    </h3>
-                    ${subText ? `
-                    <p class="font-normal capitalize text-gray-400"
-                        style="font-family: 'Poppins', sans-serif; font-size: clamp(12px, 2vw, 16px); margin-top: 0.4rem; letter-spacing: 1px;">
-                        ${subText}
-                    </p>` : ''}
-                </div>
-                <!-- Interactive Swipe Indicator (Mobile Only) -->
-                <div class="md:hidden absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-gray-300 pointer-events-none" style="animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
-                    <span class="text-[8px] font-black uppercase tracking-[0.2em]">Swipe</span>
-                    <i class="fa-solid fa-chevron-right text-[9px] translate-y-[0.5px]"></i>
-                </div>
-            </div>
-            
-            <style>
-                /* Prevent horizontal scrollbar purely on mobile */
-                .spotlight-mobile-scroll::-webkit-scrollbar { display: none; }
-                .spotlight-mobile-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-                
-                /* Explicit responsive toggles */
-                @media (max-width: 767px) {
-                    .spotlight-desktop-grid { display: none !important; }
-                    .spotlight-mobile-flex { display: flex !important; }
-                }
-                @media (min-width: 768px) {
-                    .spotlight-desktop-grid { display: grid !important; }
-                    .spotlight-mobile-flex { display: none !important; }
-                }
-            </style>
-            
-            <!-- MOBILE SWIPE VIEW -->
-            <div class="spotlight-mobile-flex related-scroll-wrapper snap-x pb-4 spotlight-mobile-scroll">
-                ${spotlightProducts.map(p => {
-        const pImg = [p.img, ...(p.images || []), p.img2, p.img3].find(u => u && u !== 'img/') || 'img/';
-        const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
-        return `
-                    <div class="product-card group flex-shrink-0 w-[160px] sm:w-[200px] snap-start" data-id="${p.id}" style="margin-right: 12px;"
-                         onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
-                        <div class="img-container mb-4 relative">
-                            ${badgeHtml}
-                            <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
-                        </div>
-                        <div class="px-1 text-left flex justify-between items-start mt-4">
-                            <div class="flex-1 min-w-0">
-                                <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
-                                ${(() => {
-                const origPrice = parseFloat(p.originalPrice); const salePrice = parseFloat(p.price);
-                if (p.originalPrice && origPrice > salePrice) {
-                    const disc = Math.round((1 - salePrice / origPrice) * 100);
-                    return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
-                        '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + p.originalPrice + ' AED</span>' +
-                        '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + p.price + ' AED</span>' +
-                        '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span></div>';
-                }
-                return '<p class="price-tag mt-2 font-bold">' + p.price + ' AED</p>';
-            })()}
-                            </div>
-                        </div>
-                    </div>`;
-    }).join('')}
-            </div>
-
-            <!-- DESKTOP GRID VIEW -->
-            <div class="spotlight-desktop-grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4 justify-center">
-                ${spotlightProducts.map(p => {
-        const pImg = [p.img, ...(p.images || []), p.img2, p.img3].find(u => u && u !== 'img/') || 'img/';
-        const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
-        return `
-                    <div class="product-card group" data-id="${p.id}"
-                         onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
-                        <div class="img-container mb-4 relative">
-                            ${badgeHtml}
-                            <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
-                        </div>
-                        <div class="px-1 text-left flex justify-between items-start mt-4">
-                            <div class="flex-1 min-w-0">
-                                <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
-                                ${(() => {
-                const origPrice = parseFloat(p.originalPrice); const salePrice = parseFloat(p.price);
-                if (p.originalPrice && origPrice > salePrice) {
-                    const disc = Math.round((1 - salePrice / origPrice) * 100);
-                    return '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;">' +
-                        '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;font-weight:500;">' + p.originalPrice + ' AED</span>' +
-                        '<span class="price-tag font-bold" style="margin:0;color:#111111;">' + p.price + ' AED</span>' +
-                        '<span style="font-size:8px;font-weight:900;color:#ef4444;background:#fef2f2;padding:1px 5px;border-radius:999px;">-' + disc + '%</span></div>';
-                }
-                return '<p class="price-tag mt-2 font-bold">' + p.price + ' AED</p>';
-            })()}
-                            </div>
-                        </div>
-                    </div>`;
-    }).join('')}
-            </div>
-            </div>
-        </div>
-    `;
-
-    container.innerHTML = html;
-    container.classList.remove('hidden');
-};
 
 window.renderAdminLeads = createAdminProxy('renderAdminLeads');
 window.deleteLead = createAdminProxy('deleteLead');
