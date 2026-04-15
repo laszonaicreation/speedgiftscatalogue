@@ -46,6 +46,9 @@ window.refreshData = (...args) => refreshData(...args);
 // Expose state + wishlist badge for app-auth.js
 Object.defineProperty(window, '_sgState', { get: () => state, configurable: true });
 window._sgRefreshMainAuthUI = () => refreshMainAuthUI();
+// Expose Firestore refs for app-popup.js
+window._sgLeadsCol = null; // set below after leadsCol is defined
+window._sgPopupSettingsCol = null;
 
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
@@ -54,6 +57,9 @@ const megaCol = collection(db, 'artifacts', appId, 'public', 'data', 'mega_menus
 const popupSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'popupSettings');
 const landingSettingsCol = collection(db, 'artifacts', appId, 'public', 'data', 'landingSettings');
 const leadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'leads');
+// Wire refs for app-popup.js lazy module
+window._sgLeadsCol = leadsCol;
+window._sgPopupSettingsCol = popupSettingsCol;
 
 let DATA = { p: [], c: [], m: [], s: [], announcements: [], leads: [], popupSettings: { title: '', msg: '', img: '' }, landingSettings: null, homeSettings: null, stats: { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 } };
 let state = { filter: 'all', sort: 'all', search: '', user: null, authUser: null, wishlist: [], cart: [], scrollPos: 0, currentVar: null, visibleChunks: 1, homeBestExpanded: false, authMode: 'login' };
@@ -69,7 +75,7 @@ const INITIAL_PRELOAD_PRODUCTS = 4;
 const INITIAL_PRELOAD_SLIDERS = 2;
 const INITIAL_EAGER_CATEGORY_IMAGES = 6;
 let clicks = 0, lastClickTime = 0;
-let iti; // Phone input instance
+// iti (intl-tel-input) is now managed inside app-popup.js
 const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
     ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
     : null;
@@ -2304,7 +2310,22 @@ window.addEventListener('scroll', () => {
         nav.classList.remove('nav-hidden');
     }, 1000);
 }, { passive: true });
-// --- LEAD POPUP CORE ---
+// --- LEAD POPUP — lazy-loaded on first trigger (Google Ads visitors only) ---
+let _popupModuleReady = false;
+async function _loadPopup() {
+    if (_popupModuleReady) return;
+    try {
+        const isMin = import.meta.url?.includes('.min.js');
+        const { initPopup } = await import(isMin ? './app-popup.min.js' : './app-popup.js');
+        initPopup(); // registers window.forceShowPopup, closeGiftPopup, submitLead
+        _popupModuleReady = true;
+    } catch (e) {
+        console.error('[Popup] Failed to load app-popup.js:', e);
+        throw e;
+    }
+}
+
+// Tiny initPopup stub — runs at startup, loads module only if needed
 window.initPopup = () => {
     console.log("[Popup] Initializing logic...");
     // Check if user is from Google Ads
@@ -2329,169 +2350,14 @@ window.initPopup = () => {
     }, 20000); // 20 Seconds Delay
 };
 
-window.forceShowPopup = async () => {
-    console.log("[Popup] Triggering show...");
-    // Fetch current settings from Firestore
-    try {
-        const snap = await getDocs(popupSettingsCol);
-        if (!snap.empty) {
-            const settings = snap.docs[0].data();
-            DATA.popupSettings = settings;
-
-            // Update UI
-            const title = document.getElementById('popup-gift-title');
-            const msg = document.getElementById('popup-gift-msg');
-            const img = document.getElementById('popup-gift-img');
-            const sTitle = document.getElementById('success-title');
-            const sMsg = document.getElementById('success-msg');
-
-            if (title) title.innerText = settings.title || "Claim Your Free Gift";
-            if (msg) msg.innerText = settings.msg || "Limited Edition • Exclusive Offer";
-            if (img) img.src = (settings.img && settings.img !== 'img/') ? getOptimizedUrl(settings.img, 800) : "https://placehold.co/600x400?text=Gift";
-
-            // Success State Content
-            if (sTitle) sTitle.innerText = settings.successTitle || "Congratulations!";
-            if (sMsg) sMsg.innerText = settings.successMsg || "Your gift has been secured. We will contact you through WhatsApp shortly.";
-        }
-    } catch (e) {
-        console.error("[Popup] Settings fetch failed", e);
-    }
-
-    const overlay = document.getElementById('gift-popup-overlay');
-    if (overlay) {
-        console.log("[Popup] Showing overlay...");
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-
-        // Initialize Intl-Tel-Input
-        const input = document.getElementById('lead-whatsapp');
-        const itild = window.intlTelInput;
-
-        if (input && itild) {
-            try {
-                console.log("[Popup] Initializing ITI...");
-                if (iti) iti.destroy(); // Avoid double init
-                iti = itild(input, {
-                    initialCountry: "ae",
-                    separateDialCode: true,
-                    autoPlaceholder: "off",
-                    useFullscreenPopup: true, // BETTER FOR MOBILE: Avoids keyboard interference
-                    dropdownContainer: document.body, // FIX: Appends to body to avoid popup clipping/layering bugs
-                    utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/js/utils.js",
-                });
-
-                // Aesthetic: Add a small delay and focus name if visible, but avoid forcing keyboard
-                // on the phone input immediately
-            } catch (err) {
-                console.error("[Popup] ITI Init Error:", err);
-            }
-        } else {
-            console.warn("[Popup] ITI skip: input or itild missing", { input: !!input, itild: !!itild });
-        }
-    } else {
-        console.error("[Popup] Error: gift-popup-overlay element not found!");
-    }
-};
-
-window.closeGiftPopup = () => {
-    const overlay = document.getElementById('gift-popup-overlay');
-    if (overlay) {
-        overlay.classList.remove('open');
-        document.body.style.overflow = 'auto';
-        localStorage.setItem('popup_dismissed', 'true');
-    }
-};
-
-window.submitLead = async (e) => {
-    if (e) e.preventDefault();
-    const btn = document.getElementById('lead-submit-btn');
-    const name = document.getElementById('lead-name').value;
-    const whatsapp = document.getElementById('lead-whatsapp').value;
-    const age = document.getElementById('lead-age').value;
-
-    console.log("Submitting to:", leadsCol.path);
-
-    if (!name || !whatsapp || !age) return showToast("Please fill all fields");
-
-    // Validate phone number - fallback to basic length check if library is unsure
-    const isValid = iti ? (iti.isValidNumber() || whatsapp.trim().length > 7) : whatsapp.trim().length > 7;
-    if (!isValid) {
-        console.warn("[Popup] Phone validation failed:", { whatsapp, itiValid: iti?.isValidNumber() });
-        return showToast("Please enter a valid WhatsApp number");
-    }
-
-    // Capture number - fallback to raw value if getNumber fails
-    let fullNumber = iti ? iti.getNumber() : whatsapp;
-    console.log("[Popup] initial getNumber:", fullNumber);
-
-    // Force country code inclusion
-    if (iti) {
-        const countryData = iti.getSelectedCountryData();
-        const dialCode = countryData.dialCode;
-        console.log("[Popup] Selected Dial Code:", dialCode);
-
-        // Remove non-digits and leading zeros from the local part
-        const cleanLocal = whatsapp.replace(/\D/g, '').replace(/^0+/, '');
-
-        // If the number doesn't look like it has the dial code, construct it manually
-        if (!fullNumber || !fullNumber.startsWith('+') || !fullNumber.includes(dialCode)) {
-            console.log("[Popup] Constructing manual international number");
-            fullNumber = `+${dialCode}${cleanLocal}`;
-        }
-    }
-
-    if (!fullNumber || fullNumber === "") {
-        fullNumber = whatsapp.trim();
-    }
-
-    console.log("[Popup] FINAL Captured number:", fullNumber);
-
-    btn.innerText = "Processing...";
-    btn.disabled = true;
-
-    try {
-        const leadData = {
-            name: name,
-            whatsapp: fullNumber,
-            age: parseInt(age) || 0,
-            status: 'new',
-            createdAt: new Date().toISOString()
-        };
-
-        await addDoc(leadsCol, leadData);
-
-        // TRANSITION TO SUCCESS STATE
-        const form = document.getElementById('lead-form');
-        const imgBox = document.querySelector('.popup-image-box');
-        const successState = document.getElementById('lead-success-state');
-        const mainTitle = document.getElementById('popup-gift-title');
-        const mainMsg = document.getElementById('popup-gift-msg');
-
-        if (form) form.classList.add('hidden');
-        if (imgBox) imgBox.classList.add('hidden');
-        if (mainTitle) mainTitle.classList.add('hidden');
-        if (mainMsg) mainMsg.classList.add('hidden');
-
-        if (successState) {
-            successState.classList.remove('hidden');
-        }
-
-        showToast("Success! Lead captured.");
-        localStorage.setItem('popup_submitted', 'true');
-
-        // Allow user to read the success message before auto-closing (if they don't click Continue)
-        setTimeout(() => {
-            // Only auto-close if the popup is still open
-            if (document.getElementById('gift-popup-overlay')?.classList.contains('open')) {
-                window.closeGiftPopup();
-            }
-        }, 8000); // 8 seconds to read the message
-    } catch (err) {
-        console.error("Lead Submission Error:", err);
-        showToast("Submission Error: " + (err.message || "Please check connection"));
-        btn.innerText = "Try Again";
-        btn.disabled = false;
-    }
+// closeGiftPopup + submitLead: shims so HTML onclick works before module loads.
+// Once _loadPopup() runs, initPopup() in app-popup.js replaces these with real impls.
+window.forceShowPopup = async () => { await _loadPopup(); window.forceShowPopup(); };
+window.closeGiftPopup = () => { document.getElementById('gift-popup-overlay')?.classList.remove('open'); document.body.style.overflow = 'auto'; localStorage.setItem('popup_dismissed', 'true'); };
+window.submitLead     = async (e) => {
+    if (e) e.preventDefault(); // MUST be sync — prevents form reload before module loads
+    await _loadPopup();
+    window.submitLead(e);
 };
 
 // --- ADMIN LEAD MANAGEMENT ---
