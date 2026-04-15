@@ -2317,61 +2317,15 @@ initSharedAuth({
 });
 
 // ============================================================================
-// CUSTOMER PASSWORD RESET FLOW
+// CUSTOMER PASSWORD RESET FLOW (LAZY LOADED)
 // ============================================================================
 
-window.handlePasswordResetFlow = async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
-    const oobCode = urlParams.get('oobCode');
-    if (mode !== 'resetPassword' || !oobCode) return;
-    try {
-        await verifyPasswordResetCode(auth, oobCode);
-        document.getElementById('auth-modal-overlay')?.classList.add('opacity-100', 'pointer-events-auto');
-        const resetModal = document.getElementById('auth-reset-modal');
-        if (resetModal) {
-            resetModal.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
-            document.getElementById('auth-reset-oobCode').value = oobCode;
-        }
-        document.body.style.overflow = 'hidden';
-    } catch (err) {
-        console.error('Reset Code Error:', err);
-        showToast('Password reset link is invalid or expired.');
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-};
-
-window.handlePasswordResetFormSubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('auth-reset-submit-btn');
-    const newPassword = document.getElementById('auth-reset-new-password').value;
-    const oobCode = document.getElementById('auth-reset-oobCode').value;
-    if (!newPassword || newPassword.length < 6) return showToast('Password must be at least 6 characters');
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-    try {
-        await confirmPasswordReset(auth, oobCode, newPassword);
-        showToast('Password Reset Successfully! Please login.');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        document.getElementById('auth-reset-modal')?.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
-        state.authMode = 'login';
-        window.updateAuthUI?.();
-        document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
-        document.getElementById('auth-reset-form').reset();
-    } catch (err) {
-        showToast(err.message.replace('Firebase:', '').trim() || 'Failed to reset password');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-};
-
-// Check for reset links on boot (once only)
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.handlePasswordResetFlow);
-} else {
-    window.handlePasswordResetFlow();
+const _urlParams = new URLSearchParams(window.location.search);
+if (_urlParams.get('mode') === 'resetPassword' && _urlParams.get('oobCode')) {
+    const isMin = document.currentScript?.src?.includes('.min.js') || import.meta.url?.includes('.min.js');
+    import(isMin ? './app-password-reset.min.js' : './app-password-reset.js').then(module => {
+        module.initPasswordReset(auth);
+    }).catch(err => console.error('[Password Reset] Load failed:', err));
 }
 
 function initMainSharedNavbar() {
