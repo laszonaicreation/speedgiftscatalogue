@@ -2059,9 +2059,9 @@ function renderSlider() {
                 const _heroRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_hero_config_');
                 setDoc(_heroRef, {
                     desktopUrl: _lcpUrlDesk || _lcpUrl,
-                    mobileUrl:  _lcpUrlMob  || _lcpUrl,
-                    updatedAt:  Date.now()
-                }, { merge: true }).catch(() => {});
+                    mobileUrl: _lcpUrlMob || _lcpUrl,
+                    updatedAt: Date.now()
+                }, { merge: true }).catch(() => { });
             } catch (_fe) { /* Firestore write unavailable — not critical */ }
         }
     } catch (_e) { /* localStorage unavailable — ignore */ }
@@ -2354,7 +2354,7 @@ window.initPopup = () => {
 // Once _loadPopup() runs, initPopup() in app-popup.js replaces these with real impls.
 window.forceShowPopup = async () => { await _loadPopup(); window.forceShowPopup(); };
 window.closeGiftPopup = () => { document.getElementById('gift-popup-overlay')?.classList.remove('open'); document.body.style.overflow = 'auto'; localStorage.setItem('popup_dismissed', 'true'); };
-window.submitLead     = async (e) => {
+window.submitLead = async (e) => {
     if (e) e.preventDefault(); // MUST be sync — prevents form reload before module loads
     await _loadPopup();
     window.submitLead(e);
@@ -2551,151 +2551,6 @@ window.resetInsightsData = async function () {
 };
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FAST-PATH: Search-only render (skips category row, mega menu, slider, SEO)
-// Called by applyCustomerSearch to avoid full renderHome on every keystroke.
-// ─────────────────────────────────────────────────────────────────────────────
-function renderSearchResults() {
-    try {
-        const appMain = document.getElementById('app');
-        if (!appMain) return;
-
-        const grid = appMain.querySelector('#product-grid');
-        if (!grid) {
-            // Grid not present yet — fall back to full render
-            renderHome();
-            return;
-        }
-
-        // Enter search mode — hides badges, slider, category row (instant, CSS-driven)
-        enterSearchMode();
-
-        // Hide category + sort elements inside #app
-        const catContainer = appMain.querySelector('#category-selector-container');
-        if (catContainer) catContainer.classList.add('hidden');
-        const catScroll = appMain.querySelector('.category-scroll-container');
-        if (catScroll) catScroll.classList.add('hidden');
-        const mobSortBar = appMain.querySelector('.md\\:hidden.mb-6.px-1');
-        if (mobSortBar) mobSortBar.classList.add('hidden');
-
-        // Filter products by current search query
-        const q = (state.search || '').toLowerCase().trim();
-        const words = q.split(' ').filter(w => w.length > 0);
-        const stockFilter = (items) => items.filter(p => p.inStock !== false);
-        let filtered = stockFilter(DATA.p);
-
-        if (words.length > 0) {
-            filtered = filtered.filter(p => {
-                const name = (p.name || '').toLowerCase();
-                const keywords = (p.keywords || '').toLowerCase();
-                const catObj = DATA.c.find(c => c.id === p.catId);
-                const catName = catObj ? catObj.name.toLowerCase() : '';
-                return words.every(word => name.includes(word) || catName.includes(word) || keywords.includes(word));
-            });
-        }
-
-        // Sort: pinned first, then newest
-        filtered.sort((a, b) => {
-            const pinA = a.isPinned ? 1 : 0;
-            const pinB = b.isPinned ? 1 : 0;
-            if (pinA !== pinB) return pinB - pinA;
-            if (state.sort !== 'all') {
-                const priceA = parseFloat(a.price) || 0;
-                const priceB = parseFloat(b.price) || 0;
-                return state.sort === 'low' ? priceA - priceB : priceB - priceA;
-            }
-            return (b.updatedAt || 0) - (a.updatedAt || 0);
-        });
-
-        const cols = getColumnsCount();
-        // In search mode — show ALL results (no pagination limit)
-        const limit = filtered.length;
-        const visibleProducts = filtered;
-        const isInWishlist = (pid) => state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === pid);
-
-        let gridContent = '';
-        if (filtered.length === 0) {
-            gridContent = `
-            <div class="col-span-full text-center py-40 px-6">
-                <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i class="fa-solid fa-magnifying-glass text-gray-200 text-xl"></i>
-                </div>
-                <h3 class="text-gray-900 font-bold text-[14px] mb-2 uppercase tracking-widest">No Results Found</h3>
-                <p class="text-gray-400 text-[11px] mb-8 max-w-xs mx-auto">Try a different keyword or browse our categories.</p>
-                <button onclick="window.clearCustomerSearch()" class="bg-black text-white px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-105 active:scale-95 transition-all">
-                    Clear Search
-                </button>
-            </div>`;
-        } else {
-            gridContent = visibleProducts.map((p, idx) => {
-                const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${getBadgeLabel(p.badge)}</div>` : '';
-                return `
-                <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${isInWishlist(p.id) ? 'wish-active' : ''}" data-id="${p.id}"
-                     onmouseenter="window.preloadProductImage('${p.id}')"
-                     onclick="viewDetail('${p.id}', false, null)">
-                    <div class="img-container mb-4 relative">
-                        ${badgeHtml}
-                        <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                        
-                        <img src="${getOptimizedUrl(p.img, 600)}"
-                             class="${idx < 4 ? 'no-animation' : ''}"
-                            ${idx < INITIAL_EAGER_IMAGES ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
-                             decoding="async"
-                             onload="this.classList.add('loaded')"
-                             alt="${p.name}">
-                    </div>
-                    <div class="px-1 text-left flex justify-between items-start mt-4">
-                        <div class="flex-1 min-w-0">
-                            <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
-                            <p class="price-tag mt-2 font-bold">${p.price} AED</p>
-                        </div>
-                        <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="toggleWishlist(event, '${p.id}')">
-                            <i class="fa-solid fa-heart"></i>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-
-            // Ghost cards to fill last row
-            const remainder = visibleProducts.length % cols;
-            if (remainder > 0 && filtered.length <= limit) {
-                const ghosts = cols - remainder;
-                for (let g = 0; g < ghosts; g++) {
-                    gridContent += `<div style="visibility:hidden;pointer-events:none;" aria-hidden="true"><div style="aspect-ratio:4/5;width:100%;"></div></div>`;
-                }
-            }
-        }
-
-        // Prevent layout jump by locking current height
-        const currentHeight = grid.offsetHeight;
-        if (currentHeight > 0) grid.style.minHeight = `${currentHeight}px`;
-
-        // Update load-more button (calculate before rAF so values are captured)
-        const hasMore = filtered.length > limit;
-
-        // Use requestAnimationFrame to not block the keyboard
-        // IMPORTANT: load-more button update is INSIDE rAF so it stays in sync with grid render
-        requestAnimationFrame(() => {
-            grid.innerHTML = gridContent;
-            setTimeout(() => ensureGridImagesVisible(grid), 0);
-            setTimeout(() => { grid.style.minHeight = ''; }, 600);
-
-            // In search mode — always hide the View More button
-            const loadMoreContainer = document.getElementById('load-more-container');
-            if (loadMoreContainer) {
-                loadMoreContainer.style.display = 'none';
-            }
-        });
-
-        // Update slider visibility for search state
-        renderSlider();
-
-    } catch (e) {
-        console.error('[renderSearchResults] Error:', e);
-        // Safe fallback
-        renderHome();
-    }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEARCH MODE — Enter/Exit helpers (professional e-commerce UX)
@@ -2832,7 +2687,7 @@ initSharedAuth({
 
 window.handlePasswordResetFlow = async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const mode    = urlParams.get('mode');
+    const mode = urlParams.get('mode');
     const oobCode = urlParams.get('oobCode');
     if (mode !== 'resetPassword' || !oobCode) return;
     try {
@@ -2855,7 +2710,7 @@ window.handlePasswordResetFormSubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('auth-reset-submit-btn');
     const newPassword = document.getElementById('auth-reset-new-password').value;
-    const oobCode     = document.getElementById('auth-reset-oobCode').value;
+    const oobCode = document.getElementById('auth-reset-oobCode').value;
     if (!newPassword || newPassword.length < 6) return showToast('Password must be at least 6 characters');
     btn.disabled = true;
     const originalText = btn.innerHTML;
