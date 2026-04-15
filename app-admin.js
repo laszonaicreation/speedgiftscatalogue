@@ -6,6 +6,17 @@ import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js"
 // Shared context (db, auth, state, DATA, helpers) passed via initAdmin()
 // ============================================================================
 
+// Preload Cloudinary widget script in the background as soon as admin module loads.
+// By the time admin clicks an upload button, the script will be ready.
+// This keeps cloudinaryUpload() synchronous (no popup-blocker issues).
+(function () {
+    if (window.cloudinary) return;
+    const s = document.createElement('script');
+    s.src = 'https://upload-widget.cloudinary.com/global/all.js';
+    s.async = true;
+    document.head.appendChild(s);
+})();
+
 export function initAdmin(ctx) {
     const {
         db, auth, state, DATA, appId,
@@ -1322,6 +1333,13 @@ let cloudinaryTarget = null; // Can be ID string or input element
 
 window.cloudinaryUpload = (target) => {
     cloudinaryTarget = target;
+
+    // If script is still loading, show a brief message and retry
+    if (!window.cloudinary) {
+        showToast('Upload widget loading... please try again in a moment.');
+        return;
+    }
+
     if (cloudinaryWidget) {
         cloudinaryWidget.open();
         return;

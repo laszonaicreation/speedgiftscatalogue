@@ -87,6 +87,7 @@ const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
 // Slider module download starts immediately at page load time.
 // By the time Firebase returns data, the module is already in memory.
 const _isMinBuild = import.meta.url?.includes('.min.js');
+window._isMinBuild = _isMinBuild; // Exposed so lazily-loaded modules (bridge, admin) can detect build type
 const _sliderModulePromise   = import(_isMinBuild ? './app-slider.min.js'   : './app-slider.js');
 const _spotlightModulePromise = import(_isMinBuild ? './app-spotlight.min.js' : './app-spotlight.js');
 
@@ -1112,8 +1113,6 @@ async function refreshData(isNavigationOnly = false) {
         if (openAdmin) {
             if (activeTab) state.adminTab = activeTab;
             window.showAdminPanel();
-        } else {
-            renderAdminUI();
         }
 
 

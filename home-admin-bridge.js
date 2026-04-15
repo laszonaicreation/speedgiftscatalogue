@@ -7,7 +7,9 @@ export function createAdminProxyFactory(getContext) {
 
         loadingPromise = (async () => {
             try {
-                const mod = await import('./app-admin.js');
+                const isMin = window._isMinBuild === true;
+                const adminFile = ['./app-admin', isMin ? '.min' : '', '.js'].join('');
+                const mod = await import(/* @vite-ignore */ adminFile);
                 if (typeof mod.initAdmin !== 'function') return false;
                 mod.initAdmin(getContext());
                 window.__adminModuleReady = true;

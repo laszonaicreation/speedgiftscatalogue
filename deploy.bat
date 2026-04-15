@@ -60,6 +60,28 @@ if %errorlevel% neq 0 (
 echo Done! app-popup.min.js updated.
 echo.
 
+echo [1d] Minifying app-admin.js...
+call npx terser app-admin.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output app-admin.min.js
+
+if %errorlevel% neq 0 (
+    echo ERROR: app-admin.js Minification failed! Deploy cancelled.
+    pause
+    exit /b 1
+)
+echo Done! app-admin.min.js updated.
+echo.
+
+echo [1e] Minifying home-admin-bridge.js...
+call npx terser home-admin-bridge.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output home-admin-bridge.min.js
+
+if %errorlevel% neq 0 (
+    echo ERROR: home-admin-bridge.js Minification failed! Deploy cancelled.
+    pause
+    exit /b 1
+)
+echo Done! home-admin-bridge.min.js updated.
+echo.
+
 echo [2/6] Minifying home-ui.js...
 call npx terser home-ui.js --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output home-ui.min.js
 
