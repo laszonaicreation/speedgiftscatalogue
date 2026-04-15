@@ -6,11 +6,14 @@ const dir = __dirname;
 const files = fs.readdirSync(dir);
 
 const jsFiles = files.filter(f => f.endsWith('.js') && !f.endsWith('.min.js') && f !== 'build.js');
+const cssFiles = files.filter(f => f.endsWith('.css') && !f.endsWith('.min.css'));
+const htmlFiles = files.filter(f => f.endsWith('.html') && f !== 'index.dev.html');
 
 console.log(`\n========================================`);
-console.log(`  Speed Gifts - Smart JS Minification`);
+console.log(`  Speed Gifts - Smart JS & CSS Minification`);
 console.log(`========================================\n`);
-console.log(`Found ${jsFiles.length} JS files to minify.\n`);
+console.log(`Found ${jsFiles.length} JS files to minify.`);
+console.log(`Found ${cssFiles.length} CSS files to minify.\n`);
 
 let successCount = 0;
 let failCount = 0;
@@ -44,6 +47,58 @@ for (const file of jsFiles) {
         failCount++;
     }
 }
+
+console.log(`\nStarting CSS Minification...`);
+for (const file of cssFiles) {
+    const minFile = file.replace(/\.css$/, '.min.css');
+    console.log(`Minifying ${file} -> ${minFile}...`);
+    try {
+        execSync(`npx clean-css-cli -o ${minFile} ${file}`, { stdio: 'inherit' });
+        successCount++;
+    } catch (e) {
+        console.error(`  => Failed to minify ${file}:`, e.message);
+        failCount++;
+    }
+}
+
+console.log(`\nUpdating HTML files to use .min.css...`);
+for (const file of htmlFiles) {
+    try {
+        const filePath = path.join(dir, file);
+        if (!fs.existsSync(filePath)) continue;
+        let content = fs.readFileSync(filePath, 'utf8');
+        
+        let newContent = content.replace(/href=["']([^"']+\.css)(\?[^"']*)?["']/gi, (match, pathStr, qs) => {
+            if (pathStr.includes('http') || pathStr.endsWith('.min.css')) return match;
+            const newPath = pathStr.replace(/\.css$/, '.min.css');
+            return match.replace(pathStr, newPath);
+        });
+
+        if (content !== newContent) {
+            fs.writeFileSync(filePath, newContent, 'utf8');
+            console.log(`  -> Updated CSS links in ${file}`);
+        }
+    } catch (e) {
+        console.error(`  => Failed to update HTML ${file}:`, e.message);
+    }
+}
+
+// Special case for index.dev.html which builds into index.html
+try {
+    const devHtml = path.join(dir, 'index.dev.html');
+    if (fs.existsSync(devHtml)) {
+        let content = fs.readFileSync(devHtml, 'utf8');
+        let newContent = content.replace(/href=["']([^"']+\.css)(\?[^"']*)?["']/gi, (match, pathStr, qs) => {
+            if (pathStr.includes('http') || pathStr.endsWith('.min.css')) return match;
+            const newPath = pathStr.replace(/\.css$/, '.min.css');
+            return match.replace(pathStr, newPath);
+        });
+        if (content !== newContent) {
+            fs.writeFileSync(devHtml, newContent, 'utf8');
+            console.log(`  -> Updated CSS links in index.dev.html`);
+        }
+    }
+} catch (e) {}
 
 console.log(`\n========================================`);
 console.log(`Minification complete!`);
