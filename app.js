@@ -9,7 +9,7 @@ import { renderCategoriesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initWishlist, loadWishlist, getWishlistItems, clearWishlistOnLogout } from "./wishlist.js";
 import { createAdminProxyFactory } from "./home-admin-bridge.js";
 import { fetchHomeDataBundle } from "./home-data.js";
-import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, ensureHomeLoadMoreContainer, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection, renderHomeCategoryRow, getHomeBestsellerProducts, applyHomeBestsellerSeo, ensureHomeViewScaffold, getHomeRenderElements, runHomePostRenderTasks } from "./home-ui.js";
+import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, ensureHomeLoadMoreContainer, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection, renderHomeCategoryRow, getHomeBestsellerProducts, applyHomeBestsellerSeo, ensureHomeViewScaffold, getHomeRenderElements, runHomePostRenderTasks } from "./home-ui2.js";
 import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
 
 const firebaseConfig = {
