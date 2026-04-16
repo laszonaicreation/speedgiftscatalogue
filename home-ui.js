@@ -31,6 +31,7 @@ export function getHomeBestLoadMoreMarkup({ hasMore, isExpanded, canCollapse }) 
     return '';
 }
 
+
 export function ensureHomeLoadMoreContainer(grid) {
     let loadMoreContainer = document.getElementById('load-more-container');
     if (!loadMoreContainer) {
@@ -147,16 +148,9 @@ export function renderHomeBestGridSection({
 
     grid.innerHTML = gridContent;
 
-    // Fallback: If an image was loaded instantly from browser cache, its onload might 
-    // never fire. We explicitly add the loaded class if it reports as complete.
     grid.querySelectorAll('img').forEach(img => {
-        if (img.complete) {
-            img.classList.add('loaded');
-        }
-        // Also attach an extra event listener just in case
-        img.addEventListener('load', function () {
-            this.classList.add('loaded');
-        });
+        if (img.complete) img.classList.add('loaded');
+        img.addEventListener('load', function () { this.classList.add('loaded'); });
     });
 
     setTimeout(() => ensureGridImagesVisible(grid), 0);
@@ -175,6 +169,7 @@ export function renderHomeBestGridSection({
         loadMoreContainer.style.display = 'none';
     }
 }
+
 
 export function renderHomeCategoryRow({
     catRow,
@@ -204,8 +199,10 @@ export function renderHomeCategoryRow({
 
 export function getHomeBestsellerProducts({ products, sort }) {
     const stockFilter = (items) => items.filter((p) => p.inStock !== false);
+    // Show admin-curated featured products first
     let filtered = stockFilter((products || []).filter((p) => p.isFeatured));
-    if (filtered.length === 0) filtered = stockFilter(products || []);
+    // Fallback: if no featured products set yet, show latest 20 (not all 202)
+    if (filtered.length === 0) filtered = stockFilter(products || []).slice(0, 20);
 
     filtered.sort((a, b) => {
         const pinA = a.isPinned ? 1 : 0;
