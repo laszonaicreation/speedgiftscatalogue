@@ -1835,7 +1835,7 @@ function renderSlider() {
                 <img src="${getOptimizedUrl(displayImg, isMobile ? 1200 : 1920)}" 
                      class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                      alt="${s.title || ''}" 
-                     ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
+                     ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="eager"'}
                      onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
                      style="${s.link ? 'cursor:pointer' : ''}"
                      draggable="false">

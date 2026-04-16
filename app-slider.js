@@ -29,7 +29,26 @@ export function initSlider({ db, appId, doc, setDoc }) {
 
         // Safety: always hide slider when a product detail is open (?p= in URL)
         const isProductDetail = new URLSearchParams(window.location.search).has('p');
-        if (!slider || !DATA.s.length || isProductDetail || state.filter !== 'all') {
+
+        // Hide if product detail page or not on home view
+        if (!slider || isProductDetail || state.filter !== 'all') {
+            if (wrapper) wrapper.classList.add('hidden');
+            sliderMarkupKey = '';
+            return;
+        }
+
+        // DATA not yet loaded — skeleton is already visible in HTML, just wait
+        // We detect this by checking if the skeleton placeholder still occupies the slider
+        const skeletonEl = document.getElementById('slider-skeleton');
+        const hasRealSlides = slider.children.length > 0 && !skeletonEl;
+        if (!hasRealSlides && !DATA.s.length) {
+            // Skeleton is showing — keep wrapper visible, don't hide
+            if (wrapper) wrapper.classList.remove('hidden');
+            return;
+        }
+
+        // Data loaded but no slides configured — hide cleanly
+        if (!DATA.s.length) {
             if (wrapper) wrapper.classList.add('hidden');
             sliderMarkupKey = '';
             return;
@@ -112,7 +131,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
                          sizes="(max-width: 767px) 100vw, 1920px"
                          class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                          alt="${s.title || ''}" 
-                         ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
+                         ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="eager"'}
                          onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
                          style="${s.link ? 'cursor:pointer' : ''}"
                          draggable="false">
@@ -121,6 +140,10 @@ export function initSlider({ db, appId, doc, setDoc }) {
             `;
         }).join('');
         sliderMarkupKey = nextMarkupKey;
+
+        // ── REMOVE LOADING STATE ──────────────────────────────────────────────
+        // Now that real slider content is in place, snap back to normal white design
+        document.getElementById('sg-loading-bg')?.remove();
 
         if (dots) {
             dots.innerHTML = visibleSliders.map((_, i) => `
