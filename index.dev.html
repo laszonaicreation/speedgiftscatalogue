@@ -3,16 +3,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <!-- Google Tag Manager -->
-    <script>(function (w, d, s, l, i) {
-            w[l] = w[l] || []; w[l].push({
-                'gtm.start':
-                    new Date().getTime(), event: 'gtm.js'
-            }); var f = d.getElementsByTagName(s)[0],
-                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-        })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');</script>
-    <!-- End Google Tag Manager -->
+    <!-- Google Tag Manager: deferred after page load for better performance -->
+    <!-- font-display: swap for FontAwesome — prevents invisible text during font load -->
+    <style>
+        @font-face { font-family: 'Font Awesome 6 Free'; font-display: swap; }
+        @font-face { font-family: 'Font Awesome 6 Brands'; font-display: swap; }
+    </style>
     <!-- UI UPDATE: 2026-01-03 17:45 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Speed Gifts - Premium Gift Collection</title>
@@ -55,15 +51,7 @@
     <!-- Cloudinary Widget: loaded on-demand inside app-admin.js (cloudinaryUpload function) -->
     <!-- Removed from global load to save ~150KB for all non-admin visitors -->
 
-    <!-- GOOGLE ADS: Global Tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-789546339"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-        gtag('config', 'AW-789546339');
-        gtag('config', 'G-98ZMG3ZF7Z');
-    </script>
+    <!-- Google Ads + Analytics: deferred after page load for better performance -->
 
     <link rel="stylesheet" href="style.min.css?v=2.6">
     <!-- Responsive helpers + badge overrides moved to style.css -->
@@ -280,12 +268,12 @@
                 <h1 class="brand-logo cursor-pointer select-none hidden md:block" id="desk-logo"
                     style="position:absolute; left:50%; transform:translateX(-50%); margin:0; z-index:1;"
                     onclick="handleLogoClick()">
-                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-8 md:h-10 w-auto inline-block">
+                    <img src="img/speed-logo.svg" alt="Speed Gifts" width="120" height="40" class="h-8 md:h-10 w-auto inline-block">
                 </h1>
             </div>
             <div class="flex-1 md:hidden text-center flex justify-center items-center">
                 <h1 class="brand-logo cursor-pointer select-none" id="mob-logo" onclick="handleLogoClick()">
-                    <img src="img/speed-logo.svg" alt="Speed Gifts" class="h-7 w-auto inline-block">
+                    <img src="img/speed-logo.svg" alt="Speed Gifts" width="105" height="28" class="h-7 w-auto inline-block">
                 </h1>
             </div>
             <div class="w-1/4 md:flex-1 flex justify-end items-center gap-4 md:gap-6">
@@ -575,7 +563,8 @@
 
         <!-- PRODUCT GRID -->
         <div id="product-grid"
-            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4 justify-center">
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-16 lg:gap-x-10 lg:gap-y-20 mt-4 justify-center"
+            style="min-height: 600px;">
         </div>
 
         <!-- CATEGORY SPOTLIGHT SECTION (rendered by JS) -->
@@ -1175,6 +1164,39 @@
     <link rel="modulepreload" href="./app-slider.min.js">
     <link rel="modulepreload" href="./app-spotlight.min.js">
     <script type="module" src="app.min.js?v=3.3"></script>
+
+    <!-- Google Tag Manager + Ads: loaded AFTER page is interactive (saves ~550ms TBT) -->
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        // Defer all analytics until after page load to keep LCP clean
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                // GTM
+                (function (w, d, s, l, i) {
+                    w[l] = w[l] || [];
+                    w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+                    var f = d.getElementsByTagName(s)[0],
+                        j = d.createElement(s),
+                        dl = l != 'dataLayer' ? '&l=' + l : '';
+                    j.async = true;
+                    j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+                    f.parentNode.insertBefore(j, f);
+                })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
+
+                // Google Ads + GA4
+                var gads = document.createElement('script');
+                gads.async = true;
+                gads.src = 'https://www.googletagmanager.com/gtag/js?id=AW-789546339';
+                document.head.appendChild(gads);
+                gads.onload = function () {
+                    gtag('js', new Date());
+                    gtag('config', 'AW-789546339');
+                    gtag('config', 'G-98ZMG3ZF7Z');
+                };
+            }, 2000); // 2s after load — page already interactive, user can interact freely
+        });
+    </script>
 </body>
 
 </html>

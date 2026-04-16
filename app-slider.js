@@ -65,9 +65,9 @@ export function initSlider({ db, appId, doc, setDoc }) {
         // ── LCP PRELOAD CACHE ─────────────────────────────────────────────────
         try {
             const _lcpRawImg  = isMobile ? visibleSliders[0].mobileImg : visibleSliders[0].img;
-            const _lcpUrl     = getOptUrl(_lcpRawImg, isMobile ? 1200 : 1920);
+            const _lcpUrl     = getOptUrl(_lcpRawImg, isMobile ? 800 : 1920);
             const _lcpUrlDesk = getOptUrl(visibleSliders[0].img, 1920);
-            const _lcpUrlMob  = getOptUrl(visibleSliders[0].mobileImg || visibleSliders[0].img, 1200);
+            const _lcpUrlMob  = getOptUrl(visibleSliders[0].mobileImg || visibleSliders[0].img, 800);
             if (_lcpUrl && _lcpUrl !== 'img/') {
                 localStorage.setItem('sg_lcp_img_url', _lcpUrl);
                 localStorage.setItem('sg_lcp_img_mobile', isMobile ? '1' : '0');
@@ -107,7 +107,9 @@ export function initSlider({ db, appId, doc, setDoc }) {
 
             return `
                 <div class="slider-slide relative" data-index="${i}">
-                    <img src="${getOptUrl(displayImg, isMobile ? 1200 : 1920)}" 
+                    <img src="${getOptUrl(displayImg, isMobile ? 800 : 1920)}" 
+                         srcset="${getOptUrl(displayImg, 600)} 600w, ${getOptUrl(displayImg, 800)} 800w, ${getOptUrl(displayImg, 1200)} 1200w, ${getOptUrl(displayImg, 1920)} 1920w"
+                         sizes="(max-width: 767px) 100vw, 1920px"
                          class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                          alt="${s.title || ''}" 
                          ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
