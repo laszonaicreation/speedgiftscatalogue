@@ -128,28 +128,47 @@
   }
 }
 </script>
-    <!-- LCP PRELOAD HINT — TWO-TIER STRATEGY
-         ① Repeat visitors  → localStorage (instant, zero network, ~0ms)
-         ② First-time visitors (Google Ads) → Firestore REST API lightweight
-            XHR fetch (~200ms), fires in parallel with page load. The hero
-            image URL is stored in a tiny Firestore document by app.js.
-            No Firebase SDK needed — uses the public REST API directly.
+    <!-- LCP PRELOAD HINT — THREE-TIER STRATEGY
+         ① Repeat visitors  → localStorage (instant, ~0ms)
+         ② Cached config    → _hero_config_ Firestore doc (~200ms)
+         ③ First-time visitors → sliders collection REST fetch (works on first ever visit)
     -->
     <script>
         (function () {
-            var PROJECT = 'speed-catalogue';
-            var HERO_DOC = 'artifacts/' + PROJECT + '/public/data/products/_hero_config_';
-            var REST_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/' + HERO_DOC;
+            var PROJECT  = 'speed-catalogue';
+            var BASE_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/';
+            var HERO_DOC = BASE_URL + 'artifacts/' + PROJECT + '/public/data/products/_hero_config_';
+            var SLIDERS_COL = BASE_URL + 'artifacts/' + PROJECT + '/public/data/sliders';
             var isMob = window.matchMedia('(max-width:767px)').matches;
+            var preloaded = false;
 
             function injectPreload(url) {
-                if (!url || url.indexOf('http') !== 0) return;
+                if (!url || url.indexOf('http') !== 0 || preloaded) return;
+                preloaded = true;
+                var optimized = url;
+                if (url.indexOf('cloudinary.com') !== -1) {
+                    var w = isMob ? '800' : '1920';
+                    optimized = url.indexOf('/upload/f_auto') === -1
+                        ? url.replace('/upload/', '/upload/f_auto,q_auto,w_' + w + ',c_limit/')
+                        : url;
+                }
                 var l = document.createElement('link');
                 l.rel = 'preload';
                 l.as = 'image';
-                l.href = url;
+                l.href = optimized;
                 l.setAttribute('fetchpriority', 'high');
                 document.head.appendChild(l);
+                try { localStorage.setItem('sg_lcp_img_url', optimized); } catch (e) { }
+            }
+
+            function xhrGet(url, cb) {
+                try {
+                    var x = new XMLHttpRequest();
+                    x.open('GET', url, true);
+                    x.timeout = 4000;
+                    x.onload = function () { if (x.status === 200) cb(x.responseText); };
+                    x.send();
+                } catch (e) { }
             }
 
             // ① Fast path: repeat visitors — instant, zero network cost
@@ -157,35 +176,40 @@
                 var cached = localStorage.getItem('sg_lcp_img_url');
                 if (cached && cached.indexOf('http') === 0) {
                     injectPreload(cached);
-                    // Skip REST call if we already have a cached URL
-                    return;
+                    return; // done — no network calls needed
                 }
             } catch (e) { }
 
-            // ② First-visit path (Google Ads customers): lightweight Firestore REST
-            //    call runs async and parallel with the rest of page loading.
-            //    When the URL arrives, inject the preload link immediately.
-            try {
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', REST_URL, true); // async = true
-                xhr.timeout = 3000; // give up after 3s — don't block anything
-                xhr.onload = function () {
-                    if (xhr.status !== 200) return;
-                    try {
-                        var data = JSON.parse(xhr.responseText);
-                        var fields = data.fields || {};
-                        var desk = (fields.desktopUrl || {}).stringValue || '';
-                        var mob  = (fields.mobileUrl  || {}).stringValue || '';
-                        var url  = isMob ? (mob || desk) : desk;
-                        if (url) {
-                            injectPreload(url);
-                            // Also cache for next visit so ① fires instantly
-                            try { localStorage.setItem('sg_lcp_img_url', url); } catch (e) { }
-                        }
-                    } catch (e) { }
-                };
-                xhr.send();
-            } catch (e) { }
+            // ② Try _hero_config_ (written after first slider render — NOT on very first visit)
+            xhrGet(HERO_DOC, function (text) {
+                try {
+                    var fields = JSON.parse(text).fields || {};
+                    var url = isMob
+                        ? ((fields.mobileUrl || {}).stringValue || (fields.desktopUrl || {}).stringValue)
+                        : (fields.desktopUrl || {}).stringValue;
+                    if (url) injectPreload(url);
+                } catch (e) { }
+            });
+
+            // ③ Sliders collection — works even on the very first visit ever
+            //    Fetches the raw sliders list, picks the lowest-order slide, preloads its image.
+            xhrGet(SLIDERS_COL, function (text) {
+                try {
+                    if (preloaded) return; // ② already handled it
+                    var docs = JSON.parse(text).documents || [];
+                    if (!docs.length) return;
+                    // Sort by 'order' field ascending
+                    docs.sort(function (a, b) {
+                        var oa = parseInt(((a.fields || {}).order || {}).integerValue || 999, 10);
+                        var ob = parseInt(((b.fields || {}).order || {}).integerValue || 999, 10);
+                        return oa - ob;
+                    });
+                    var f = docs[0].fields || {};
+                    var imgKey = isMob ? 'mobileImg' : 'img';
+                    var url = (f[imgKey] || {}).stringValue || (f['img'] || {}).stringValue || '';
+                    if (url && url !== 'img/') injectPreload(url);
+                } catch (e) { }
+            });
         })();
     </script>
 </head>
