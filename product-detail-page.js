@@ -8,6 +8,7 @@ import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges, mergeCartOnLogin } from "./cart.js";
 import { initSharedAuth } from "./shared-auth.js";
+import { getWishlistItems, initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout } from "./wishlist.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -32,24 +33,23 @@ const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products')
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 
 const DATA = { p: [], c: [] };
+Object.defineProperty(window, '_sgDATA', { get: () => DATA, configurable: true });
 const state = { wishlist: [], currentVar: null };
 state.authMode = 'login';
 state.authUser = null;
+state.user = null;
+
+// Expose state so wishlist.js can read user, currentVar, etc.
+Object.defineProperty(window, '_sgState', { get: () => state, configurable: true });
 
 // ── Cart bridge: called by product-detail-interactions.js window.addToCart ──
 window.cartAddItem = ({ id, name, price, img, size, color }) => {
     addToCart({ id, name, price, img, size, color });
     updateCartBadges();
 };
-const WISHLIST_KEY = 'speedgifts_wishlist';
-const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
-const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 const DETAIL_CACHE_KEY = 'speedgifts_detail_cache';
 const HOME_SNAPSHOT_KEY = 'speedgifts_home_snapshot';
 const trackedProductViews = new Set();
-const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
-    ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
-    : null;
 
 registerProductDetailInteractions({ getOptimizedUrl, state });
 
@@ -176,76 +176,7 @@ function showToast(msg) {
 }
 window.showToast = showToast;
 
-function loadWishlist() {
-    try {
-        const raw = localStorage.getItem(WISHLIST_KEY);
-        state.wishlist = raw ? JSON.parse(raw) : [];
-    } catch {
-        state.wishlist = [];
-    }
-}
-
-function saveWishlist() {
-    localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist));
-    localStorage.setItem(WISHLIST_SYNC_PING_KEY, String(Date.now()));
-    wishlistChannel?.postMessage({ wishlist: state.wishlist, at: Date.now() });
-    updateWishlistBadges();
-}
-
-async function persistWishlistToCloud() {
-    try {
-        const user = auth.currentUser;
-        if (!user?.uid) return;
-        const wishRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'wishlist');
-        const ids = state.wishlist.map((entry) => (typeof entry === 'string' ? entry : entry?.id)).filter(Boolean);
-        await setDoc(wishRef, { ids }, { merge: true });
-    } catch (e) {
-        // Non-blocking: local wishlist is source-of-truth fallback
-    }
-}
-
-window.toggleWishlist = async (event, id) => {
-    event?.stopPropagation?.();
-    const idx = state.wishlist.findIndex(x => (typeof x === 'string' ? x : x.id) === id);
-    if (idx >= 0) {
-        state.wishlist.splice(idx, 1);
-    } else {
-        state.wishlist.push(id);
-    }
-    saveWishlist();
-    await persistWishlistToCloud();
-    renderFavoritesSidebar();
-
-    const active = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);
-
-    // Update main detail heart icon only if it matches the toggled id
-    const detailBtn = document.getElementById('detail-wish-btn');
-    if (detailBtn && detailBtn.getAttribute('data-id') === id) {
-        const icon = detailBtn.querySelector('i');
-        if (icon) {
-            icon.className = `${active ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl`;
-        }
-    }
-
-    // Update any recommendation product cards on the screen
-    const gridCards = document.querySelectorAll(`.product-card[data-id="${id}"]`);
-    gridCards.forEach(card => {
-        card.classList.toggle('wish-active', active);
-    });
-};
-
-function updateWishlistBadges() {
-    const count = (state.wishlist || []).length;
-    const deskBadge = document.getElementById('nav-wishlist-count');
-    const mobBadge = document.getElementById('nav-wishlist-count-mob');
-    [deskBadge, mobBadge].forEach((badge) => {
-        if (!badge) return;
-        badge.innerText = String(count);
-        if (count > 0) badge.classList.remove('hidden');
-        else badge.classList.add('hidden');
-    });
-}
-
+// ── Sidebar Renderers ─────────────────────────────────────────────────────────
 function renderCategoriesSidebar() {
     renderCategoriesSidebarMainLike({
         categories: DATA.c || [],
@@ -255,14 +186,9 @@ function renderCategoriesSidebar() {
     });
 }
 
+// Delegate to wishlist.js which owns this. Called by wishlist._isSidebarOpen check.
 function renderFavoritesSidebar() {
-    renderFavoritesSidebarMainLike({
-        wishlist: state.wishlist || [],
-        products: DATA.p || [],
-        getOptimizedUrl,
-        onItemClickJs: (p) => `window.location.href='${getProductDetailUrl(p.originalId)}'`,
-        onRemoveClickJs: (p) => `window.toggleWishlist(null, '${p.originalId}')`,
-    });
+    window.renderFavoritesSidebar?.();
 }
 
 window.goBackToHome = () => { window.location.href = 'index.html'; };
@@ -433,15 +359,19 @@ async function bootstrap() {
         setAuthMode: (mode) => { state.authMode = mode; },
         getAuthMode: () => state.authMode,
         updateAuthUserUI,
+        onSignOut: () => { clearWishlistOnLogout(); },
         showToast
     });
     onAuthStateChanged(auth, async (u) => {
+        // Always keep state.user current so wishlist.js (_sgState.user) works
+        state.user = u;
         updateAuthUserUI();
         if (!u) {
             await signInAnonymously(auth).catch(() => { /* no-op */ });
             return;
         } else if (!u.isAnonymous) {
             mergeCartOnLogin(u.uid);
+            loadWishlist(); // Sync wishlist from cloud on login
         }
         await initTrafficTracking();
         if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
@@ -457,8 +387,8 @@ async function bootstrap() {
         return;
     }
 
-    loadWishlist();
-    updateWishlistBadges();
+    initWishlist();
+
 
     // Fast-path: render from session cache immediately (if available),
     // then sync with Firestore in background.

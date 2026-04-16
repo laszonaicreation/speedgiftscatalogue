@@ -157,7 +157,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </button>
                 <button id="detail-wish-btn" data-id="${product.id}" onclick="window.toggleWishlist(event, '${product.id}')"
                     class="flex-1 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90 border border-gray-100">
-                    <i class="${state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl"></i>
+                    <i class="${(typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || [])).some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl"></i>
                 </button>
             </div>
         </div>
@@ -181,7 +181,8 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                         ${related.map(rp => {
                 const rpImg = [rp.img, ...(rp.images || []), rp.img2, rp.img3].find(u => u && u !== 'img/') || 'https://placehold.co/400x500?text=Gift';
                 const badgeHtml = rp.badge && window.getBadgeLabel ? `<div class="p-badge-card badge-${rp.badge}">${window.getBadgeLabel(rp.badge)}</div>` : '';
-                const isWished = state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === rp.id);
+                const wl = typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || []);
+                const isWished = wl.some(x => (typeof x === 'string' ? x : x.id) === rp.id);
                 return `
                             <div class="product-card group flex-shrink-0 w-[160px] md:w-[220px] ${isWished ? 'wish-active' : ''}" data-id="${rp.id}" onclick="viewDetail('${rp.id}')">
                                 <div class="img-container mb-4 relative">

@@ -61,7 +61,8 @@ for (const file of cssFiles) {
     }
 }
 
-console.log(`\nUpdating HTML files to use .min.css...`);
+console.log(`\nUpdating HTML files to use .min.css and .min.js with cache-busters...`);
+const ts = Date.now();
 for (const file of htmlFiles) {
     try {
         const filePath = path.join(dir, file);
@@ -69,14 +70,30 @@ for (const file of htmlFiles) {
         let content = fs.readFileSync(filePath, 'utf8');
         
         let newContent = content.replace(/href=["']([^"']+\.css)(\?[^"']*)?["']/gi, (match, pathStr, qs) => {
-            if (pathStr.includes('http') || pathStr.endsWith('.min.css')) return match;
+            if (pathStr.includes('http') || pathStr.endsWith('.min.css')) {
+                if (pathStr.endsWith('.min.css') && !pathStr.includes('http')) {
+                    return `href="${pathStr}?v=${ts}"`;
+                }
+                return match;
+            }
             const newPath = pathStr.replace(/\.css$/, '.min.css');
-            return match.replace(pathStr, newPath);
+            return `href="${newPath}?v=${ts}"`;
+        });
+
+        newContent = newContent.replace(/src=["']([^"']+\.js)(\?[^"']*)?["']/gi, (match, pathStr, qs) => {
+            if (pathStr.includes('http') || pathStr.endsWith('.min.js')) {
+                if (pathStr.endsWith('.min.js') && !pathStr.includes('http')) {
+                    return `src="${pathStr}?v=${ts}"`;
+                }
+                return match;
+            }
+            const newPath = pathStr.replace(/\.js$/, '.min.js');
+            return `src="${newPath}?v=${ts}"`;
         });
 
         if (content !== newContent) {
             fs.writeFileSync(filePath, newContent, 'utf8');
-            console.log(`  -> Updated CSS links in ${file}`);
+            console.log(`  -> Updated CSS/JS links in ${file}`);
         }
     } catch (e) {
         console.error(`  => Failed to update HTML ${file}:`, e.message);

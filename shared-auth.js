@@ -6,6 +6,7 @@ export function initSharedAuth(config) {
         setAuthMode,
         getAuthMode,
         updateAuthUserUI,
+        onSignOut,
         showToast
     } = config;
 
@@ -178,6 +179,7 @@ export function initSharedAuth(config) {
 
     window.handleSignOut = async () => {
         try {
+            onSignOut?.(); // Clean up module state before Firebase signs out
             await signOut(auth);
             window.closeAuthModals?.();
             showToast?.('Signed Out Successfully');

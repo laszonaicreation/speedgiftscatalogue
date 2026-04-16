@@ -15,6 +15,7 @@ import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
 import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
+import { getWishlistItems, initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout, updateAllWishlistUI } from "./wishlist.js";
 
 // ─── Firebase Setup ──────────────────────────────────────────────
 const firebaseConfig = {
@@ -49,6 +50,8 @@ const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';
 const WISHLIST_SYNC_PING_KEY = 'speedgifts_wishlist_sync_ping';
 
 const DATA = { products: [], categories: [], megaMenus: [] };
+Object.defineProperty(window, '_sgDATA', { get: () => DATA, configurable: true });
+
 const state = {
     filter: 'all',
     sort: 'default',
@@ -57,16 +60,17 @@ const state = {
     selected: [],
     selectionId: null,
     viewMode: 'normal',  // 'normal' | 'compact'
-    wishlist: [],
     user: null,
     authUser: null,
     authMode: 'login'
 };
+
+const getWishlistIds = () => getWishlistItems();
 let sharedNav = null;
-let wishlistUnsub = null;
-const wishlistChannel = (typeof BroadcastChannel !== 'undefined')
-    ? new BroadcastChannel(WISHLIST_SYNC_CHANNEL)
-    : null;
+
+// Expose state so wishlist.js can read window._sgState?.user, window._sgDb, window._sgAppId
+Object.defineProperty(window, '_sgState', { get: () => state, configurable: true });
+
 mountSharedShell('shop');
 window.handleCartClick = openCartSidebar;
 window.openCartSidebar = openCartSidebar;
@@ -74,6 +78,10 @@ window.closeCartSidebar = closeCartSidebar;
 
 // Initialize cart synchronously so badges update immediately after shell mount
 initCart({ getProducts: () => DATA.products, getOptimizedUrl });
+
+// Initialize centralized wishlist IMMEDIATELY — reads localStorage so cards render correct state
+initWishlist();
+
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 function setupSearchBackNavigationStep() {
@@ -130,21 +138,12 @@ onAuthStateChanged(auth, async (user) => {
     state.authUser = user.isAnonymous ? null : user;
     refreshAuthUI();
 
-    // INSTANT badge refresh from localStorage — before any async Firebase calls
-    try {
-        const localWish = localStorage.getItem(SHOP_WISHLIST_KEY);
-        if (localWish) {
-            const parsed = JSON.parse(localWish);
-            if (Array.isArray(parsed)) {
-                state.wishlist = normalizeWishlistEntries(parsed);
-                syncWishlistVisualState();
-            }
-        }
-    } catch (_) { }
     updateCartBadges();
 
     if (!user.isAnonymous) {
         mergeCartOnLogin(user.uid);
+        // Sync wishlist with cloud now that user is authenticated
+        loadWishlist();
     }
     await fetchData();
 });
@@ -196,7 +195,7 @@ async function fetchData() {
 
         setupSearchBackNavigationStep();
 
-        await loadWishlist();
+        // Render products — wishlist already loaded via initWishlist() above
         renderCategoryChips();
         renderMobileVisualCategories();
         renderMobCatList();
@@ -204,7 +203,7 @@ async function fetchData() {
         renderFilterBanner();
         renderProducts();
         sharedNav = initSharedNavbar({
-            getWishlistIds: () => state.wishlist,
+            getWishlistIds: () => getWishlistItems(),
             getProductById: (id) => DATA.products.find(p => p.id === id),
             getCategories: () => [...DATA.categories].sort((a, b) => (a.order || 0) - (b.order || 0)),
             getProductUrl: (id) => getProductDetailUrl(id),
@@ -235,166 +234,19 @@ async function fetchData() {
 }
 
 // ─── Wishlist ─────────────────────────────────────────────────────
-async function loadWishlist() {
-    try {
-        const raw = localStorage.getItem(SHOP_WISHLIST_KEY);
-        state.wishlist = normalizeWishlistEntries(raw ? JSON.parse(raw) : []);
-    } catch { state.wishlist = []; }
-
-    // Only sync with cloud for real signed-in users, not anonymous
-    if (state.user && !state.user.isAnonymous) {
-        await syncWishlistWithCloud();
-        startWishlistRealtimeSync();
+window._sgWishlistCallback = () => {
+    // Re-render all product card heart states when wishlist changes
+    updateAllWishlistUI();
+    if (document.getElementById('favorites-sidebar')?.classList.contains('open')) {
+        renderFavoritesSidebarLikeMain();
     }
-}
-
-function saveWishlist() {
-    state.wishlist = normalizeWishlistEntries(state.wishlist);
-    localStorage.setItem(SHOP_WISHLIST_KEY, JSON.stringify(state.wishlist));
-    localStorage.setItem(WISHLIST_SYNC_PING_KEY, String(Date.now()));
-    wishlistChannel?.postMessage({ wishlist: state.wishlist, at: Date.now() });
-}
-
-function getWishId(entry) {
-    return typeof entry === 'string' ? entry : entry?.id;
-}
-
-function normalizeWishlistEntries(entries = []) {
-    const seen = new Set();
-    const normalized = [];
-    entries.forEach((entry) => {
-        const id = getWishId(entry);
-        if (!id || seen.has(id)) return;
-        seen.add(id);
-        if (typeof entry === 'string') normalized.push({ id });
-        else normalized.push(entry?.id ? { ...entry } : { id });
-    });
-    return normalized;
-}
-
-async function syncWishlistWithCloud() {
-    if (!state.user) return;
-    try {
-        const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
-        const wishDoc = await getDoc(wishRef);
-
-        const localIds = new Set(state.wishlist.map(x => typeof x === 'string' ? x : x.id));
-
-        if (wishDoc.exists()) {
-            const cloudIds = normalizeWishlistEntries(wishDoc.data().ids || []);
-            // Merge: keep cloud + add any local guest items not already there
-            const merged = [...cloudIds];
-            for (const entry of state.wishlist) {
-                const id = typeof entry === 'string' ? entry : entry.id;
-                if (id && !cloudIds.some(c => (typeof c === 'string' ? c : c.id) === id)) {
-                    merged.push(entry);
-                }
-            }
-            state.wishlist = normalizeWishlistEntries(merged);
-        } else {
-            state.wishlist = normalizeWishlistEntries(state.wishlist);
-        }
-
-        saveWishlist();
-        await setDoc(wishRef, { ids: state.wishlist });
-    } catch (err) {
-        console.error('[ShopPage] wishlist sync error:', err);
-    }
-}
-
-async function persistWishlistToCloud() {
-    if (!state.user) return;
-    try {
-        const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
-        await setDoc(wishRef, { ids: normalizeWishlistEntries(state.wishlist) });
-    } catch (err) {
-        console.error('[ShopPage] wishlist persist error:', err);
-    }
-}
-
-function startWishlistRealtimeSync() {
-    if (!state.user) return;
-    const wishRef = doc(db, 'artifacts', appId, 'users', state.user.uid, 'data', 'wishlist');
-    wishlistUnsub?.();
-
-    let isFirstFire = true; // skip the immediate echo from our own setDoc
-
-    wishlistUnsub = onSnapshot(wishRef, (snap) => {
-        // Skip the very first fire — it just echoes the data we already synced
-        if (isFirstFire) { isFirstFire = false; return; }
-
-        const cloudIds = normalizeWishlistEntries(snap.exists() ? (snap.data().ids || []) : []);
-
-        // Only update if data genuinely changed (another device/tab)
-        const currentKeys = state.wishlist.map(x => (typeof x === 'string' ? x : x.id)).sort().join(',');
-        const cloudKeys = cloudIds.map(x => (typeof x === 'string' ? x : x.id)).sort().join(',');
-        if (currentKeys === cloudKeys) return; // no real change, skip blink
-
-        state.wishlist = cloudIds;
-        saveWishlist();
-        syncWishlistVisualState();
-        if (document.getElementById('favorites-sidebar')?.classList.contains('open')) {
-            renderFavoritesSidebarLikeMain();
-        }
-        sharedNav?.refresh();
-    }, (err) => {
-        console.error('[ShopPage] wishlist listener error:', err);
-    });
-}
-
-function isWishlisted(id) {
-    return state.wishlist.some(x => (typeof x === 'string' ? x : x.id) === id);
-}
-
-function syncWishlistVisualState() {
-    document.querySelectorAll('.product-card[data-id]').forEach((card) => {
-        const pid = card.getAttribute('data-id');
-        card.classList.toggle('wish-active', isWishlisted(pid));
-    });
-}
-
-window.toggleCardWish = (e, id) => {
-    e.stopPropagation();
-    const idx = state.wishlist.findIndex(x => (typeof x === 'string' ? x : x.id) === id);
-    if (idx >= 0) {
-        state.wishlist.splice(idx, 1);
-    } else {
-        state.wishlist.push({ id });
-    }
-    saveWishlist();
-    persistWishlistToCloud();
-    const active = isWishlisted(id);
-    document.querySelectorAll(`.product-card[data-id="${id}"]`).forEach(card => {
-        card.classList.toggle('wish-active', active);
-    });
     sharedNav?.refresh();
 };
 
-window.addEventListener('storage', (event) => {
-    if (event.key !== SHOP_WISHLIST_KEY && event.key !== WISHLIST_SYNC_PING_KEY) return;
-    try {
-        const raw = localStorage.getItem(SHOP_WISHLIST_KEY);
-        state.wishlist = normalizeWishlistEntries(raw ? JSON.parse(raw) : []);
-    } catch {
-        state.wishlist = [];
-    }
-    syncWishlistVisualState();
-    if (document.getElementById('favorites-sidebar')?.classList.contains('open')) {
-        renderFavoritesSidebarLikeMain();
-    }
-    sharedNav?.refresh();
-});
-
-wishlistChannel?.addEventListener('message', (event) => {
-    const incoming = normalizeWishlistEntries(event?.data?.wishlist || []);
-    state.wishlist = incoming;
-    localStorage.setItem(SHOP_WISHLIST_KEY, JSON.stringify(state.wishlist));
-    syncWishlistVisualState();
-    if (document.getElementById('favorites-sidebar')?.classList.contains('open')) {
-        renderFavoritesSidebarLikeMain();
-    }
-    sharedNav?.refresh();
-});
+window.toggleCardWish = (e, id) => {
+    if (e) e.stopPropagation();
+    window.toggleWishlist(e, id);
+};
 
 // ─── Image helpers ────────────────────────────────────────────────
 function getOptimizedUrl(url, width) {
@@ -412,11 +264,11 @@ function getFirstImage(p) {
 
 function renderFavoritesSidebarLikeMain() {
     renderFavoritesSidebarMainLike({
-        wishlist: state.wishlist,
+        wishlist: getWishlistItems(),
         products: DATA.products,
         getOptimizedUrl: (url, w) => getOptimizedUrl(url || '', w),
         onItemClickJs: (p) => `window.closeFavoritesSidebar(); goToProduct('${p.originalId}')`,
-        onRemoveClickJs: (p) => `window.toggleCardWish({stopPropagation(){ }}, '${p.originalId}')`
+        onRemoveClickJs: (p) => `window.toggleWishlist(null, '${p.originalId}')`
     });
 }
 
@@ -594,7 +446,8 @@ function renderProducts(append = false) {
 function buildCard(p, index) {
     const img = getFirstImage(p);
     const imgUrl = getOptimizedUrl(img, 600);
-    const isWish = isWishlisted(p.id);
+    const wishlist = getWishlistItems();
+    const isWish = wishlist.some(x => (typeof x === 'string' ? x : x.id) === p.id);
 
     // Price logic — same as main page
     const origP = parseFloat(p.originalPrice);
@@ -1315,19 +1168,6 @@ window.handleForgotPassword = async () => {
     }
 };
 
-window.handleSignOut = async () => {
-    try {
-        await signOut(auth);
-        window.closeAuthModals();
-        state.wishlist = [];
-        localStorage.removeItem(SHOP_WISHLIST_KEY);
-        syncWishlistVisualState();
-        clearCart();
-        showToast('Signed Out Successfully');
-    } catch {
-        showToast('Error signing out');
-    }
-};
 
 initSharedAuth({
     auth,
@@ -1344,6 +1184,10 @@ initSharedAuth({
     getAuthMode: () => state.authMode,
     setAuthMode: (mode) => { state.authMode = mode; },
     updateAuthUserUI: refreshAuthUI,
+    onSignOut: () => {
+        clearWishlistOnLogout();
+        clearCart();
+    },
     showToast
 });
 
