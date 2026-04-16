@@ -6,7 +6,7 @@ import { registerProductDetailInteractions } from "./product-detail-interactions
 import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
-import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges, mergeCartOnLogin } from "./cart.js";
+import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
 import { initSharedAuth } from "./shared-auth.js";
 import { getWishlistItems, initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout } from "./wishlist.js";
 
@@ -359,7 +359,10 @@ async function bootstrap() {
         setAuthMode: (mode) => { state.authMode = mode; },
         getAuthMode: () => state.authMode,
         updateAuthUserUI,
-        onSignOut: () => { clearWishlistOnLogout(); },
+        onSignOut: () => {
+            clearWishlistOnLogout();
+            clearCart();
+        },
         showToast
     });
     onAuthStateChanged(auth, async (u) => {

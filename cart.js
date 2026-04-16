@@ -129,9 +129,28 @@ export function updateCartBadges() {
 }
 
 export function clearCart() {
+    // Snapshot current user BEFORE clearing (sign-out may already be in progress)
+    const auth  = window._sgAuth;
+    const db    = window._sgDb;
+    const appId = window._sgAppId;
+    const user  = auth?.currentUser;
+    const shouldClearCloud = user && !user.isAnonymous && db && appId;
+
     _cartItems = [];
-    saveCart();
+    localStorage.removeItem(CART_KEY);
     updateCartBadges();
+    // Re-render sidebar if open (now shows empty)
+    if (document.getElementById('cart-sidebar')?.classList.contains('open')) {
+        renderCartSidebar();
+    }
+
+    // Clear cloud cart immediately while user session is still valid
+    if (shouldClearCloud) {
+        import('https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js').then(({ doc, setDoc }) => {
+            const cartRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'cart');
+            setDoc(cartRef, { items: [] }).catch(e => console.error('[Cart] Cloud clear failed:', e));
+        });
+    }
 }
 
 // ── Sidebar Open/Close ────────────────────────────────────────────────────────

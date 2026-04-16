@@ -2000,7 +2000,10 @@ initSharedAuth({
     getAuthMode: () => state.authMode,
     setAuthMode: (mode) => { state.authMode = mode; },
     updateAuthUserUI: refreshMainAuthUI,
-    onSignOut: clearWishlistOnLogout,
+    onSignOut: () => {
+        clearWishlistOnLogout();
+        clearCart();
+    },
     showToast
 });
 
