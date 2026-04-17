@@ -3145,12 +3145,13 @@ body,
    The aspect-ratio approach preserves correct proportions on all screens.
    ========================================================================== */
 
-/* Mobile: typical banner is roughly 4:3 */
+/* Slider wrapper — reserves space, transparent background (no white flash) */
 .slider-wrapper {
     position: relative;
     width: 100%;
     aspect-ratio: 4 / 3;
     overflow: hidden;
+    background: transparent;
 }
 
 /* Desktop: wide cinematic banner */
@@ -3182,20 +3183,5 @@ body,
     min-height: 100%;
 }
 
-/* Skeleton shimmer — visible on first paint until JS injects real slides */
-.slider-skeleton-slide {
-    flex: 0 0 100%;
-    width: 100%;
-    min-width: 100%;
-    background: linear-gradient(90deg,
-        #ececec 0%, #ececec 40%,
-        #e0e0e0 50%,
-        #ececec 60%, #ececec 100%);
-    background-size: 200% 100%;
-    animation: sg-shimmer 1.4s ease-in-out infinite;
-}
+/* Skeleton CSS removed — slider-skeleton-slide element no longer used */
 
-@keyframes sg-shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}

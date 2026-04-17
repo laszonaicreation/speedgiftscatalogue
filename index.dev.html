@@ -8,6 +8,9 @@
     <style>
         @font-face { font-family: 'Font Awesome 6 Free'; font-display: swap; }
         @font-face { font-family: 'Font Awesome 6 Brands'; font-display: swap; }
+        /* PAGE REVEAL — hidden until Firebase data renders (Shopify-style instant reveal) */
+        body { opacity: 0; }
+        body.sg-ready { opacity: 1; transition: opacity 0.35s ease; }
     </style>
     <!-- UI UPDATE: 2026-01-03 17:45 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -441,9 +444,6 @@
             <div class="slider-wrapper relative overflow-hidden rounded-none shadow-none group">
                 <div id="home-slider"
                     class="flex transition-transform duration-500 ease-out no-scrollbar overflow-x-auto snap-x snap-mandatory">
-                    <!-- Skeleton shimmer — reserves space and shows while Firebase data loads.
-                         renderSlider() replaces this with real slides automatically. -->
-                    <div class="slider-skeleton-slide" id="slider-skeleton" aria-hidden="true"></div>
                 </div>
             </div>
 

@@ -82,7 +82,7 @@ export function buildHomeProductCardHtml({
             <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
             <img src="${imageUrl}" 
                  class="${(idx < 4 || isEager) ? 'no-animation' : ''}"
-                 ${isEager ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
+                 ${isEager ? 'fetchpriority="auto" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
                  decoding="async"
                  onload="this.classList.add('loaded')"
                  onerror="window.handleImgError(this)"
@@ -301,7 +301,7 @@ export function buildHomeCategoryRowHtml({
     return categories.map((c, idx) => `
         <div class="category-item ${activeFilter === c.id ? 'active' : ''}" onclick="applyFilter('${c.id}', event)">
             <div class="category-img-box">
-                <img src="${getImageUrl(c)}" ${idx < 6 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="low" loading="lazy"'} decoding="async" ${getImageUrl(c) ? "onerror=\"this.src='https://placehold.co/100x100?text=Gift'\"" : ''}>
+                <img src="${getImageUrl(c)}" fetchpriority="auto" loading="eager" decoding="async" ${getImageUrl(c) ? "onerror=\"this.src='https://placehold.co/100x100?text=Gift'\"" : ''}>
                 ${c.isPinned && isAdminVisible ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-black text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm"><i class="fa-solid fa-thumbtack text-[6px]"></i></div>' : ''}
             </div>
             <p class="category-label truncate px-1 w-full">${c.name}</p>

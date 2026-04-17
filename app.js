@@ -152,6 +152,16 @@ setupHomeSharedShell();
 initCart({ getProducts: () => DATA.p, getOptimizedUrl });
 initWishlist();
 
+// ─── PAGE REVEAL ─────────────────────────────────────────────────────────────
+// Called after any successful render (cache or Firebase). Fades body in.
+// Fallback: force-reveal after 5s so broken Firebase never leaves page invisible.
+function revealPage() {
+    if (document.body.classList.contains('sg-ready')) return;
+    document.body.classList.add('sg-ready');
+}
+// Safety net: if Firebase fails entirely, reveal after 5 seconds
+setTimeout(revealPage, 5000);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTANT CACHE RENDER — runs at module level after DOM is fully parsed
 // Provides zero-flash product display before Firebase auth resolves
@@ -181,6 +191,7 @@ window._sgTryInstantCacheRender = function () {
         if (typeof applyHomeSnapshotIfAny === 'function') applyHomeSnapshotIfAny();
 
         if (typeof renderHome === 'function') renderHome();
+        revealPage(); // Cache render complete — show page
     } catch (e) {
         console.warn('[Cache] Render failed:', e);
     }
@@ -1045,9 +1056,11 @@ function renderHome() {
         });
         state.isLoadMore = scrollResult.nextIsLoadMore;
         state.skipScroll = scrollResult.nextSkipScroll;
+        revealPage(); // Firebase render complete — show page
     } catch (e) {
         console.error("Render Error:", e);
         showToast("UI Display Error");
+        revealPage(); // Even on error, don't leave page invisible
     }
 }
 
@@ -1498,7 +1511,9 @@ function primeHomeCriticalAssets() {
         };
 
         const isMobile = window.matchMedia("(max-width: 767px)").matches;
-        const firstSlider = (DATA.s || []).find((s) => {
+        // Sort by order — MUST match app-slider.js sort to preload the correct first slide
+        const sortedSliders = [...(DATA.s || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+        const firstSlider = sortedSliders.find((s) => {
             const candidate = isMobile ? s?.mobileImg : s?.img;
             return candidate && candidate !== 'img/';
         });
@@ -1507,10 +1522,12 @@ function primeHomeCriticalAssets() {
             prime(sliderSrc, 'high');
         }
 
+        // Categories: auto priority — load after slider but before products
         (DATA.c || []).slice(0, INITIAL_EAGER_CATEGORY_IMAGES).forEach((c) => {
             const src = getOptimizedUrl(c?.img, 200);
-            if (src) prime(src, 'high');
+            if (src) prime(src, 'auto');
         });
+
     } catch (e) {
         // Non-blocking warmup path
     }
