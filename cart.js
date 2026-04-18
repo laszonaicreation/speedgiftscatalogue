@@ -124,7 +124,13 @@ export function updateCartBadges() {
         const el = document.getElementById(id);
         if (!el) return;
         el.textContent = count > 99 ? '99+' : String(count);
-        el.classList.toggle('hidden', count === 0);
+        if (count > 0) {
+            el.style.setProperty('display', 'flex', 'important');
+            el.classList.remove('hidden');
+        } else {
+            el.style.setProperty('display', 'none', 'important');
+            el.classList.add('hidden');
+        }
     });
 }
 

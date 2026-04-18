@@ -132,10 +132,10 @@ function updateBadge() {
         if (!el) return;
         if (count > 0) {
             el.innerText = count;
-            el.style.display = 'flex';
+            el.style.setProperty('display', 'flex', 'important');
             el.classList.remove('hidden');
         } else {
-            el.style.display = 'none';
+            el.style.setProperty('display', 'none', 'important');
             el.classList.add('hidden');
         }
     });

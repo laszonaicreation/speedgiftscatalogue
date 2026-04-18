@@ -759,6 +759,10 @@
 
         window.handleSignOut = async () => {
             try {
+                localStorage.removeItem('speedgifts_wishlist');
+                localStorage.removeItem('speedgifts_wishlist_ping');
+                localStorage.removeItem('speedgifts_cart');
+                localStorage.removeItem('speedgifts_guest_additions');
                 await signOut(auth);
                 showToast('Signed out successfully');
                 setTimeout(() => window.location.href = '/', 800);
