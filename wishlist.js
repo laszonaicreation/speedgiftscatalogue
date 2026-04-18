@@ -224,6 +224,28 @@ export function initWishlist() {
     } catch (_) { _data = []; }
     refreshUI();
 
+    // Sync when returning from BFCache (e.g. hitting back button on mobile)
+    window.addEventListener('pageshow', (e) => {
+        if (e.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            try {
+                const raw = localStorage.getItem(WISHLIST_KEY);
+                _data = normalize(raw ? JSON.parse(raw) : []);
+            } catch (_) { _data = []; }
+            refreshUI();
+        }
+    });
+
+    // Sync when switching tabs back to this page
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            try {
+                const raw = localStorage.getItem(WISHLIST_KEY);
+                _data = normalize(raw ? JSON.parse(raw) : []);
+            } catch (_) { _data = []; }
+            refreshUI();
+        }
+    });
+
     // Cross-tab sync via storage event
     window.addEventListener('storage', (e) => {
         if (e.key !== WISHLIST_KEY && e.key !== WISHLIST_PING_KEY) return;
