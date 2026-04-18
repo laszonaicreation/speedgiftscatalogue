@@ -935,6 +935,15 @@ img[src=""] {
     pointer-events: none;
 }
 
+/* Ensure bottom nav inner div always has correct padding
+   (Tailwind px-6/py-3 may not compile when injected via shared-shell.js) */
+#mobile-bottom-nav > div {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
 /* MOBILE BOTTOM NAV */
 .mobile-nav-btn {
     display: flex;

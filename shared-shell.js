@@ -23,11 +23,11 @@ export function mountSharedShell(page = 'shop') {
     } catch(e) {}
 
     const mobileNavHtml = `
-            <button onclick="${isHome ? 'window.goBackToHome && window.goBackToHome(true)' : '(document.referrer.endsWith(\'/index.html\') || document.referrer.endsWith(\'/\')) && window.history.length > 1 ? window.history.back() : window.location.href=\'index.html\''}" class="mobile-nav-btn ${isHome ? 'active' : ''}"><i class="fa-solid fa-house"></i> <span>Home</span></button>
+            <button onclick="${isHome ? 'window.goBackToHome && window.goBackToHome(true)' : 'window.location.href=\'index.html\''}" class="mobile-nav-btn ${isHome ? 'active' : ''}"><i class="fa-solid fa-house"></i> <span>Home</span></button>
             <button onclick="window.focusSearch()" class="mobile-nav-btn"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></button>
             <button onclick="window.openCategoriesSidebar()" class="mobile-nav-btn"><i class="fa-solid fa-table-cells"></i> <span>Categories</span></button>
             <button onclick="window.handleFavoritesClick()" class="mobile-nav-btn relative"><i class="fa-solid fa-heart"></i> <span>Saved</span><span id="nav-wishlist-count-mob" class="absolute -top-1 right-0 bg-red-500 text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white ${initialWishlistCount > 0 ? '' : 'hidden'}">${initialWishlistCount}</span></button>
-            <button onclick="window.handleUserAuthClick()" class="mobile-nav-btn"><i class="fa-solid fa-user" id="mob-user-icon"></i> <span id="mob-user-text">Account</span></button>
+            <button onclick="window.handleUserAuthClick()" class="mobile-nav-btn ${page === 'account' ? 'active' : ''}"><i class="fa-solid fa-user" id="mob-user-icon"></i> <span id="mob-user-text">Account</span></button>
         `;
     const desktopMenuHtml = isHome
         ? ''
@@ -56,7 +56,7 @@ export function mountSharedShell(page = 'shop') {
                 <h1 class="brand-logo cursor-pointer select-none" id="mob-logo"><a href="index.html"><img src="img/speed-logo.svg" alt="Speed Gifts" width="105" height="28" class="h-7 w-auto inline-block"></a></h1>
             </div>
             <div class="w-1/4 md:flex-1 flex justify-end items-center gap-4 md:gap-6">
-                <div class="${(page === 'cart' || page === 'favourites') ? 'hidden' : 'hidden md:block'}" style="position:relative;width:100%;max-width:360px;transition:max-width .3s ease">
+                <div class="${(page === 'cart' || page === 'favourites' || page === 'account') ? 'hidden' : 'hidden md:block'}" style="position:relative;width:100%;max-width:360px;transition:max-width .3s ease">
                     <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;pointer-events:none"></i>
                     <input type="text" id="${deskSearchId}" class="shop-search-input" placeholder="Search products..." autocomplete="off" value="${escapedInitialSearch}" style="width:100%;background:#f3f4f6;border:1.5px solid transparent;border-radius:999px;padding:10px 36px 10px 38px;font-size:12px;font-weight:500;color:#111;outline:0;transition:all .2s ease;font-family:inherit">
                     <button id="${deskClearId}" onclick="clearSearch && clearSearch()" style="display:${initialSearchQuery ? 'flex' : 'none'};position:absolute;right:8px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#e5e7eb;border:none;cursor:pointer;align-items:center;justify-content:center;font-size:9px;color:#666"><i class="fa-solid fa-xmark"></i></button>

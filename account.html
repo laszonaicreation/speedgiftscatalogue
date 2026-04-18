@@ -3,14 +3,27 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>My Account – Speed Gifts</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/png"
         href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind + Site CSS (same as main page) -->
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1776510300810">
+    <link rel="stylesheet" href="style.min.css?v=1776510300810">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+
     <style>
         *,
         *::before,
@@ -21,57 +34,10 @@
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: #f7f7f7;
             color: #111;
             -webkit-font-smoothing: antialiased;
-        }
-
-        .sg-nav {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid #f0f0f0;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 1.5rem;
-        }
-
-        .sg-nav a {
-            text-decoration: none;
-            color: #111;
-        }
-
-        .sg-nav-logo {
-            flex: 1;
-            text-align: center;
-        }
-
-        .sg-nav-logo img {
-            height: 28px;
-            width: auto;
-        }
-
-        .sg-nav-side {
-            width: 60px;
-        }
-
-        .sg-nav-back {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #9ca3af;
-            width: 60px;
-        }
-
-        .sg-nav-back:hover {
-            color: #111;
         }
 
         .sg-page {
@@ -97,23 +63,35 @@
         }
 
         .sg-avatar {
-            width: 96px;
-            height: 96px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            background: #f4f4f4;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
             overflow: hidden;
-            border: 4px solid #fff;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            border: 3px solid #fff;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.08);
+            position: relative;
         }
 
         .sg-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .sg-avatar-initial {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.6rem;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            text-transform: uppercase;
+            user-select: none;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.18);
         }
 
         .sg-profile-info {
@@ -443,46 +421,6 @@
             }
         }
 
-        /* Mobile Nav */
-        .mob-nav {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #fff;
-            border-top: 1px solid #f0f0f0;
-            padding: 0.75rem 1.5rem calc(0.75rem + env(safe-area-inset-bottom));
-            justify-content: space-around;
-            z-index: 50;
-        }
-
-        @media(max-width:767px) {
-            .mob-nav {
-                display: flex;
-            }
-        }
-
-        .mob-nav a {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.2rem;
-            font-size: 0.55rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #9ca3af;
-            text-decoration: none;
-        }
-
-        .mob-nav a.active {
-            color: #111;
-        }
-
-        .mob-nav i {
-            font-size: 1.05rem;
-        }
     </style>
 </head>
 
@@ -503,21 +441,15 @@
         </div>
     </div>
 
-    <nav class="sg-nav">
-        <div class="sg-nav-logo">
-            <a href="/"><img src="img/speed-logo.svg" alt="Speed Gifts"></a>
-        </div>
-
-    </nav>
+    <!-- Shared Shell (main page navbar + sidebars + mobile bottom nav) -->
+    <div id="shared-shell-root"></div>
 
     <div class="sg-page" id="sg-page" style="display:none;">
 
         <!-- Profile Card -->
         <div class="sg-profile-card">
             <div class="sg-avatar-wrapper">
-                <div class="sg-avatar" id="acc-avatar">
-                    <i class="fa-solid fa-user" style="font-size:2.5rem;color:#ccc;"></i>
-                </div>
+                <div class="sg-avatar" id="acc-avatar"></div>
             </div>
             <div class="sg-profile-info">
                 <div class="sg-profile-name" id="acc-name">Loading...</div>
@@ -605,19 +537,78 @@
 
     </div>
 
-    <nav class="mob-nav">
-        <a href="/"><i class="fa-solid fa-house"></i><span>Home</span></a>
-        <a href="/shop.html"><i class="fa-solid fa-bag-shopping"></i><span>Shop</span></a>
-        <a href="/cart.html"><i class="fa-solid fa-cart-shopping"></i><span>Cart</span></a>
-        <a href="/account.html" class="active"><i class="fa-solid fa-user"></i><span>Account</span></a>
-    </nav>
-
     <div id="sg-toast"></div>
 
     <script type="module">
+        import { mountSharedShell } from './shared-shell.min.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile }
             from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+        // Mount shared navbar (same as main page)
+        mountSharedShell('account');
+
+        // ── Stub out sidebar functions that shared-shell HTML references ──
+        window.closeCartSidebar = () => {
+            document.getElementById('cart-sidebar')?.classList.remove('open');
+            document.getElementById('cart-sidebar-overlay')?.classList.remove('open');
+        };
+        window.openCartSidebar = () => { window.location.href = '/cart.html'; };
+        window.closeCategoriesSidebar = () => {
+            document.getElementById('categories-sidebar')?.classList.remove('open');
+            document.getElementById('categories-sidebar-overlay')?.classList.remove('open');
+        };
+        window.openCategoriesSidebar = () => { window.location.href = '/shop.html'; };
+        window.closeAuthModals = () => {};
+        window.toggleAuthMode = () => {};
+        window.handleAuthSubmit = (e) => { e.preventDefault(); };
+        window.signInWithGoogle = () => {};
+        window.handleForgotPassword = () => {};
+        window.updateAuthUserUI = () => {};
+        window.cartCheckoutWhatsApp = () => { window.location.href = '/cart.html'; };
+
+        // Search → redirect to home
+        window.focusSearch = () => { window.location.href = '/'; };
+
+        // Favourites → redirect
+        window.handleFavoritesClick = () => { window.location.href = '/favourites.html'; };
+
+        // ── Account dropdown (desktop user icon) ──
+        window.openAccountDropdown = () => {
+            const dd = document.getElementById('sg-account-dropdown');
+            if (!dd) return;
+            const name = document.getElementById('dd-user-name');
+            const email = document.getElementById('dd-user-email');
+            if (name) name.textContent = currentUser?.displayName ? `Hi, ${currentUser.displayName.split(' ')[0]}!` : 'Hi there!';
+            if (email) email.textContent = currentUser?.email || '';
+            dd.style.display = 'block';
+            setTimeout(() => {
+                document.addEventListener('click', window._sgDdOutsideClick = (ev) => {
+                    if (!dd.contains(ev.target) && ev.target.id !== 'nav-user-btn' && !ev.target.closest('#nav-user-btn')) {
+                        window.closeAccountDropdown?.();
+                    }
+                }, { once: true });
+            }, 0);
+        };
+        window.closeAccountDropdown = () => {
+            const dd = document.getElementById('sg-account-dropdown');
+            if (dd) dd.style.display = 'none';
+            document.removeEventListener('click', window._sgDdOutsideClick);
+        };
+
+        // User icon: desktop → dropdown, mobile → scroll to top (already on account page)
+        window.handleUserAuthClick = () => {
+            if (window.innerWidth < 768) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                const dd = document.getElementById('sg-account-dropdown');
+                if (dd && dd.style.display === 'block') {
+                    window.closeAccountDropdown();
+                } else {
+                    window.openAccountDropdown();
+                }
+            }
+        };
 
         const firebaseConfig = {
             apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -640,7 +631,6 @@
                 const count = Array.isArray(list) ? list.length : 0;
                 const sub = document.getElementById('fav-count-sub');
                 if (sub) sub.textContent = count > 0 ? `${count} item${count > 1 ? 's' : ''} saved` : 'No saved items yet';
-                // Add badge to menu item if count > 0
                 const link = document.getElementById('fav-link');
                 if (link && count > 0) {
                     const arrow = link.querySelector('.sg-menu-arrow');
@@ -661,7 +651,6 @@
                 const count = Array.isArray(list) ? list.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
                 const sub = document.getElementById('cart-count-sub');
                 if (sub) sub.textContent = count > 0 ? `${count} item${count > 1 ? 's' : ''} in cart` : 'View items in cart';
-                
                 const link = document.getElementById('cart-link');
                 if (link && count > 0) {
                     const arrow = link.querySelector('.sg-menu-arrow');
@@ -683,14 +672,46 @@
                 currentUser = user;
                 document.getElementById('acc-name').textContent = user.displayName || 'Speed Gifts User';
                 document.getElementById('acc-email').textContent = user.email || '';
-                // Avatar
+                // Avatar — modern initial with dynamic gradient
                 const av = document.getElementById('acc-avatar');
-                if (user.photoURL) {
-                    av.innerHTML = `<img src="${user.photoURL}" alt="${user.displayName || ''}">`;
-                } else {
-                    const initials = (user.displayName || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-                    av.innerHTML = `<span style="font-size:1.75rem;font-weight:800;color:#111;">${initials}</span>`;
+                const name = user.displayName || 'U';
+                const letter = name.trim()[0].toUpperCase();
+                const palettes = [
+                    ['#6366f1','#8b5cf6'],
+                    ['#0ea5e9','#6366f1'],
+                    ['#f59e0b','#ef4444'],
+                    ['#10b981','#0ea5e9'],
+                    ['#ec4899','#8b5cf6'],
+                    ['#f97316','#f59e0b'],
+                    ['#8b5cf6','#ec4899'],
+                    ['#14b8a6','#6366f1'],
+                ];
+                const [c1, c2] = palettes[letter.charCodeAt(0) % palettes.length];
+
+                function showInitialAvatar() {
+                    av.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+                    av.innerHTML = `<span class="sg-avatar-initial">${letter}</span>`;
                 }
+
+                if (user.photoURL) {
+                    av.style.background = 'transparent';
+                    const img = new Image();
+                    img.onload = () => {
+                        av.innerHTML = `<img src="${user.photoURL}" alt="${name}" style="width:100%;height:100%;object-fit:cover;">`;
+                    };
+                    img.onerror = () => showInitialAvatar();
+                    img.src = user.photoURL;
+                    // Show initial immediately, replace with photo if it loads
+                    showInitialAvatar();
+                } else {
+                    showInitialAvatar();
+                }
+                // Update shared navbar user icon to show logged-in state
+                const deskIcon = document.getElementById('desk-user-icon');
+                if (deskIcon) deskIcon.style.color = '#111';
+                const mobUserText = document.getElementById('mob-user-text');
+                const firstName = user.displayName?.split(' ')[0] || 'Account';
+                if (mobUserText) mobUserText.textContent = firstName.length > 7 ? 'Account' : firstName;
                 loadFavouritesCount();
                 loadCartCount();
                 loading.style.opacity = '0';
