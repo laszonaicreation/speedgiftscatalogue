@@ -191,6 +191,8 @@ window._sgTryInstantCacheRender = function () {
         if (typeof applyHomeSnapshotIfAny === 'function') applyHomeSnapshotIfAny();
 
         if (typeof renderHome === 'function') renderHome();
+        _loadSliderModule(); // Instantiate slider immediately using cache
+        if (typeof _loadSpotlightModule === 'function') _loadSpotlightModule();
         revealPage(); // Cache render complete — show page
     } catch (e) {
         console.warn('[Cache] Render failed:', e);

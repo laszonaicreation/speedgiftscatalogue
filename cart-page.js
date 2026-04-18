@@ -49,6 +49,14 @@ window._sgAppId = appId;
 
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 
+const WISHLIST_KEY = 'speedgifts_wishlist';
+const state = {
+    wishlist: [],
+    products: [],
+    authUser: null,
+    authMode: 'login'
+};
+
 
 // ── Boot shared shell (nav + sidebars) ────────────────────────────────────────
 mountSharedShell('cart');
