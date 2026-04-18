@@ -154,7 +154,7 @@
                 preloaded = true;
                 var optimized = url;
                 if (url.indexOf('cloudinary.com') !== -1) {
-                    var w = isMob ? '800' : '1920';
+                    var w = isMob ? '1200' : '1920';
                     optimized = url.indexOf('/upload/f_auto') === -1
                         ? url.replace('/upload/', '/upload/f_auto,q_auto,w_' + w + ',c_limit/')
                         : url;
