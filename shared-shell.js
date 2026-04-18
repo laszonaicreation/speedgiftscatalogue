@@ -56,7 +56,7 @@ export function mountSharedShell(page = 'shop') {
                 <h1 class="brand-logo cursor-pointer select-none" id="mob-logo"><a href="index.html"><img src="img/speed-logo.svg" alt="Speed Gifts" width="105" height="28" class="h-7 w-auto inline-block"></a></h1>
             </div>
             <div class="w-1/4 md:flex-1 flex justify-end items-center gap-4 md:gap-6">
-                <div class="${page === 'cart' ? 'hidden' : 'hidden md:block'}" style="position:relative;width:100%;max-width:360px;transition:max-width .3s ease">
+                <div class="${(page === 'cart' || page === 'favourites') ? 'hidden' : 'hidden md:block'}" style="position:relative;width:100%;max-width:360px;transition:max-width .3s ease">
                     <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px;pointer-events:none"></i>
                     <input type="text" id="${deskSearchId}" class="shop-search-input" placeholder="Search products..." autocomplete="off" value="${escapedInitialSearch}" style="width:100%;background:#f3f4f6;border:1.5px solid transparent;border-radius:999px;padding:10px 36px 10px 38px;font-size:12px;font-weight:500;color:#111;outline:0;transition:all .2s ease;font-family:inherit">
                     <button id="${deskClearId}" onclick="clearSearch && clearSearch()" style="display:${initialSearchQuery ? 'flex' : 'none'};position:absolute;right:8px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#e5e7eb;border:none;cursor:pointer;align-items:center;justify-content:center;font-size:9px;color:#666"><i class="fa-solid fa-xmark"></i></button>
