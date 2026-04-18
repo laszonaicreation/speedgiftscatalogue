@@ -33,7 +33,6 @@ export function initSlider({ db, appId, doc, setDoc }) {
         // Hide if product detail page or not on home view
         if (!slider || isProductDetail || state.filter !== 'all') {
             if (wrapper) wrapper.classList.add('hidden');
-            sliderMarkupKey = '';
             return;
         }
 

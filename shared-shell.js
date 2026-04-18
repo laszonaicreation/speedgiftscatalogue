@@ -23,7 +23,7 @@ export function mountSharedShell(page = 'shop') {
     } catch(e) {}
 
     const mobileNavHtml = `
-            <button onclick="${isHome ? 'window.goBackToHome && window.goBackToHome(true)' : 'window.location.href=\'index.html\''}" class="mobile-nav-btn ${isHome ? 'active' : ''}"><i class="fa-solid fa-house"></i> <span>Home</span></button>
+            <button onclick="${isHome ? 'window.goBackToHome && window.goBackToHome(true)' : '(document.referrer.endsWith(\'/index.html\') || document.referrer.endsWith(\'/\')) && window.history.length > 1 ? window.history.back() : window.location.href=\'index.html\''}" class="mobile-nav-btn ${isHome ? 'active' : ''}"><i class="fa-solid fa-house"></i> <span>Home</span></button>
             <button onclick="window.focusSearch()" class="mobile-nav-btn"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></button>
             <button onclick="window.openCategoriesSidebar()" class="mobile-nav-btn"><i class="fa-solid fa-table-cells"></i> <span>Categories</span></button>
             <button onclick="window.handleFavoritesClick()" class="mobile-nav-btn relative"><i class="fa-solid fa-heart"></i> <span>Saved</span><span id="nav-wishlist-count-mob" class="absolute -top-1 right-0 bg-red-500 text-white text-[7px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-white ${initialWishlistCount > 0 ? '' : 'hidden'}">${initialWishlistCount}</span></button>
