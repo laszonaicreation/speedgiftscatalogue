@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.min.css?v=1776495656102">
+    <link rel="stylesheet" href="style.min.css?v=1776500821491">
     <style>
         *,
         *::before,
@@ -444,7 +444,7 @@
             }
         }
 
-        /* MOBILE NAV */
+        /* MOBILE NAV — matches main app style */
         .mob-nav {
             display: none;
             position: fixed;
@@ -452,10 +452,11 @@
             left: 0;
             right: 0;
             background: #fff;
-            border-top: 1px solid #f0f0f0;
-            padding: 0.75rem 1.5rem calc(0.75rem + env(safe-area-inset-bottom));
-            justify-content: space-around;
-            z-index: 50;
+            border-top: 1px solid #f3f4f6;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+            padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+            justify-content: space-between;
+            z-index: 150;
         }
 
         @media(max-width:767px) {
@@ -464,25 +465,48 @@
             }
         }
 
-        .mob-nav a {
+        .mob-nav-btn {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.2rem;
-            font-size: 0.55rem;
+            gap: 3px;
+            font-size: 0.5rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.07em;
             color: #9ca3af;
-            text-decoration: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            padding: 0;
+            position: relative;
+            transition: color 0.2s;
         }
 
-        .mob-nav a.active {
-            color: #ef4444;
+        .mob-nav-btn.active {
+            color: #111;
         }
 
-        .mob-nav i {
-            font-size: 1.05rem;
+        .mob-nav-btn i {
+            font-size: 1.1rem;
+        }
+
+        .mob-nav-btn .mob-badge {
+            position: absolute;
+            top: -3px;
+            right: -2px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.43rem;
+            font-weight: 900;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
         }
 
         /* Transition for removing items */
@@ -524,10 +548,27 @@
     </main>
 
     <nav class="mob-nav">
-        <a href="/"><i class="fa-solid fa-house"></i><span>Home</span></a>
-        <a href="/shop.html"><i class="fa-solid fa-bag-shopping"></i><span>Shop</span></a>
-        <a href="/cart.html"><i class="fa-solid fa-cart-shopping"></i><span>Cart</span></a>
-        <a href="/account.html"><i class="fa-solid fa-user"></i><span>Account</span></a>
+        <button class="mob-nav-btn" onclick="window.location.href='/'">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </button>
+        <button class="mob-nav-btn" onclick="window.location.href='shop.html'">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Search</span>
+        </button>
+        <button class="mob-nav-btn" onclick="window.location.href='shop.html'">
+            <i class="fa-solid fa-table-cells"></i>
+            <span>Categories</span>
+        </button>
+        <button class="mob-nav-btn active" onclick="window.location.href='/favourites.html'">
+            <i class="fa-solid fa-heart"></i>
+            <span>Saved</span>
+            <span id="mob-fav-badge" class="mob-badge" style="display:none;">0</span>
+        </button>
+        <button class="mob-nav-btn" onclick="window.location.href='/account.html'" id="mob-account-btn">
+            <i class="fa-solid fa-user" id="mob-user-icon-fav"></i>
+            <span id="mob-user-text-fav">Account</span>
+        </button>
     </nav>
 
     <div id="sg-toast"></div>
@@ -535,7 +576,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, documentId }
+        import { getFirestore, collection, query, where, getDocs, documentId, doc, setDoc }
             from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -554,6 +595,7 @@
         const WISHLIST_KEY = 'speedgifts_wishlist';
         let wishlistIds = [];
         let loadedProducts = [];
+        let currentUser = null; // track auth user for Firestore sync
 
         function getOptimizedUrl(url, w = 300) {
             if (!url) return 'https://placehold.co/300x300?text=?';
@@ -571,6 +613,17 @@
 
         function saveIds(ids) {
             try { localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids.map(id => ({ id })))); } catch { }
+        }
+
+        // Sync current wishlist ids to Firestore (for signed-in users)
+        async function syncToFirestore(ids) {
+            if (!currentUser || currentUser.isAnonymous) return;
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'data', 'wishlist');
+                await setDoc(ref, { ids: ids.map(id => ({ id })) }, { merge: false });
+            } catch (e) {
+                console.warn('[Favourites] Firestore sync failed:', e);
+            }
         }
 
         async function fetchProducts(ids) {
@@ -652,6 +705,8 @@
         window.removeItem = (id) => {
             wishlistIds = wishlistIds.filter(i => i !== id);
             saveIds(wishlistIds);
+            syncToFirestore(wishlistIds); // sync deletion to Firestore for signed-in users
+            updateNavBadge();
             const el = document.querySelector(`.fav-item[data-id="${id}"]`);
             if (el) {
                 el.classList.add('removing');
@@ -685,6 +740,7 @@
 
         async function init() {
             wishlistIds = loadIds();
+            updateNavBadge();
             const loading = document.getElementById('sg-loading');
             const page = document.getElementById('sg-page');
             const container = document.getElementById('sg-list-container');
@@ -714,7 +770,33 @@
             }
         }
 
-        onAuthStateChanged(auth, () => init());
+        function updateNavBadge() {
+            const count = wishlistIds.length;
+            const badge = document.getElementById('mob-fav-badge');
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function updateNavAccountUI(user) {
+            const icon = document.getElementById('mob-user-icon-fav');
+            const text = document.getElementById('mob-user-text-fav');
+            const btn = document.getElementById('mob-account-btn');
+            const isLoggedIn = user && !user.isAnonymous;
+            if (icon) icon.className = 'fa-solid fa-user';
+            if (text) text.textContent = isLoggedIn ? 'Account' : 'Login';
+            if (btn) btn.onclick = () => window.location.href = isLoggedIn ? '/account.html' : '/account.html';
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user; // store for Firestore sync
+            updateNavAccountUI(user);
+            init();
+        });
 
         function showToast(msg) {
             const t = document.getElementById('sg-toast');

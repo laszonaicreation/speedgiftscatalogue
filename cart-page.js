@@ -26,7 +26,6 @@ import {
 
 import { mountSharedShell } from './shared-shell.js?v=4';
 import { initSharedAuth } from './shared-auth.js';
-import { renderFavoritesSidebarMainLike } from './shared-sidebar-renderers.js';
 
 // ── Firebase ──────────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -50,33 +49,6 @@ window._sgAppId = appId;
 
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 
-// ── State ─────────────────────────────────────────────────────────────────────
-const state = {
-    authUser: null,
-    authMode: 'login',
-    wishlist: [],
-    products: []      // cached for favorites sidebar
-};
-
-const WISHLIST_KEY = 'speedgifts_wishlist';
-const BLOCKED_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'];
-
-// ── Products (lazy load for favorites sidebar) ────────────────────────────────
-let productsLoading = false;
-async function ensureProducts() {
-    if (state.products.length > 0 || productsLoading) return;
-    productsLoading = true;
-    try {
-        const snap = await getDocs(prodCol);
-        state.products = snap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .filter(p => !BLOCKED_IDS.includes(p.id));
-    } catch (e) {
-        console.warn('[CartPage] products load failed:', e);
-    } finally {
-        productsLoading = false;
-    }
-}
 
 // ── Boot shared shell (nav + sidebars) ────────────────────────────────────────
 mountSharedShell('cart');
@@ -131,34 +103,12 @@ window.__cartPageRemoveWish = (id) => {
     if (idx >= 0) state.wishlist.splice(idx, 1);
     localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist));
     updateWishlistBadges();
-    renderFavoritesSidebar();
 };
 
-// ── Favorites Sidebar wiring ──────────────────────────────────────────────────
-window.handleFavoritesClick = async () => {
-    loadWishlist();
-    const side = document.getElementById('favorites-sidebar');
-    const over = document.getElementById('favorites-sidebar-overlay');
-    if (!side || !over) return;
-    side.classList.add('open');
-    over.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    // Show immediately (may be empty), then re-render with product data
-    renderFavoritesSidebar();
-    await ensureProducts();
-    renderFavoritesSidebar();  // re-render with full product details
-};
-
-window.openFavoritesSidebar = window.handleFavoritesClick;
-
-window.closeFavoritesSidebar = () => {
-    const side = document.getElementById('favorites-sidebar');
-    const over = document.getElementById('favorites-sidebar-overlay');
-    if (!side || !over) return;
-    side.classList.remove('open');
-    over.classList.remove('open');
-    document.body.style.overflow = 'auto';
-};
+// ── Favorites: navigate to page ───────────────────────────────────────────────
+window.handleFavoritesClick = () => window.location.href = '/favourites.html';
+window.openFavoritesSidebar = () => window.location.href = '/favourites.html';
+window.closeFavoritesSidebar = () => {};
 
 // ── Auth User UI ──────────────────────────────────────────────────────────────
 function updateAuthUserUI() {
@@ -370,8 +320,6 @@ window.addEventListener('storage', (e) => {
     if (e.key === WISHLIST_KEY) {
         loadWishlist();
         updateWishlistBadges();
-        const side = document.getElementById('favorites-sidebar');
-        if (side?.classList.contains('open')) renderFavoritesSidebar();
     }
 });
 

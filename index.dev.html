@@ -858,38 +858,6 @@
         })();
     </script>
 
-    <!-- FAVORITES SIDEBAR -->
-    <div id="favorites-sidebar-overlay" onclick="window.closeFavoritesSidebar()"
-        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[2000] opacity-0 pointer-events-none transition-all duration-500">
-    </div>
-
-    <div id="favorites-sidebar"
-        class="fixed top-0 right-0 h-full w-[85%] md:w-[400px] bg-white z-[2001] translate-x-full transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[-20px_0_60px_rgba(0,0,0,0.1)] flex flex-col">
-        <div
-            class="p-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
-            <div class="flex flex-col">
-                <h2 class="text-[13px] font-black uppercase tracking-[0.15em] text-black">Your Favorites</h2>
-                <p id="sidebar-count" class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">0
-                    Items
-                    Saved</p>
-            </div>
-            <button onclick="window.closeFavoritesSidebar()"
-                class="w-10 h-10 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-black hover:text-white transition-all duration-300">
-                <i class="fa-solid fa-xmark text-sm"></i>
-            </button>
-        </div>
-        <div id="sidebar-items" class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
-            <!-- Items injected here -->
-        </div>
-        <div class="p-6 border-t border-gray-50 bg-gray-50/50">
-            <button onclick="window.sendBulkInquiry()" id="sidebar-inquiry-btn"
-                class="w-full bg-black text-white py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all">
-                <i class="fa-brands fa-whatsapp text-lg"></i>
-                Inquiry All on WhatsApp
-            </button>
-        </div>
-    </div>
-
     <!-- MOBILE BOTTOM NAVIGATION -->
     <nav id="mobile-bottom-nav"
         class="md:hidden fixed bottom-0 left-0 right-0 z-[150] bg-white border-t border-gray-100 shadow-[0_-5px_20px_rgba(0,0,0,0.03)]">

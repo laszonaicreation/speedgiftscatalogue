@@ -5,7 +5,7 @@ import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
 import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
-import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
+import { renderCategoriesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
 import { initSharedAuth } from "./shared-auth.js";
 import { getWishlistItems, initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout } from "./wishlist.js";
@@ -186,10 +186,6 @@ function renderCategoriesSidebar() {
     });
 }
 
-// Delegate to wishlist.js which owns this. Called by wishlist._isSidebarOpen check.
-function renderFavoritesSidebar() {
-    window.renderFavoritesSidebar?.();
-}
 
 window.goBackToHome = () => { window.location.href = 'index.html'; };
 window.focusSearch = () => { window.location.href = 'shop.html'; };
@@ -222,24 +218,10 @@ window.clearSearch = () => {
     if (deskInput) deskInput.value = '';
     if (deskClear) deskClear.style.display = 'none';
 };
-window.handleFavoritesClick = () => window.openFavoritesSidebar();
-window.openFavoritesSidebar = () => {
-    const sidebar = document.getElementById('favorites-sidebar');
-    const overlay = document.getElementById('favorites-sidebar-overlay');
-    if (!sidebar || !overlay) return;
-    renderFavoritesSidebar();
-    sidebar.classList.add('open');
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-};
-window.closeFavoritesSidebar = () => {
-    const sidebar = document.getElementById('favorites-sidebar');
-    const overlay = document.getElementById('favorites-sidebar-overlay');
-    if (!sidebar || !overlay) return;
-    sidebar.classList.remove('open');
-    overlay.classList.remove('open');
-    document.body.style.overflow = 'auto';
-};
+window.handleFavoritesClick = () => window.location.href = '/favourites.html';
+window.openFavoritesSidebar = () => window.location.href = '/favourites.html';
+window.closeFavoritesSidebar = () => {};
+
 // Cart sidebar wired from cart.js module globals
 window.openCartSidebar = openCartSidebar;
 window.closeCartSidebar = closeCartSidebar;

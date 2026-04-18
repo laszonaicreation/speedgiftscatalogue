@@ -322,7 +322,6 @@ export async function toggleWishlist(e, id) {
 
     // Update UI immediately
     refreshUI();
-    if (_isSidebarOpen()) renderFavoritesSidebar();
 
     // Save to cloud if signed in
     const user = getAuthUser();
@@ -346,51 +345,7 @@ export function clearWishlistOnLogout() {
         localStorage.removeItem('speedgifts_guest_additions');
     } catch (_) {}
     refreshUI();
-    if (_isSidebarOpen()) renderFavoritesSidebar();
     console.log('[Wishlist] Cleared on logout');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FAVORITES SIDEBAR
-// ─────────────────────────────────────────────────────────────────────────────
-
-function _isSidebarOpen() {
-    return document.getElementById('favorites-sidebar')?.classList.contains('open') ?? false;
-}
-
-export function openFavoritesSidebar() {
-    const sidebar = document.getElementById('favorites-sidebar');
-    const overlay = document.getElementById('favorites-sidebar-overlay');
-    if (!sidebar || !overlay) return;
-    renderFavoritesSidebar();
-    sidebar.classList.add('open');
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-}
-
-export function closeFavoritesSidebar() {
-    const sidebar = document.getElementById('favorites-sidebar');
-    const overlay = document.getElementById('favorites-sidebar-overlay');
-    if (!sidebar || !overlay) return;
-    sidebar.classList.remove('open');
-    overlay.classList.remove('open');
-    document.body.style.overflow = 'auto';
-}
-
-export async function renderFavoritesSidebar() {
-    const { renderFavoritesSidebarMainLike } = await import('./shared-sidebar-renderers.js');
-    const products = window._sgDATA?.p || window._sgDATA?.products || [];
-    const getUrl   = typeof window.getOptimizedUrl === 'function'
-        ? window.getOptimizedUrl
-        : (window._sgGetOptUrl || (url => url));
-
-    renderFavoritesSidebarMainLike({
-        wishlist: _data,
-        products,
-        getOptimizedUrl: getUrl,
-        onItemClickJs:  (p) => `window.closeFavoritesSidebar(); viewDetail('${p.originalId}', false, ${p.preSelect ? JSON.stringify(p.preSelect) : 'null'})`,
-        onRemoveClickJs:(p) => `window.toggleWishlist(null, '${p.originalId}')`
-    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -401,8 +356,5 @@ export { updateBadge as updateWishlistBadge };
 export { startRealtimeListener as startWishlistRealtimeSync };
 export { cloudWrite as syncWishlistToCurrentUserCloud };
 
-window.toggleWishlist         = toggleWishlist;
-window.getWishlistItems       = getWishlistItems;
-window.openFavoritesSidebar   = openFavoritesSidebar;
-window.closeFavoritesSidebar  = closeFavoritesSidebar;
-window.renderFavoritesSidebar = renderFavoritesSidebar;
+window.toggleWishlist   = toggleWishlist;
+window.getWishlistItems = getWishlistItems;

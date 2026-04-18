@@ -124,16 +124,10 @@ export function initSharedNavbar(config) {
     };
 
     window.handleFavoritesClick = () => {
-        renderFavoritesSidebar();
-        const side = document.getElementById('favorites-sidebar');
-        const over = document.getElementById('favorites-sidebar-overlay');
-        if (!side || !over) return;
-        side.classList.add('open');
-        over.classList.add('open');
-        if (typeof onSidebarStateChange === 'function') onSidebarStateChange(true);
+        window.location.href = '/favourites.html';
     };
 
-    window.closeFavoritesSidebar = closeFavoritesSidebar;
+    window.closeFavoritesSidebar = () => {};
 
     window.openCategoriesSidebar = () => {
         renderSidebarCategories();

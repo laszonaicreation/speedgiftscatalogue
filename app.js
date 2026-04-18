@@ -1398,29 +1398,15 @@ window.shareProduct = async (id, name) => {
 };
 
 window.handleFavoritesClick = () => {
-    window.openFavoritesSidebar();
+    window.location.href = '/favourites.html';
 };
 
 window.openFavoritesSidebar = () => {
-    const sidebar = document.getElementById('favorites-sidebar');
-    const overlay = document.getElementById('favorites-sidebar-overlay');
-    if (sidebar && overlay) {
-        renderFavoritesSidebar();
-        sidebar.classList.add('open');
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
+    window.location.href = '/favourites.html';
 };
 
-window.closeFavoritesSidebar = () => {
-    const sidebar = document.getElementById('favorites-sidebar');
-    const overlay = document.getElementById('favorites-sidebar-overlay');
-    if (sidebar && overlay) {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('open');
-        document.body.style.overflow = 'auto';
-    }
-};
+window.closeFavoritesSidebar = () => {};
+
 
 window.openCategoriesSidebar = () => {
     const sidebar = document.getElementById('categories-sidebar');
