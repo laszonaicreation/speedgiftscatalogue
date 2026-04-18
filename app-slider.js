@@ -126,8 +126,6 @@ export function initSlider({ db, appId, doc, setDoc }) {
             return `
                 <div class="slider-slide relative" data-index="${i}">
                     <img src="${getOptUrl(displayImg, isMobile ? 800 : 1920)}" 
-                         srcset="${getOptUrl(displayImg, 600)} 600w, ${getOptUrl(displayImg, 800)} 800w, ${getOptUrl(displayImg, 1200)} 1200w, ${getOptUrl(displayImg, 1920)} 1920w"
-                         sizes="(max-width: 767px) 100vw, 1920px"
                          class="${i === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                          alt="${s.title || ''}" 
                          ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="eager"'}
