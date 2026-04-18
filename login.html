@@ -3,89 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In – Speed Gifts</title>
+    <title>Sign In â€“ Speed Gifts</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             font-family: 'Poppins', sans-serif;
-            background: #f5f5f5;
+            background: #fff;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem;
+            padding: 1.5rem 1.25rem;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Layout */
-        .auth-wrapper {
-            display: grid;
-            grid-template-columns: 1fr;
-            width: 100%;
-            max-width: 440px;
-            background: #fff;
-            border-radius: 28px;
-            overflow: hidden;
-            box-shadow: 0 24px 80px rgba(0,0,0,0.10);
-        }
-        @media (min-width: 900px) {
-            .auth-wrapper {
-                grid-template-columns: 1fr 1fr;
-                max-width: 860px;
-                border-radius: 32px;
-            }
-        }
-
-        /* Left Panel (brand) */
-        .auth-brand {
-            display: none;
+        /* â”€â”€ LOGO â”€â”€ */
+        .auth-logo {
+            display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            background: #000;
-            padding: 3rem;
-            color: #fff;
+            align-items: center;
+            margin-bottom: 2rem;
         }
-        @media (min-width: 900px) { .auth-brand { display: flex; } }
-        .auth-brand-logo img { height: 36px; filter: brightness(0) invert(1); }
-        .auth-brand-copy h2 {
-            font-size: 2rem;
-            font-weight: 800;
-            line-height: 1.2;
-            letter-spacing: -0.03em;
-            margin-bottom: 0.75rem;
+        .auth-logo-box {
+            width: 48px;
+            height: 48px;
+            background: #111;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.65rem;
         }
-        .auth-brand-copy p { font-size: 0.85rem; color: #999; line-height: 1.7; }
-        .auth-brand-bottom {
+        .auth-logo-box img {
+            width: 28px;
+            height: 28px;
+            filter: brightness(0) invert(1);
+            object-fit: contain;
+        }
+        .auth-logo-name {
             font-size: 0.7rem;
-            color: #444;
-            font-weight: 500;
-            letter-spacing: 0.05em;
+            font-weight: 700;
+            color: #111;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
         }
 
-        /* Right Panel (form) */
-        .auth-form-panel { padding: 2.5rem 2rem; }
-        @media (min-width: 900px) { .auth-form-panel { padding: 3rem 2.5rem; } }
-
-        .auth-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #9ca3af;
-            text-decoration: none;
-            margin-bottom: 2rem;
-            transition: color 0.2s;
+        /* â”€â”€ FORM CONTAINER â”€â”€ */
+        .auth-box {
+            width: 100%;
+            max-width: 360px;
         }
-        .auth-back:hover { color: #111; }
 
-        .auth-title { font-size: 1.6rem; font-weight: 800; color: #111; letter-spacing: -0.03em; margin-bottom: 0.4rem; }
-        .auth-subtitle { font-size: 0.8rem; color: #9ca3af; font-weight: 400; margin-bottom: 2rem; }
+        .auth-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #111;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.3rem;
+            text-align: center;
+        }
+        .auth-subtitle {
+            font-size: 0.78rem;
+            color: #9ca3af;
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
 
         /* Google Button */
         .btn-google {
@@ -98,55 +87,52 @@
             background: #fff;
             color: #111;
             font-family: 'Poppins', sans-serif;
-            font-size: 0.85rem;
+            font-size: 0.83rem;
             font-weight: 600;
-            padding: 0.75rem 1rem;
-            border-radius: 14px;
+            padding: 0.72rem 1rem;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s, border-color 0.2s;
-            margin-bottom: 1.5rem;
+            transition: background 0.18s, border-color 0.18s;
+            margin-bottom: 1.25rem;
         }
         .btn-google:hover { background: #f9fafb; border-color: #d1d5db; }
-        .btn-google img { width: 18px; height: 18px; }
+        .btn-google:active { opacity: 0.85; }
+        .btn-google img { width: 17px; height: 17px; }
 
         /* Divider */
         .auth-divider {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            color: #e5e7eb;
-            font-size: 0.75rem;
+            gap: 0.6rem;
+            margin-bottom: 1.1rem;
+            font-size: 0.72rem;
             color: #9ca3af;
         }
-        .auth-divider::before,
-        .auth-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #e5e7eb;
+        .auth-divider::before, .auth-divider::after {
+            content: ''; flex: 1; height: 1px; background: #e5e7eb;
         }
 
-        /* Inputs */
-        .auth-field { margin-bottom: 1rem; }
+        /* Fields */
+        .auth-field { margin-bottom: 0.85rem; }
         .auth-field label {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 600;
             color: #374151;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.35rem;
         }
         .auth-input {
             width: 100%;
-            padding: 0.75rem 1rem;
+            padding: 0.72rem 0.9rem;
             border: 1.5px solid #e5e7eb;
-            border-radius: 12px;
+            border-radius: 10px;
             font-family: 'Poppins', sans-serif;
             font-size: 0.875rem;
             color: #111;
             background: #fff;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.18s;
+            -webkit-appearance: none;
         }
         .auth-input:focus { border-color: #111; }
         .auth-input::placeholder { color: #d1d5db; }
@@ -155,158 +141,291 @@
         .auth-forgot {
             display: block;
             text-align: right;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 600;
             color: #9ca3af;
             text-decoration: none;
-            margin-top: -0.5rem;
-            margin-bottom: 1.25rem;
-            transition: color 0.2s;
+            margin-top: -0.35rem;
+            margin-bottom: 1.1rem;
+            transition: color 0.18s;
         }
         .auth-forgot:hover { color: #111; }
 
-        /* Submit Button */
+        /* Submit */
         .btn-submit {
             width: 100%;
             background: #111;
             color: #fff;
             font-family: 'Poppins', sans-serif;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             font-weight: 700;
-            padding: 0.875rem 1rem;
+            padding: 0.8rem 1rem;
             border: none;
-            border-radius: 14px;
+            border-radius: 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            transition: background 0.2s, opacity 0.2s;
+            transition: background 0.18s, opacity 0.18s;
             margin-bottom: 1.25rem;
         }
         .btn-submit:hover { background: #222; }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-submit:active { opacity: 0.85; }
+        .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 
         /* Toggle */
-        .auth-toggle {
-            text-align: center;
-            font-size: 0.8rem;
-            color: #9ca3af;
-        }
+        .auth-toggle { text-align: center; font-size: 0.78rem; color: #9ca3af; }
         .auth-toggle button {
-            background: none;
+            background: none; border: none;
+            color: #111; font-family: 'Poppins', sans-serif;
+            font-size: 0.78rem; font-weight: 700;
+            cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+        }
+
+        /* X Close button */
+        .auth-close-btn {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f5f5f5;
             border: none;
-            color: #111;
-            font-family: 'Poppins', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 700;
             cursor: pointer;
-            text-decoration: underline;
-            text-underline-offset: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 0.9rem;
+            transition: background 0.18s, color 0.18s;
+            z-index: 10;
+        }
+        .auth-close-btn:hover { background: #e5e7eb; color: #111; }
+
+        /* Forgot Password Modal Overlay */
+        .forgot-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.25);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .forgot-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .forgot-modal {
+            background: #fff;
+            border-radius: 22px;
+            padding: 2rem 1.75rem;
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            transform: translateY(12px) scale(0.97);
+            transition: transform 0.25s ease;
+            position: relative;
+        }
+        .forgot-overlay.open .forgot-modal {
+            transform: translateY(0) scale(1);
+        }
+        .forgot-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 0.8rem;
+            transition: background 0.18s;
+        }
+        .forgot-modal-close:hover { background: #e5e7eb; color: #111; }
+        .forgot-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            color: #111;
+        }
+        .forgot-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.02em;
+        }
+        .forgot-sub {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-bottom: 1.25rem;
+            line-height: 1.55;
+        }
+        .forgot-success {
+            display: none;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .forgot-success.show { display: flex; }
+        .forgot-success-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: #f0fdf4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            color: #16a34a;
         }
 
         /* Toast */
         #sg-toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
+            position: fixed; bottom: 2rem; left: 50%;
             transform: translateX(-50%) translateY(100px);
-            background: #111;
-            color: #fff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 100px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            z-index: 9999;
-            transition: transform 0.3s ease;
-            white-space: nowrap;
+            background: #111; color: #fff;
+            padding: 0.65rem 1.25rem; border-radius: 100px;
+            font-size: 0.78rem; font-weight: 600;
+            z-index: 9999; transition: transform 0.3s ease;
+            max-width: 90vw; text-align: center; white-space: nowrap;
         }
         #sg-toast.show { transform: translateX(-50%) translateY(0); }
 
         .hidden { display: none !important; }
 
-        /* Password wrapper */
+        /* PW toggle */
         .pw-wrap { position: relative; }
         .pw-toggle {
-            position: absolute;
-            right: 0.875rem;
-            top: 50%;
+            position: absolute; right: 0.8rem; top: 50%;
             transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #9ca3af;
-            cursor: pointer;
-            font-size: 0.875rem;
-            padding: 0;
+            background: none; border: none;
+            color: #9ca3af; cursor: pointer; font-size: 0.85rem; padding: 0;
         }
     </style>
 </head>
 <body>
 
-<div class="auth-wrapper">
-    <!-- Left Brand Panel -->
-    <div class="auth-brand">
-        <div class="auth-brand-logo">
-            <img src="img/speed-logo.svg" alt="Speed Gifts">
-        </div>
-        <div class="auth-brand-copy">
-            <h2>Welcome to Speed Gifts</h2>
-            <p>Abu Dhabi's premier destination for personalized gifts, custom engraving, and unique creations for every occasion.</p>
-        </div>
-        <div class="auth-brand-bottom">WTC Mall · Abu Dhabi · UAE</div>
+<!-- Logo -->
+<div class="auth-logo">
+    <div class="auth-logo-box">
+        <img src="img/speed-logo.svg" alt="Speed Gifts"
+             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'font-size:1rem;font-weight:900;color:#fff;\'>SG</span>'">
     </div>
+    <span class="auth-logo-name">Speed Gifts</span>
+</div>
 
-    <!-- Right Form Panel -->
-    <div class="auth-form-panel">
+<!-- Form Box -->
+<div class="auth-box">
 
-        <h1 class="auth-title" id="auth-title">Welcome Back</h1>
-        <p class="auth-subtitle" id="auth-subtitle">Sign in to your Speed Gifts account</p>
+    <h1 class="auth-title" id="auth-title">Welcome Back</h1>
+    <p class="auth-subtitle" id="auth-subtitle">Sign in to your Speed Gifts account</p>
 
-        <!-- Google Sign In -->
-        <button class="btn-google" id="btn-google" onclick="signInWithGoogle()">
-            <img src="https://www.google.com/favicon.ico" alt="Google">
-            Continue with Google
+    <!-- Google -->
+    <button class="btn-google" id="btn-google" onclick="signInWithGoogle()">
+        <img src="https://www.google.com/favicon.ico" alt="Google">
+        Continue with Google
+    </button>
+
+    <div class="auth-divider">or</div>
+
+    <!-- Form -->
+    <form id="auth-form" onsubmit="handleSubmit(event)" novalidate>
+
+        <div class="auth-field hidden" id="field-name">
+            <label for="auth-name">Full Name</label>
+            <input type="text" id="auth-name" class="auth-input" placeholder="Your full name" autocomplete="name">
+        </div>
+
+        <div class="auth-field">
+            <label for="auth-email">Email Address</label>
+            <input type="email" id="auth-email" class="auth-input" placeholder="you@example.com" autocomplete="email" required>
+        </div>
+
+        <div class="auth-field">
+            <label for="auth-password">Password</label>
+            <div class="pw-wrap">
+                <input type="password" id="auth-password" class="auth-input" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autocomplete="current-password" required style="padding-right:2.5rem;">
+                <button type="button" class="pw-toggle" onclick="togglePw()" id="pw-toggle-btn">
+                    <i class="fa-regular fa-eye" id="pw-icon"></i>
+                </button>
+            </div>
+        </div>
+
+        <a href="#" class="auth-forgot" id="auth-forgot" onclick="handleForgot(event)">Forgot password?</a>
+
+        <button type="submit" class="btn-submit" id="btn-submit">
+            <span id="btn-text">Sign In</span>
+            <i class="fa-solid fa-arrow-right" style="font-size:0.78rem;"></i>
         </button>
 
-        <div class="auth-divider">or</div>
+    </form>
 
-        <!-- Form -->
-        <form id="auth-form" onsubmit="handleSubmit(event)" novalidate>
-            <!-- Name (register only) -->
-            <div class="auth-field hidden" id="field-name">
-                <label for="auth-name">Full Name</label>
-                <input type="text" id="auth-name" class="auth-input" placeholder="Your full name" autocomplete="name">
-            </div>
+    <div class="auth-toggle">
+        <span id="toggle-label">Don't have an account?</span>
+        <button onclick="toggleMode()" id="toggle-btn">Sign Up</button>
+    </div>
 
+</div>
+
+<!-- X Close Button -->
+<button class="auth-close-btn" onclick="window.location.href='/'" title="Back to Speed Gifts">
+    <i class="fa-solid fa-xmark"></i>
+</button>
+
+<!-- Forgot Password Modal -->
+<div class="forgot-overlay" id="forgot-overlay" onclick="closeForgotModal(event)">
+    <div class="forgot-modal">
+        <button class="forgot-modal-close" onclick="closeForgotModalBtn()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Send Form -->
+        <div id="forgot-form-view">
+            <div class="forgot-icon"><i class="fa-solid fa-lock"></i></div>
+            <div class="forgot-title">Reset Password</div>
+            <p class="forgot-sub">Enter your email address and we'll send you a link to reset your password.</p>
             <div class="auth-field">
-                <label for="auth-email">Email Address</label>
-                <input type="email" id="auth-email" class="auth-input" placeholder="you@example.com" autocomplete="email" required>
+                <label for="forgot-email">Email Address</label>
+                <input type="email" id="forgot-email" class="auth-input" placeholder="you@example.com" autocomplete="email">
             </div>
-
-            <div class="auth-field">
-                <label for="auth-password">Password</label>
-                <div class="pw-wrap">
-                    <input type="password" id="auth-password" class="auth-input" placeholder="••••••••" autocomplete="current-password" required style="padding-right:2.5rem;">
-                    <button type="button" class="pw-toggle" onclick="togglePw()" id="pw-toggle-btn"><i class="fa-regular fa-eye" id="pw-icon"></i></button>
-                </div>
-            </div>
-
-            <a href="#" class="auth-forgot" id="auth-forgot" onclick="handleForgot(event)">Forgot password?</a>
-
-            <button type="submit" class="btn-submit" id="btn-submit">
-                <span id="btn-text">Sign In</span>
-                <i class="fa-solid fa-arrow-right text-xs"></i>
+            <button class="btn-submit" id="forgot-send-btn" onclick="sendForgotEmail()" style="margin-top:0.5rem;">
+                <span id="forgot-btn-text">Send Reset Link</span>
+                <i class="fa-solid fa-paper-plane" style="font-size:0.78rem;"></i>
             </button>
-        </form>
+        </div>
 
-        <div class="auth-toggle">
-            <span id="toggle-label">Don't have an account?</span>
-            <button onclick="toggleMode()" id="toggle-btn">Sign Up</button>
+        <!-- Success State -->
+        <div class="forgot-success" id="forgot-success-view">
+            <div class="forgot-success-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="forgot-title">Email Sent!</div>
+            <p class="forgot-sub">A password reset link has been sent to your email.<br>Check your inbox (and spam folder).</p>
+            <button class="btn-submit" onclick="closeForgotModalBtn()" style="margin-top:0.25rem;">
+                Done <i class="fa-solid fa-check" style="font-size:0.78rem;"></i>
+            </button>
         </div>
     </div>
 </div>
-
-<div id="sg-toast"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
@@ -337,7 +456,7 @@
 
     const redirectTo = sessionStorage.getItem('sg_login_redirect') || '/';
 
-    // ── PASSWORD RESET MODE ──────────────────────────────────────────
+    // â”€â”€ PASSWORD RESET MODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const urlParams = new URLSearchParams(window.location.search);
     const urlMode = urlParams.get('mode');
     const oobCode = urlParams.get('oobCode');
@@ -346,7 +465,7 @@
         // Hide normal login UI, show reset form
         showResetPasswordUI(oobCode);
     } else {
-        // Normal auth flow: if already logged in → redirect
+        // Normal auth flow: if already logged in â†’ redirect
         onAuthStateChanged(auth, (user) => {
             if (user && !user.isAnonymous) {
                 sessionStorage.removeItem('sg_login_redirect');
@@ -411,7 +530,7 @@
 
             try {
                 await confirmPasswordReset(auth, code, newPw);
-                showToast('✅ Password reset successfully! Redirecting to login...');
+                showToast('âœ… Password reset successfully! Redirecting to login...');
                 window.history.replaceState({}, '', '/login.html');
                 setTimeout(() => window.location.reload(), 2000);
             } catch (err) {
@@ -422,7 +541,7 @@
         };
     }
 
-    // ── NORMAL AUTH FLOW ────────────────────────────────────────────
+    // â”€â”€ NORMAL AUTH FLOW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let mode = 'login'; // 'login' | 'register'
 
     window.toggleMode = () => {
@@ -485,16 +604,42 @@
         }
     };
 
-    window.handleForgot = async (e) => {
+    window.handleForgot = (e) => {
         e.preventDefault();
-        const email = document.getElementById('auth-email').value.trim();
-        if (!email) return showToast('Enter your email first');
+        // Pre-fill email if already typed in main form
+        const mainEmail = document.getElementById('auth-email').value.trim();
+        if (mainEmail) document.getElementById('forgot-email').value = mainEmail;
+        // Reset modal state
+        document.getElementById('forgot-form-view').style.display = 'block';
+        document.getElementById('forgot-success-view').classList.remove('show');
+        document.getElementById('forgot-overlay').classList.add('open');
+    };
+
+    window.sendForgotEmail = async () => {
+        const email = document.getElementById('forgot-email').value.trim();
+        const btn = document.getElementById('forgot-send-btn');
+        if (!email) { showToast('Please enter your email address'); return; }
+        btn.disabled = true;
+        document.getElementById('forgot-btn-text').textContent = 'Sending...';
         try {
             await sendPasswordResetEmail(auth, email);
-            showToast('Password reset email sent!');
+            document.getElementById('forgot-form-view').style.display = 'none';
+            document.getElementById('forgot-success-view').classList.add('show');
         } catch (err) {
-            showToast(err.message?.replace('Firebase:', '').trim() || 'Error');
+            showToast(err.message?.replace('Firebase:', '').trim() || 'Error sending email');
+            btn.disabled = false;
+            document.getElementById('forgot-btn-text').textContent = 'Send Reset Link';
         }
+    };
+
+    window.closeForgotModal = (e) => {
+        if (e.target === document.getElementById('forgot-overlay')) {
+            document.getElementById('forgot-overlay').classList.remove('open');
+        }
+    };
+
+    window.closeForgotModalBtn = () => {
+        document.getElementById('forgot-overlay').classList.remove('open');
     };
 
     window.togglePw = () => {
