@@ -318,7 +318,9 @@
         signInWithPopup,
         sendPasswordResetEmail,
         onAuthStateChanged,
-        updateProfile
+        updateProfile,
+        verifyPasswordResetCode,
+        confirmPasswordReset
     } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -333,17 +335,94 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // Redirect destination: where user came from (or home)
     const redirectTo = sessionStorage.getItem('sg_login_redirect') || '/';
 
-    // If already logged in → redirect
-    onAuthStateChanged(auth, (user) => {
-        if (user && !user.isAnonymous) {
-            sessionStorage.removeItem('sg_login_redirect');
-            window.location.href = redirectTo;
-        }
-    });
+    // ── PASSWORD RESET MODE ──────────────────────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
 
+    if (urlMode === 'resetPassword' && oobCode) {
+        // Hide normal login UI, show reset form
+        showResetPasswordUI(oobCode);
+    } else {
+        // Normal auth flow: if already logged in → redirect
+        onAuthStateChanged(auth, (user) => {
+            if (user && !user.isAnonymous) {
+                sessionStorage.removeItem('sg_login_redirect');
+                window.location.href = redirectTo;
+            }
+        });
+    }
+
+    async function showResetPasswordUI(code) {
+        // Verify code first
+        let emailForReset = '';
+        try {
+            emailForReset = await verifyPasswordResetCode(auth, code);
+        } catch (err) {
+            showToast('This password reset link is invalid or has expired. Please request a new one.');
+            setTimeout(() => {
+                window.history.replaceState({}, '', '/login.html');
+            }, 3000);
+            return;
+        }
+
+        // Swap UI to reset form
+        document.getElementById('auth-title').textContent = 'New Password';
+        document.getElementById('auth-subtitle').textContent = `Set a new password for ${emailForReset}`;
+        document.getElementById('btn-google').style.display = 'none';
+        document.querySelector('.auth-divider').style.display = 'none';
+        document.getElementById('field-name').classList.add('hidden');
+        document.getElementById('auth-forgot').style.display = 'none';
+        document.getElementById('auth-email').closest('.auth-field').style.display = 'none';
+        document.getElementById('auth-password').placeholder = 'New password (min 6 chars)';
+        document.getElementById('auth-password').autocomplete = 'new-password';
+        document.getElementById('btn-text').textContent = 'Save New Password';
+        document.querySelector('.auth-toggle').style.display = 'none';
+
+        // Add confirm password field dynamically
+        const pwField = document.getElementById('auth-password').closest('.auth-field');
+        if (!document.getElementById('auth-password-confirm')) {
+            const confirmField = document.createElement('div');
+            confirmField.className = 'auth-field';
+            confirmField.innerHTML = `
+                <label for="auth-password-confirm">Confirm Password</label>
+                <div class="pw-wrap">
+                    <input type="password" id="auth-password-confirm" class="auth-input"
+                        placeholder="Repeat new password" autocomplete="new-password" style="padding-right:2.5rem;">
+                </div>`;
+            pwField.insertAdjacentElement('afterend', confirmField);
+        }
+
+        // Override form submit for reset
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const newPw = document.getElementById('auth-password').value;
+            const confirmPw = document.getElementById('auth-password-confirm').value;
+            const btn = document.getElementById('btn-submit');
+
+            if (newPw.length < 6) return showToast('Password must be at least 6 characters');
+            if (newPw !== confirmPw) return showToast('Passwords do not match');
+
+            btn.disabled = true;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                await confirmPasswordReset(auth, code, newPw);
+                showToast('✅ Password reset successfully! Redirecting to login...');
+                window.history.replaceState({}, '', '/login.html');
+                setTimeout(() => window.location.reload(), 2000);
+            } catch (err) {
+                showToast(err.message?.replace('Firebase:', '').trim() || 'Failed to reset password');
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
+        };
+    }
+
+    // ── NORMAL AUTH FLOW ────────────────────────────────────────────
     let mode = 'login'; // 'login' | 'register'
 
     window.toggleMode = () => {
@@ -440,3 +519,4 @@
 </script>
 </body>
 </html>
+
