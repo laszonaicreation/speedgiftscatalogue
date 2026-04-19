@@ -448,9 +448,17 @@
         -->
         <div id="home-slider-container" class="fade-in px-0">
             <div class="slider-wrapper relative overflow-hidden rounded-none shadow-none group">
+                <div id="slider-skeleton" aria-hidden="true"></div>
                 <div id="home-slider"
                     class="flex transition-transform duration-500 ease-out no-scrollbar overflow-x-auto snap-x snap-mandatory">
                 </div>
+            </div>
+
+            <!-- Slider Skeleton Dots (shown while slider loads) -->
+            <div id="slider-skeleton-dots" aria-hidden="true">
+                <div class="slider-skeleton-dot"></div>
+                <div class="slider-skeleton-dot"></div>
+                <div class="slider-skeleton-dot"></div>
             </div>
 
             <!-- Pagination Dots -->
