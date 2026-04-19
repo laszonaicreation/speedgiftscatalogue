@@ -15,8 +15,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS (same as other pages) -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1776597881836">
-    <link rel="stylesheet" href="style.min.css?v=1776597881836">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1776603269244">
+    <link rel="stylesheet" href="style.min.css?v=1776603269244">
+    <link rel="stylesheet" href="cart.min.css?v=1776603269244">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -52,29 +53,23 @@
         }
 
         .sg-header-left {
-            text-align: center;
+            text-align: left;
             flex: 1;
         }
 
         .sg-header-left h1 {
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             font-weight: 800;
             color: #111;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.45rem;
+            margin-bottom: 0.15rem;
+            letter-spacing: -0.02em;
         }
 
-        .sg-header-left h1 i { color: #ef4444; }
-
         .sg-header-count {
-            font-size: 0.72rem;
-            font-weight: 400;
-            text-transform: capitalize;
-            letter-spacing: 0;
-            color: #9ca3af;
-            margin-top: 0.2rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin: 0;
         }
 
         /* WhatsApp All Button */
@@ -95,8 +90,52 @@
             transition: background 0.2s;
             white-space: nowrap;
         }
-        .sg-wa-all-btn:hover { background: #25D366; }
+        .sg-wa-all-btn:hover { background: #333; }
         .sg-wa-all-btn i { font-size: 1rem; }
+
+        /* LOGIN PROMPT */
+        .sg-login-prompt {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            color: #0369a1;
+        }
+        .sg-login-prompt-icon {
+            font-size: 1.5rem;
+            color: #0284c7;
+        }
+        .sg-login-prompt-text {
+            flex: 1;
+        }
+        .sg-login-prompt-text h3 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            color: #0c4a6e;
+        }
+        .sg-login-prompt-text p {
+            font-size: 0.7rem;
+            color: #0369a1;
+            line-height: 1.4;
+        }
+        .sg-login-prompt-btn {
+            background: #0284c7;
+            color: #fff;
+            border: none;
+            border-radius: 100px;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .sg-login-prompt-btn:hover { background: #0369a1; }
 
         /* ITEMS LIST */
         .sg-items-list { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -146,7 +185,7 @@
 
         .fav-actions { display: flex; align-items: center; gap: 0.4rem; }
 
-        .fav-wa-btn {
+        .fav-cart-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
@@ -162,8 +201,8 @@
             text-decoration: none;
             transition: background 0.15s;
         }
-        .fav-wa-btn:hover { background: #25D366; }
-        .fav-wa-btn i { font-size: 0.875rem; }
+        .fav-cart-btn:hover { background: #333; }
+        .fav-cart-btn i { font-size: 0.875rem; }
 
         .fav-view-btn {
             display: inline-flex;
@@ -318,12 +357,21 @@
 
         <div class="sg-header">
             <div class="sg-header-left">
-                <h1><i class="fa-solid fa-heart"></i> My Favourites</h1>
+                <h1>My Favourites</h1>
                 <p class="sg-header-count" id="fav-count-text">Loading...</p>
             </div>
-            <a href="#" id="wa-all-btn" class="sg-wa-all-btn" style="display:none;" onclick="inquireAll(event)">
-                <i class="fa-brands fa-whatsapp"></i> Inquire All
+            <a href="#" id="cart-all-btn" class="sg-wa-all-btn" style="display:none;" onclick="addAllToCart(event)">
+                <i class="fa-solid fa-cart-shopping"></i> Add All to Cart
             </a>
+        </div>
+
+        <div id="sg-login-prompt" class="sg-login-prompt" style="display:none;">
+            <div class="sg-login-prompt-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <div class="sg-login-prompt-text">
+                <h3>Save your favourites permanently</h3>
+                <p>Sign in to sync your saved items across all your devices so you never lose them.</p>
+            </div>
+            <button onclick="window.openAuthModal && window.openAuthModal()" class="sg-login-prompt-btn">Login Now</button>
         </div>
 
         <div id="sg-list-container"></div>
@@ -332,7 +380,7 @@
 
     <div id="sg-toast"></div>
 
-    <script type="module" src="favourites-page.min.js?v=1776597881836"></script>
+    <script type="module" src="favourites-page.min.js?v=1776603269244"></script>
 </body>
 
 </html>

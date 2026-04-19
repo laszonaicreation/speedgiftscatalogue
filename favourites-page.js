@@ -12,6 +12,7 @@ import { getFirestore, collection, query, where, getDocs, documentId, doc, setDo
 
 import { mountSharedShell } from './shared-shell.js?v=4';
 import { initSharedAuth } from './shared-auth.js';
+import { addToCart, openCartSidebar } from './cart.js';
 
 // ── Firebase ──────────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -56,6 +57,11 @@ function updateAuthUserUI() {
     state.authUser = auth.currentUser && !auth.currentUser.isAnonymous ? auth.currentUser : null;
     const mobText = document.getElementById('mob-user-text');
     if (mobText) mobText.innerText = state.authUser ? 'Account' : 'Login';
+    
+    const prompt = document.getElementById('sg-login-prompt');
+    if (prompt) {
+        prompt.style.display = state.authUser ? 'none' : 'flex';
+    }
 }
 
 initSharedAuth({
@@ -158,7 +164,7 @@ function renderItems(products) {
     const ordered = wishlistIds.map(id => products.find(p => p.id === id)).filter(Boolean);
     if (!ordered.length) return renderEmpty();
 
-    document.getElementById('wa-all-btn').style.display = 'flex';
+    document.getElementById('cart-all-btn').style.display = 'flex';
 
     return `<div class="sg-items-list">${ordered.map(p => {
         const img = getOptimizedUrl(Array.isArray(p.images) ? p.images[0] : p.img, 300);
@@ -173,9 +179,9 @@ function renderItems(products) {
                 <div class="fav-name" onclick="window.location.href='product-detail.html?id=${p.id}'">${p.name || 'Product'}</div>
                 ${price}
                 <div class="fav-actions">
-                    <a href="${getWaLink(p)}" target="_blank" class="fav-wa-btn">
-                        <i class="fa-brands fa-whatsapp"></i> Inquire
-                    </a>
+                    <button class="fav-cart-btn" onclick="window.addFavToCart('${p.id}')">
+                        <i class="fa-solid fa-cart-shopping"></i> Add to Cart
+                    </button>
                     <a href="product-detail.html?id=${p.id}" class="fav-view-btn" title="View product">
                         <i class="fa-solid fa-arrow-right"></i>
                     </a>
@@ -222,15 +228,33 @@ window.removeItem = (id) => {
     showToast('Removed from favourites');
 };
 
-// ── Inquire All ───────────────────────────────────────────────────────────────
-window.inquireAll = (e) => {
-    e.preventDefault();
+// ── Add to Cart (Single) ──────────────────────────────────────────────────────
+window.addFavToCart = (id) => {
     if (!loadedProducts.length) return;
-    const items = wishlistIds.map(id => loadedProducts.find(p => p.id === id)).filter(Boolean);
-    if (!items.length) return;
-    const list = items.map((p, i) => `${i + 1}. ${p.name || 'Product'}\n   Price: ${p.price ? p.price + ' AED' : 'TBD'}\n   Link: https://speedgifts.net/product-detail.html?id=${p.id}`).join('\n\n');
-    const txt = `Hi Speed Gifts Team,\n\nI would like to inquire about the following items from my favourites:\n\n${list}\n\nPlease let me know the availability.\n\nThank you.`;
-    window.open(`https://wa.me/971561010387?text=${encodeURIComponent(txt)}`, '_blank');
+    const p = loadedProducts.find(x => x.id === id);
+    if (!p) return;
+    const img = Array.isArray(p.images) ? p.images[0] : p.img;
+    addToCart({ id: p.id, name: p.name || 'Product', price: p.price || 0, img });
+    showToast('Added to cart');
+};
+
+// ── Add All To Cart ───────────────────────────────────────────────────────────
+window.addAllToCart = (e) => {
+    e.preventDefault();
+    if (!loadedProducts.length || !wishlistIds.length) return;
+    let addedCount = 0;
+    wishlistIds.forEach(id => {
+        const p = loadedProducts.find(x => x.id === id);
+        if (p) {
+            const img = Array.isArray(p.images) ? p.images[0] : p.img;
+            addToCart({ id: p.id, name: p.name || 'Product', price: p.price || 0, img });
+            addedCount++;
+        }
+    });
+    if (addedCount > 0) {
+        showToast(`Added ${addedCount} item${addedCount !== 1 ? 's' : ''} to cart`);
+        openCartSidebar();
+    }
 };
 
 // ── Update count ──────────────────────────────────────────────────────────────
@@ -240,7 +264,7 @@ function updateCount() {
     if (countEl) countEl.textContent = items === 0 ? 'No saved items' : `${items} saved item${items !== 1 ? 's' : ''}`;
     if (items === 0) {
         document.getElementById('sg-list-container').innerHTML = renderEmpty();
-        document.getElementById('wa-all-btn').style.display = 'none';
+        document.getElementById('cart-all-btn').style.display = 'none';
     }
 }
 
