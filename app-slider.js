@@ -252,7 +252,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
         let msgs = DATA.announcements || [];
         if (msgs.length === 0 || (msgs.length === 1 && msgs[0].trim() === "")) {
             bar.style.display = 'none';
-            if (nav) nav.style.marginTop = '10px';
+            if (nav) nav.style.marginTop = '0px';
             return;
         }
         bar.style.display = 'flex';
