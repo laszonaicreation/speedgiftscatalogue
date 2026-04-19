@@ -1073,6 +1073,67 @@ img[src=""] {
 
 /* HERO SLIDER STYLES */
 
+/* ── SLIDER SKELETON LOADING ───────────────────────────────────────────────── */
+#slider-skeleton {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    overflow: hidden;
+    background: #f0f0f0;
+    border-radius: inherit;
+}
+
+#slider-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.55) 45%,
+        rgba(255, 255, 255, 0.75) 50%,
+        rgba(255, 255, 255, 0.55) 55%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: slider-shimmer 1.6s ease-in-out infinite;
+}
+
+
+/* Skeleton dots placeholder */
+#slider-skeleton-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.slider-skeleton-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e0e0e0;
+}
+.slider-skeleton-dot:first-child {
+    width: 24px;
+    border-radius: 10px;
+    background: #c8c8c8;
+}
+
+@keyframes slider-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* On desktop, respect the rounded slider-wrapper */
+@media (min-width: 768px) {
+    #slider-skeleton {
+        border-radius: 2.5rem;
+    }
+}
+
 .slider-wrapper {
     position: relative;
     width: 100%;

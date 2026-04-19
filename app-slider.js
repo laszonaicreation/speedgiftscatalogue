@@ -142,6 +142,20 @@ export function initSlider({ db, appId, doc, setDoc }) {
         // Now that real slider content is in place, snap back to normal white design
         document.getElementById('sg-loading-bg')?.remove();
 
+        // Remove skeleton overlay + skeleton dots with a smooth fade-out
+        const skeletonEl2 = document.getElementById('slider-skeleton');
+        if (skeletonEl2) {
+            skeletonEl2.style.transition = 'opacity 0.3s ease';
+            skeletonEl2.style.opacity = '0';
+            setTimeout(() => skeletonEl2.remove(), 320);
+        }
+        const skeletonDotsEl = document.getElementById('slider-skeleton-dots');
+        if (skeletonDotsEl) {
+            skeletonDotsEl.style.transition = 'opacity 0.3s ease';
+            skeletonDotsEl.style.opacity = '0';
+            setTimeout(() => skeletonDotsEl.remove(), 320);
+        }
+
         if (dots) {
             dots.innerHTML = visibleSliders.map((_, i) => `
                 <div class="slider-dot ${i === 0 ? 'active' : ''}" onclick="window.goToSlide(${i})"></div>
