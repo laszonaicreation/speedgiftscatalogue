@@ -1127,6 +1127,43 @@ img[src=""] {
     100% { background-position: -200% 0; }
 }
 
+/* ── CATEGORY SKELETON LOADING ─────────────────────────────────────────────── */
+.cat-skel-item {
+    width: clamp(55px, 15vw, 65px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.cat-skel-item::before,
+.cat-skel-item::after {
+    content: '';
+    display: block;
+    background: linear-gradient(
+        90deg,
+        #f3f4f6 0%,
+        #ffffff 50%,
+        #f3f4f6 100%
+    );
+    background-size: 200% 100%;
+    animation: slider-shimmer 1.6s ease-in-out infinite;
+}
+
+.cat-skel-item::before {
+    width: 100%;
+    height: clamp(55px, 15vw, 65px);
+    border-radius: 12px;
+}
+
+.cat-skel-item::after {
+    width: 60%;
+    height: 8px;
+    border-radius: 4px;
+    margin-top: 2px;
+}
+
+
 /* On desktop, respect the rounded slider-wrapper */
 @media (min-width: 768px) {
     #slider-skeleton {

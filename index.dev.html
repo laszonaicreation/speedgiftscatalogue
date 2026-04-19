@@ -527,6 +527,28 @@
             <p>Loading our latest collection of custom gifts, engraved wood, and personalized items. Please wait a
                 moment while we fetch the best deals for you.</p>
         </div>
+
+        <!-- INITIAL SKELETON DISPLAY WHILE JS/FIREBASE LOADS -->
+        <div id="initial-page-skeleton" class="md:hidden w-full" style="margin-top: 15px;">
+            <div class="category-scroll-container" style="position:relative; width:100vw; margin-left: calc(-1 * ((100vw - 100%) / 2)); padding-left: calc((100vw - 100%) / 2); margin-bottom: 0px;">
+                <div style="background:#fff;display:grid;grid-template-rows:repeat(2,auto);grid-auto-flow:column;gap:6px 1px;padding-top:20px;padding-left:clamp(8px, env(safe-area-inset-left), 16px);overflow:hidden;pointer-events:none;">
+                    <div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div>
+                    <div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div>
+                </div>
+            </div>
+            <div style="height: 35px;"></div>
+            <div class="w-full flex flex-col items-center justify-center mb-6">
+                <div style="width: 250px; height: 32px; border-radius: 8px; margin-bottom: 12px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div>
+                <div style="width: 140px; height: 12px; border-radius: 4px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div>
+            </div>
+            <!-- Initial Product Grid Skeleton -->
+            <div class="grid grid-cols-2 gap-x-3 gap-y-8 mt-4 px-2">
+                <div class="flex flex-col gap-2"><div style="width:100%; aspect-ratio:4/5; border-radius:12px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:80%; height:12px; border-radius:4px; margin-top:8px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:40%; height:14px; border-radius:4px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div></div>
+                <div class="flex flex-col gap-2"><div style="width:100%; aspect-ratio:4/5; border-radius:12px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:80%; height:12px; border-radius:4px; margin-top:8px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:40%; height:14px; border-radius:4px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div></div>
+                <div class="flex flex-col gap-2"><div style="width:100%; aspect-ratio:4/5; border-radius:12px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:80%; height:12px; border-radius:4px; margin-top:8px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:40%; height:14px; border-radius:4px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div></div>
+                <div class="flex flex-col gap-2"><div style="width:100%; aspect-ratio:4/5; border-radius:12px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:80%; height:12px; border-radius:4px; margin-top:8px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div><div style="width:40%; height:14px; border-radius:4px; background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: slider-shimmer 1.6s ease-in-out infinite;"></div></div>
+            </div>
+        </div>
     </main>
 
 
@@ -558,6 +580,10 @@
 
         <div class="category-scroll-container md:hidden"
             style="position:relative; width:100vw; margin-left: calc(-1 * ((100vw - 100%) / 2)); padding-left: calc((100vw - 100%) / 2); margin-bottom: 0px;">
+            <div id="category-skeleton" style="position:absolute;inset:0;z-index:5;background:#fff;display:grid;grid-template-rows:repeat(2,auto);grid-auto-flow:column;gap:6px 1px;padding-top:20px;padding-left:clamp(8px, env(safe-area-inset-left), 16px);overflow:hidden;pointer-events:none;">
+                <div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div>
+                <div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div><div class="cat-skel-item"></div>
+            </div>
             <div id="category-row" class="no-scrollbar overflow-x-auto pb-2 px-2 scroll-smooth"
                 style="display:grid; grid-template-rows: repeat(2, auto); grid-auto-flow: column; gap: 6px 1px; padding-top: 20px;"
                 onscroll="window.handleCategoryRowScroll(this)"></div>

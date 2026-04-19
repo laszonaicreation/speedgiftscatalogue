@@ -186,6 +186,14 @@ export function renderHomeCategoryRow({
         isAdminVisible
     });
 
+    // Remove category skeleton once real content is in place
+    const catSkeleton = document.getElementById('category-skeleton');
+    if (catSkeleton) {
+        catSkeleton.style.transition = 'opacity 0.3s ease';
+        catSkeleton.style.opacity = '0';
+        setTimeout(() => catSkeleton.remove(), 320);
+    }
+
     setTimeout(() => {
         if (activeFilter === 'all') return;
         const activeItem = catRow.querySelector('.category-item.active');
