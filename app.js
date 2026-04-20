@@ -14,7 +14,7 @@ import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCar
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
-    authDomain: "speed-catalogue.firebaseapp.com",
+    authDomain: "speedgifts.net",
     projectId: "speed-catalogue",
     storageBucket: "speed-catalogue.firebasestorage.app",
     messagingSenderId: "84589409246",
