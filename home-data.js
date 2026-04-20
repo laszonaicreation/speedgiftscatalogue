@@ -1,3 +1,5 @@
+import { query, where, documentId, limit } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
 export async function fetchHomeDataBundle({
     db,
     appId,
@@ -14,8 +16,16 @@ export async function fetchHomeDataBundle({
     const today = getTodayStr();
     const todayRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
 
-    const [pSnap, cSnap, mSnap, sSnap, popSnap, todaySnap] = await Promise.all([
-        getDocs(prodCol),
+    // Queries for massive payload reduction on initial load
+    const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--'];
+    const qConfig = query(prodCol, where(documentId(), 'in', configDocIds));
+    const qFeatured = query(prodCol, where('isFeatured', '==', true));
+    const qFallback = query(prodCol, limit(30)); // Provides a fallback if no items are featured
+
+    const [configSnap, featuredSnap, fallbackSnap, cSnap, mSnap, sSnap, popSnap, todaySnap] = await Promise.all([
+        getDocs(qConfig).catch(() => ({ docs: [] })),
+        getDocs(qFeatured).catch(() => ({ docs: [] })),
+        getDocs(qFallback).catch(() => ({ docs: [] })),
         getDocs(catCol),
         getDocs(megaCol).catch(() => ({ docs: [] })),
         getDocs(sliderCol).catch(() => ({ docs: [] })),
@@ -23,7 +33,15 @@ export async function fetchHomeDataBundle({
         getDoc(todayRef).catch(() => null)
     ]);
 
-    const rawProducts = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const uniqueMap = new Map();
+    const allDocs = [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs];
+    allDocs.forEach(d => {
+        if (!uniqueMap.has(d.id)) {
+            uniqueMap.set(d.id, { id: d.id, ...d.data() });
+        }
+    });
+
+    const rawProducts = Array.from(uniqueMap.values());
     const categories = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const megaMenus = mSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (a.order || 0) - (b.order || 0));

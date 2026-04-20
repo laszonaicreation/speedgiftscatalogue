@@ -1197,37 +1197,51 @@
     <link rel="modulepreload" href="./app-spotlight.min.js">
     <script type="module" src="app.min.js?v=3.3"></script>
 
-    <!-- Google Tag Manager + Ads: loaded AFTER page is interactive (saves ~550ms TBT) -->
+    <!-- Google Tag Manager + Ads: loaded ONLY on user interaction for maximum PageSpeed score -->
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
-        // Defer all analytics until after page load to keep LCP clean
-        window.addEventListener('load', function () {
-            setTimeout(function () {
-                // GTM
-                (function (w, d, s, l, i) {
-                    w[l] = w[l] || [];
-                    w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-                    var f = d.getElementsByTagName(s)[0],
-                        j = d.createElement(s),
-                        dl = l != 'dataLayer' ? '&l=' + l : '';
-                    j.async = true;
-                    j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-                    f.parentNode.insertBefore(j, f);
-                })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
+        
+        let analyticsLoaded = false;
+        function loadAnalytics() {
+            if (analyticsLoaded) return;
+            analyticsLoaded = true;
+            
+            // Remove event listeners once triggered
+            window.removeEventListener('scroll', loadAnalytics);
+            window.removeEventListener('mousemove', loadAnalytics);
+            window.removeEventListener('touchstart', loadAnalytics);
 
-                // Google Ads + GA4
-                var gads = document.createElement('script');
-                gads.async = true;
-                gads.src = 'https://www.googletagmanager.com/gtag/js?id=AW-789546339';
-                document.head.appendChild(gads);
-                gads.onload = function () {
-                    gtag('js', new Date());
-                    gtag('config', 'AW-789546339');
-                    gtag('config', 'G-98ZMG3ZF7Z');
-                };
-            }, 2000); // 2s after load — page already interactive, user can interact freely
-        });
+            console.log("User interaction detected, loading analytics...");
+
+            // GTM
+            (function (w, d, s, l, i) {
+                w[l] = w[l] || [];
+                w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+                var f = d.getElementsByTagName(s)[0],
+                    j = d.createElement(s),
+                    dl = l != 'dataLayer' ? '&l=' + l : '';
+                j.async = true;
+                j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+                f.parentNode.insertBefore(j, f);
+            })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
+
+            // Google Ads + GA4
+            var gads = document.createElement('script');
+            gads.async = true;
+            gads.src = 'https://www.googletagmanager.com/gtag/js?id=AW-789546339';
+            document.head.appendChild(gads);
+            gads.onload = function () {
+                gtag('js', new Date());
+                gtag('config', 'AW-789546339');
+                gtag('config', 'G-98ZMG3ZF7Z');
+            };
+        }
+
+        // Attach user interaction listeners
+        window.addEventListener('scroll', loadAnalytics, { passive: true, once: true });
+        window.addEventListener('mousemove', loadAnalytics, { passive: true, once: true });
+        window.addEventListener('touchstart', loadAnalytics, { passive: true, once: true });
     </script>
 </body>
 
