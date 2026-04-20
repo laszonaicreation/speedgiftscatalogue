@@ -2007,7 +2007,9 @@ initSharedAuth({
     updateAuthUserUI: refreshMainAuthUI,
     onSignOut: () => {
         clearWishlistOnLogout();
-        clearCart();
+        // localOnly=true: only clear localStorage, keep Firestore cloud cart intact.
+        // The user's cart is restored by mergeCartOnLogin() on next sign-in.
+        clearCart(true);
     },
     showToast
 });

@@ -60,17 +60,20 @@ function saveCart() {
 
 function syncCartToCloud() {
     try {
-        // Access Firebase auth via global (set by app.js)
         const auth = window._sgAuth;
         const db = window._sgDb;
         const appId = window._sgAppId;
         if (!auth || !db || !appId) return;
         const user = auth.currentUser;
         if (!user || user.isAnonymous) return;
-        // Lazy import to avoid circular deps
+        // ── CRITICAL: Snapshot items NOW (synchronously) before any async gap ──
+        // If clearCart() runs between here and the setDoc call (e.g. during
+        // sign-out), _cartItems would be [] and we'd accidentally wipe the cloud.
+        // A frozen copy guarantees we always write the correct items.
+        const itemsSnapshot = _cartItems.map(x => ({ ...x }));
         import('https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js').then(({ doc, setDoc }) => {
             const cartRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'cart');
-            setDoc(cartRef, { items: _cartItems }).catch(e => console.error('[Cart] Cloud sync failed:', e));
+            setDoc(cartRef, { items: itemsSnapshot }).catch(e => console.error('[Cart] Cloud sync failed:', e));
         });
     } catch (_) { }
 }
@@ -134,13 +137,16 @@ export function updateCartBadges() {
     });
 }
 
-export function clearCart() {
+export function clearCart(localOnly = false) {
     // Snapshot current user BEFORE clearing (sign-out may already be in progress)
     const auth  = window._sgAuth;
     const db    = window._sgDb;
     const appId = window._sgAppId;
     const user  = auth?.currentUser;
-    const shouldClearCloud = user && !user.isAnonymous && db && appId;
+    // Only clear cloud if explicitly requested (NOT during sign-out).
+    // During sign-out (localOnly=true) the cloud cart must be preserved so that
+    // mergeCartOnLogin() can restore all items when the user signs back in.
+    const shouldClearCloud = !localOnly && user && !user.isAnonymous && db && appId;
 
     _cartItems = [];
     localStorage.removeItem(CART_KEY);
@@ -150,7 +156,7 @@ export function clearCart() {
         renderCartSidebar();
     }
 
-    // Clear cloud cart immediately while user session is still valid
+    // Clear cloud cart ONLY when it's an explicit user action (not sign-out)
     if (shouldClearCloud) {
         import('https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js').then(({ doc, setDoc }) => {
             const cartRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'cart');

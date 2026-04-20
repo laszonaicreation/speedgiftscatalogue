@@ -15,8 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS (same as main page) -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1776603269244">
-    <link rel="stylesheet" href="style.min.css?v=1776603269244">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1776670452535">
+    <link rel="stylesheet" href="style.min.css?v=1776670452535">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -664,65 +664,100 @@
             } catch (e) { /* no-op */ }
         }
 
-        onAuthStateChanged(auth, (user) => {
+        // ── PROFESSIONAL AUTH GUARD ──────────────────────────────────────────
+        // Problem: On mobile (especially iOS Safari), Firebase must restore auth
+        // state from IndexedDB before onAuthStateChanged fires. The first call
+        // may return null even for logged-in users, causing a false redirect loop.
+        //
+        // Solution:
+        //   1. Instantly check auth.currentUser (sync) — if already resolved, show page.
+        //   2. Otherwise, start the auth listener but only redirect AFTER a 3-second
+        //      settling window. This gives Firebase time to restore the session.
+        //      If the user IS logged in, the page renders immediately when Firebase fires.
+        //      If the user is NOT logged in after 3s, then we redirect to login.
+        // ────────────────────────────────────────────────────────────────────────
+
+        function showAccountPage(user) {
             const loading = document.getElementById('sg-loading');
             const page = document.getElementById('sg-page');
+            currentUser = user;
+            document.getElementById('acc-name').textContent = user.displayName || 'Speed Gifts User';
+            document.getElementById('acc-email').textContent = user.email || '';
 
-            if (user && !user.isAnonymous) {
-                currentUser = user;
-                document.getElementById('acc-name').textContent = user.displayName || 'Speed Gifts User';
-                document.getElementById('acc-email').textContent = user.email || '';
-                // Avatar — modern initial with dynamic gradient
-                const av = document.getElementById('acc-avatar');
-                const name = user.displayName || 'U';
-                const letter = name.trim()[0].toUpperCase();
-                const palettes = [
-                    ['#6366f1','#8b5cf6'],
-                    ['#0ea5e9','#6366f1'],
-                    ['#f59e0b','#ef4444'],
-                    ['#10b981','#0ea5e9'],
-                    ['#ec4899','#8b5cf6'],
-                    ['#f97316','#f59e0b'],
-                    ['#8b5cf6','#ec4899'],
-                    ['#14b8a6','#6366f1'],
-                ];
-                const [c1, c2] = palettes[letter.charCodeAt(0) % palettes.length];
+            // Avatar — modern initial with dynamic gradient
+            const av = document.getElementById('acc-avatar');
+            const name = user.displayName || 'U';
+            const letter = name.trim()[0].toUpperCase();
+            const palettes = [
+                ['#6366f1','#8b5cf6'],
+                ['#0ea5e9','#6366f1'],
+                ['#f59e0b','#ef4444'],
+                ['#10b981','#0ea5e9'],
+                ['#ec4899','#8b5cf6'],
+                ['#f97316','#f59e0b'],
+                ['#8b5cf6','#ec4899'],
+                ['#14b8a6','#6366f1'],
+            ];
+            const [c1, c2] = palettes[letter.charCodeAt(0) % palettes.length];
 
-                function showInitialAvatar() {
-                    av.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
-                    av.innerHTML = `<span class="sg-avatar-initial">${letter}</span>`;
-                }
+            function showInitialAvatar() {
+                av.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+                av.innerHTML = `<span class="sg-avatar-initial">${letter}</span>`;
+            }
 
-                if (user.photoURL) {
-                    av.style.background = 'transparent';
-                    const img = new Image();
-                    img.onload = () => {
-                        av.innerHTML = `<img src="${user.photoURL}" alt="${name}" style="width:100%;height:100%;object-fit:cover;">`;
-                    };
-                    img.onerror = () => showInitialAvatar();
-                    img.src = user.photoURL;
-                    // Show initial immediately, replace with photo if it loads
-                    showInitialAvatar();
-                } else {
-                    showInitialAvatar();
-                }
-                // Update shared navbar user icon to show logged-in state
-                const deskIcon = document.getElementById('desk-user-icon');
-                if (deskIcon) deskIcon.style.color = '#111';
-                const mobUserText = document.getElementById('mob-user-text');
-                const firstName = user.displayName?.split(' ')[0] || 'Account';
-                if (mobUserText) mobUserText.textContent = firstName.length > 7 ? 'Account' : firstName;
-                loadFavouritesCount();
-                loadCartCount();
-                loading.style.opacity = '0';
-                setTimeout(() => { loading.style.display = 'none'; page.style.display = 'block'; }, 300);
-                if (window.location.hash === '#orders') {
-                    setTimeout(() => document.getElementById('orders')?.scrollIntoView({ behavior: 'smooth' }), 400);
-                }
+            if (user.photoURL) {
+                av.style.background = 'transparent';
+                const img = new Image();
+                img.onload = () => {
+                    av.innerHTML = `<img src="${user.photoURL}" alt="${name}" style="width:100%;height:100%;object-fit:cover;">`;
+                };
+                img.onerror = () => showInitialAvatar();
+                img.src = user.photoURL;
+                showInitialAvatar(); // Show initial immediately, replace with photo if it loads
             } else {
+                showInitialAvatar();
+            }
+
+            // Update shared navbar user icon to show logged-in state
+            const deskIcon = document.getElementById('desk-user-icon');
+            if (deskIcon) deskIcon.style.color = '#111';
+            const mobUserText = document.getElementById('mob-user-text');
+            const firstName = user.displayName?.split(' ')[0] || 'Account';
+            if (mobUserText) mobUserText.textContent = firstName.length > 7 ? 'Account' : firstName;
+
+            loadFavouritesCount();
+            loadCartCount();
+            loading.style.opacity = '0';
+            setTimeout(() => { loading.style.display = 'none'; page.style.display = 'block'; }, 300);
+
+            if (window.location.hash === '#orders') {
+                setTimeout(() => document.getElementById('orders')?.scrollIntoView({ behavior: 'smooth' }), 400);
+            }
+        }
+
+        let _authSettled = false;
+
+        // Safety timeout: if Firebase hasn't resolved auth in 3 seconds → redirect.
+        // This only fires if the user is genuinely not logged in.
+        const _authRedirectTimer = setTimeout(() => {
+            if (!_authSettled) {
+                _authSettled = true;
                 sessionStorage.setItem('sg_login_redirect', '/account.html');
                 window.location.href = '/login.html';
             }
+        }, 3000);
+
+        onAuthStateChanged(auth, (user) => {
+            if (_authSettled) return; // Already handled (page shown or redirect triggered)
+
+            if (user && !user.isAnonymous) {
+                // User is logged in — cancel redirect timer and show page
+                _authSettled = true;
+                clearTimeout(_authRedirectTimer);
+                showAccountPage(user);
+            }
+            // If user is null or anonymous: do NOT redirect immediately.
+            // The safety timeout above handles the logged-out case after 3s.
         });
 
         // Edit Profile Modal
@@ -780,9 +815,13 @@
 
         window.handleSignOut = async () => {
             try {
+                // ── IMPORTANT: Only clear LOCAL storage on sign-out ──────────
+                // The cloud cart (Firestore) must be preserved so that when the
+                // user signs back in, mergeCartOnLogin() can restore all items.
+                // Deleting the cloud cart here would permanently lose the user's cart.
                 localStorage.removeItem('speedgifts_wishlist');
                 localStorage.removeItem('speedgifts_wishlist_ping');
-                localStorage.removeItem('speedgifts_cart');
+                localStorage.removeItem('speedgifts_cart');      // local only — cloud stays intact
                 localStorage.removeItem('speedgifts_guest_additions');
                 await signOut(auth);
                 showToast('Signed out successfully');

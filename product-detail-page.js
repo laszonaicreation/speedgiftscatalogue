@@ -343,7 +343,7 @@ async function bootstrap() {
         updateAuthUserUI,
         onSignOut: () => {
             clearWishlistOnLogout();
-            clearCart();
+            clearCart(true);
         },
         showToast
     });

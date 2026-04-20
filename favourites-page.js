@@ -12,7 +12,7 @@ import { getFirestore, collection, query, where, getDocs, documentId, doc, setDo
 
 import { mountSharedShell } from './shared-shell.js?v=4';
 import { initSharedAuth } from './shared-auth.js';
-import { addToCart, openCartSidebar } from './cart.js';
+import { addToCart, openCartSidebar, clearCart } from './cart.js';
 
 // ── Firebase ──────────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -78,7 +78,9 @@ initSharedAuth({
     onSignOut: () => {
         localStorage.removeItem(WISHLIST_KEY);
         localStorage.removeItem('speedgifts_wishlist_ping');
-        localStorage.removeItem('speedgifts_cart');
+        // localOnly=true: only clear localStorage, keep Firestore cloud cart intact.
+        // The user's cart is restored by mergeCartOnLogin() on next sign-in.
+        clearCart(true);
         wishlistIds = [];
         loadedProducts = [];
         // Update wishlist badge to 0 immediately

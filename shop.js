@@ -1186,7 +1186,7 @@ initSharedAuth({
     updateAuthUserUI: refreshAuthUI,
     onSignOut: () => {
         clearWishlistOnLogout();
-        clearCart();
+        clearCart(true);
     },
     showToast
 });
