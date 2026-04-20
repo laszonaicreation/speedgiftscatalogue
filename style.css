@@ -937,7 +937,7 @@ img[src=""] {
 
 /* Ensure bottom nav inner div always has correct padding
    (Tailwind px-6/py-3 may not compile when injected via shared-shell.js) */
-#mobile-bottom-nav > div {
+#mobile-bottom-nav>div {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
     padding-top: 0.75rem;
@@ -1089,14 +1089,12 @@ img[src=""] {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.55) 45%,
-        rgba(255, 255, 255, 0.75) 50%,
-        rgba(255, 255, 255, 0.55) 55%,
-        transparent 100%
-    );
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.55) 45%,
+            rgba(255, 255, 255, 0.75) 50%,
+            rgba(255, 255, 255, 0.55) 55%,
+            transparent 100%);
     background-size: 200% 100%;
     animation: slider-shimmer 1.6s ease-in-out infinite;
 }
@@ -1116,6 +1114,7 @@ img[src=""] {
     border-radius: 50%;
     background: #e0e0e0;
 }
+
 .slider-skeleton-dot:first-child {
     width: 24px;
     border-radius: 10px;
@@ -1123,8 +1122,13 @@ img[src=""] {
 }
 
 @keyframes slider-shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 /* ── CATEGORY SKELETON LOADING ─────────────────────────────────────────────── */
@@ -1140,12 +1144,10 @@ img[src=""] {
 .cat-skel-item::after {
     content: '';
     display: block;
-    background: linear-gradient(
-        90deg,
-        #f3f4f6 0%,
-        #ffffff 50%,
-        #f3f4f6 100%
-    );
+    background: linear-gradient(90deg,
+            #f3f4f6 0%,
+            #ffffff 50%,
+            #f3f4f6 100%);
     background-size: 200% 100%;
     animation: slider-shimmer 1.6s ease-in-out infinite;
 }
@@ -3291,4 +3293,3 @@ body,
 }
 
 /* Skeleton CSS removed — slider-skeleton-slide element no longer used */
-
