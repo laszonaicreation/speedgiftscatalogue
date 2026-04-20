@@ -13,6 +13,7 @@ import { getFirestore, collection, query, where, getDocs, documentId, doc, setDo
 import { mountSharedShell } from './shared-shell.js?v=4';
 import { initSharedAuth } from './shared-auth.js';
 import { addToCart, openCartSidebar, clearCart } from './cart.js';
+import { getWishlistItems, initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout } from './wishlist.js';
 
 // ── Firebase ──────────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -33,11 +34,12 @@ window._sgAuth = auth;
 window._sgDb = db;
 window._sgAppId = APP_ID;
 
+// Expose state globally for wishlist.js
+const state = { authUser: null, authMode: 'login', user: null };
+window._sgState = state;
+
 // ── State ─────────────────────────────────────────────────────────────────────
-let wishlistIds = [];
 let loadedProducts = [];
-let currentUser = null;
-const state = { authUser: null, authMode: 'login' };
 
 // ── Mount shared shell (same top nav + mobile bottom nav as all other pages) ──
 mountSharedShell('favourites');
@@ -76,18 +78,10 @@ initSharedAuth({
     getAuthMode: () => state.authMode,
     updateAuthUserUI,
     onSignOut: () => {
-        localStorage.removeItem(WISHLIST_KEY);
-        localStorage.removeItem('speedgifts_wishlist_ping');
-        // localOnly=true: only clear localStorage, keep Firestore cloud cart intact.
-        // The user's cart is restored by mergeCartOnLogin() on next sign-in.
-        clearCart(true);
-        wishlistIds = [];
+        clearWishlistOnLogout();
+        clearCart(true); // purely local clear for cart
         loadedProducts = [];
-        // Update wishlist badge to 0 immediately
-        ['nav-wishlist-count', 'nav-wishlist-count-mob'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.setProperty('display', 'none', 'important');
-        });
+        renderCurrentState(); // refresh the view
     },
     showToast
 });
@@ -99,30 +93,8 @@ function getOptimizedUrl(url, w = 300) {
     return url;
 }
 
-function loadIds() {
-    try {
-        const raw = localStorage.getItem(WISHLIST_KEY);
-        const list = raw ? JSON.parse(raw) : [];
-        return list.map(e => typeof e === 'string' ? e : e?.id).filter(Boolean);
-    } catch { return []; }
-}
-
-function saveIds(ids) {
-    try { localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids.map(id => ({ id })))); } catch {}
-}
-
-async function syncToFirestore(ids) {
-    if (!currentUser || currentUser.isAnonymous) return;
-    try {
-        const ref = doc(db, 'artifacts', APP_ID, 'users', currentUser.uid, 'data', 'wishlist');
-        await setDoc(ref, { ids: ids.map(id => ({ id })) }, { merge: false });
-    } catch (e) {
-        console.warn('[Favourites] Firestore sync failed:', e);
-    }
-}
-
 async function fetchProducts(ids) {
-    if (!ids.length) return [];
+    if (!ids || !ids.length) return [];
     const prodCol = collection(db, 'artifacts', APP_ID, 'public', 'data', 'products');
     const results = [];
     for (let i = 0; i < ids.length; i += 30) {
@@ -162,13 +134,15 @@ function renderEmpty() {
     </div>`;
 }
 
-function renderItems(products) {
-    const ordered = wishlistIds.map(id => products.find(p => p.id === id)).filter(Boolean);
-    if (!ordered.length) return renderEmpty();
+function renderItems(items) {
+    if (!items.length) return renderEmpty();
 
     document.getElementById('cart-all-btn').style.display = 'flex';
 
-    return `<div class="sg-items-list">${ordered.map(p => {
+    return `<div class="sg-items-list">${items.map(entry => {
+        const id = entry.id || entry;
+        const p = loadedProducts.find(x => x.id === id);
+        if (!p) return '';
         const img = getOptimizedUrl(Array.isArray(p.images) ? p.images[0] : p.img, 300);
         const price = p.price ? `<div class="fav-price"><strong>${parseFloat(p.price).toFixed(2)}</strong> AED</div>` : '';
         return `
@@ -196,29 +170,10 @@ function renderItems(products) {
     }).join('')}</div>`;
 }
 
-// ── Nav badge (uses shared nav IDs) ──────────────────────────────────────────
-function updateNavBadge() {
-    const count = wishlistIds.length;
-    ['nav-wishlist-count', 'nav-wishlist-count-mob'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (count > 0) {
-            el.innerText = count;
-            el.style.setProperty('display', 'flex', 'important');
-            el.classList.remove('hidden');
-        } else {
-            el.style.setProperty('display', 'none', 'important');
-            el.classList.add('hidden');
-        }
-    });
-}
-
 // ── Remove item ───────────────────────────────────────────────────────────────
-window.removeItem = (id) => {
-    wishlistIds = wishlistIds.filter(i => i !== id);
-    saveIds(wishlistIds);
-    syncToFirestore(wishlistIds);
-    updateNavBadge();
+window.removeItem = async (id) => {
+    await toggleWishlist(null, id); 
+
     const el = document.querySelector(`.fav-item[data-id="${id}"]`);
     if (el) {
         el.classList.add('removing');
@@ -243,9 +198,11 @@ window.addFavToCart = (id) => {
 // ── Add All To Cart ───────────────────────────────────────────────────────────
 window.addAllToCart = (e) => {
     e.preventDefault();
-    if (!loadedProducts.length || !wishlistIds.length) return;
+    const currentWishlist = getWishlistItems();
+    if (!loadedProducts.length || !currentWishlist.length) return;
     let addedCount = 0;
-    wishlistIds.forEach(id => {
+    currentWishlist.forEach(entry => {
+        const id = entry.id || entry;
         const p = loadedProducts.find(x => x.id === id);
         if (p) {
             const img = Array.isArray(p.images) ? p.images[0] : p.img;
@@ -279,15 +236,54 @@ window.focusSearch = () => { window.location.href = '/shop.html'; };
 // ── openCategoriesSidebar ─────────────────────────────────────────────────────
 window.openCategoriesSidebar = () => { window.location.href = '/shop.html'; };
 
+window._sgWishlistCallback = () => {
+    // Fired whenever wishlist changes (from other tabs, realtime sync, etc.)
+    renderCurrentState();
+};
+
+async function renderCurrentState() {
+    const currentWishlist = getWishlistItems();
+    const container = document.getElementById('sg-list-container');
+    const countEl = document.getElementById('fav-count-text');
+
+    if (!currentWishlist.length) {
+        if (countEl) countEl.textContent = 'No saved items yet';
+        if (container) container.innerHTML = renderEmpty();
+        
+        const btn = document.getElementById('cart-all-btn');
+        if (btn) btn.style.display = 'none';
+        return;
+    }
+
+    // Identify which products need to be fetched (not loaded yet)
+    const neededIds = currentWishlist.map(e => e.id || e);
+    const missingIds = neededIds.filter(id => !loadedProducts.some(p => p.id === id));
+
+    if (missingIds.length > 0) {
+        if (container) container.innerHTML = renderSkeletons(Math.min(neededIds.length, 5));
+        if (countEl) countEl.textContent = `Loading ${neededIds.length} item${neededIds.length !== 1 ? 's' : ''}...`;
+
+        try {
+            const newProducts = await fetchProducts(missingIds);
+            loadedProducts = [...loadedProducts, ...newProducts];
+        } catch (err) {
+            console.error('Favourites fetch error:', err);
+            if (container) container.innerHTML = `<div class="sg-empty"><i class="fa-solid fa-triangle-exclamation"></i><h2>Could not load items</h2><p>Check your connection and try again.</p><a href="/" class="sg-empty-btn">Go Home</a></div>`;
+            return;
+        }
+    }
+
+    if (container) container.innerHTML = renderItems(currentWishlist);
+    const count = neededIds.length;
+    if (countEl) countEl.textContent = `${count} saved item${count !== 1 ? 's' : ''}`;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-    wishlistIds = loadIds();
-    updateNavBadge();
+    initWishlist();
 
     const loading = document.getElementById('sg-loading');
     const page = document.getElementById('sg-page');
-    const container = document.getElementById('sg-list-container');
-    const countEl = document.getElementById('fav-count-text');
 
     if (page) page.style.display = 'block';
     if (loading) {
@@ -295,32 +291,20 @@ async function init() {
         setTimeout(() => { loading.style.display = 'none'; }, 300);
     }
 
-    if (!wishlistIds.length) {
-        if (countEl) countEl.textContent = 'No saved items yet';
-        if (container) container.innerHTML = renderEmpty();
-        return;
-    }
-
-    if (container) container.innerHTML = renderSkeletons(Math.min(wishlistIds.length, 5));
-    if (countEl) countEl.textContent = `Loading ${wishlistIds.length} item${wishlistIds.length !== 1 ? 's' : ''}...`;
-
-    try {
-        loadedProducts = await fetchProducts(wishlistIds);
-        if (container) container.innerHTML = renderItems(loadedProducts);
-        const count = wishlistIds.length;
-        if (countEl) countEl.textContent = `${count} saved item${count !== 1 ? 's' : ''}`;
-    } catch (err) {
-        console.error('Favourites error:', err);
-        if (container) container.innerHTML = `<div class="sg-empty"><i class="fa-solid fa-triangle-exclamation"></i><h2>Could not load items</h2><p>Check your connection and try again.</p><a href="/" class="sg-empty-btn">Go Home</a></div>`;
-    }
+    renderCurrentState();
 }
 
 // ── Auth state ────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
-    currentUser = user;
+    state.user = user;
     updateAuthUserUI();
     if (!user) {
         signInAnonymously(auth).catch(() => {});
+    } else if (!user.isAnonymous) {
+        // Now if they just signed in, tell wishlist.js to merge the cloud
+        await loadWishlist();
+        renderCurrentState(); // render with any new merged products
     }
-    await init();
 });
+
+init();

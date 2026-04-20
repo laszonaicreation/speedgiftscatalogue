@@ -107,11 +107,15 @@ async function getFS() {
 async function cloudWrite() {
     const ref = getWishRef();
     if (!ref) return;
+
+    // Snapshot data before async operation to avoid race conditions (e.g. sign out wiping it)
+    const snapData = [..._data];
+
     try {
         const { doc, setDoc } = await getFS();
         const wishRef = doc(ref.db, 'artifacts', ref.appId, 'users', ref.uid, 'data', 'wishlist');
-        await setDoc(wishRef, { ids: _data });
-        console.log('[Wishlist] Cloud saved:', _data.length, 'items');
+        await setDoc(wishRef, { ids: snapData });
+        console.log('[Wishlist] Cloud saved:', snapData.length, 'items');
     } catch (err) {
         console.error('[Wishlist] Cloud write failed:', err.code, err.message);
     }
