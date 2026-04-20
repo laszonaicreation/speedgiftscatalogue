@@ -1258,6 +1258,22 @@ function restoreShopReturnPosition() {
     setTimeout(attempt, 60);
 }
 
-window.addEventListener('pageshow', () => {
+window.addEventListener('pageshow', (e) => {
     restoreShopReturnPosition();
+
+    // After BFCache restore, auth.currentUser may still reflect the OLD cached state.
+    // auth.authStateReady() waits until Firebase fully resolves the NEW auth state
+    // (e.g. returning via history.back() from login page on mobile).
+    if (e.persisted) {
+        auth.authStateReady().then(() => {
+            const user = auth.currentUser;
+            if (user && !user.isAnonymous) {
+                mergeCartOnLogin(user.uid);
+                loadWishlist();
+            } else {
+                updateCartBadges();
+            }
+        });
+    }
 });
+

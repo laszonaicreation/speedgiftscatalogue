@@ -83,7 +83,7 @@ let clicks = 0, lastClickTime = 0;
 // By the time Firebase returns data, the module is already in memory.
 const _isMinBuild = import.meta.url?.includes('.min.js');
 window._isMinBuild = _isMinBuild; // Exposed so lazily-loaded modules (bridge, admin) can detect build type
-const _sliderModulePromise   = import(_isMinBuild ? './app-slider.min.js'   : './app-slider.js');
+const _sliderModulePromise = import(_isMinBuild ? './app-slider.min.js' : './app-slider.js');
 const _spotlightModulePromise = import(_isMinBuild ? './app-spotlight.min.js' : './app-spotlight.js');
 
 // Legacy route support: old links used /?tab=shop.
@@ -553,6 +553,18 @@ const handleReentry = () => {
 
 window.addEventListener('pageshow', (e) => {
     if (e.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        // After BFCache restore, auth.currentUser may still reflect the OLD cached state
+        // (anonymous/null) even if the user just signed in on login.html.
+        // auth.authStateReady() waits until Firebase fully resolves the NEW auth state.
+        auth.authStateReady().then(() => {
+            const user = auth.currentUser;
+            if (user && !user.isAnonymous) {
+                mergeCartOnLogin(user.uid);
+                loadWishlist();
+            } else {
+                updateCartBadges();
+            }
+        });
         setTimeout(handleReentry, 150);
     }
 });
@@ -1407,7 +1419,7 @@ window.openFavoritesSidebar = () => {
     window.location.href = '/favourites.html';
 };
 
-window.closeFavoritesSidebar = () => {};
+window.closeFavoritesSidebar = () => { };
 
 
 window.openCategoriesSidebar = () => {
@@ -1696,9 +1708,9 @@ window.focusSearch = () => {
 // SLIDER + ANNOUNCEMENT — lazy-loaded from app-slider.js
 // Stubs replaced once the module resolves (parallel to Firebase data fetch).
 // ─────────────────────────────────────────────────────────────────────────────
-let renderSlider         = () => {};
-let renderAnnouncementBar = () => {};
-let _sliderModuleLoaded  = false;
+let renderSlider = () => { };
+let renderAnnouncementBar = () => { };
+let _sliderModuleLoaded = false;
 
 async function _loadSliderModule() {
     if (_sliderModuleLoaded) return;
@@ -1706,7 +1718,7 @@ async function _loadSliderModule() {
     try {
         const { initSlider } = await _sliderModulePromise; // Already downloading since page load!
         const ctx = initSlider({ db, appId, doc, setDoc });
-        renderSlider          = ctx.renderSlider;
+        renderSlider = ctx.renderSlider;
         renderAnnouncementBar = ctx.renderAnnouncementBar;
         renderSlider();
         renderAnnouncementBar();
@@ -1719,17 +1731,17 @@ async function _loadSliderModule() {
 
 
 // ADMIN SLIDER FUNCTIONS (proxy stubs — admin logic lives in app-admin.js)
-window.saveSlider                 = createAdminProxy('saveSlider');
+window.saveSlider = createAdminProxy('saveSlider');
 window.cloudinaryBulkSliderUpload = createAdminProxy('cloudinaryBulkSliderUpload');
-window.handleSliderBulkDrop      = createAdminProxy('handleSliderBulkDrop');
-window.editSlider                 = createAdminProxy('editSlider');
-window.deleteSlider               = createAdminProxy('deleteSlider');
+window.handleSliderBulkDrop = createAdminProxy('handleSliderBulkDrop');
+window.editSlider = createAdminProxy('editSlider');
+window.deleteSlider = createAdminProxy('deleteSlider');
 
 // (Announcement bar code lives in app-slider.js — loaded lazily after data fetch)
 
 // ADMIN ANNOUNCEMENTS (proxy stubs)
 window.addAnnouncementRow = createAdminProxy('addAnnouncementRow');
-window.saveAnnouncements  = createAdminProxy('saveAnnouncements');
+window.saveAnnouncements = createAdminProxy('saveAnnouncements');
 
 // Auth state and data fetching are handled by onAuthStateChanged.
 
@@ -1850,7 +1862,7 @@ document.addEventListener('mousedown', (e) => {
 // SPOTLIGHT SECTION — lazy-loaded from app-spotlight.js
 // Stub replaced once the module resolves.
 // ─────────────────────────────────────────────────────────────────────────────
-window.renderSpotlightSection = () => {}; // no-op stub until module loads
+window.renderSpotlightSection = () => { }; // no-op stub until module loads
 let _spotlightModuleLoaded = false;
 
 async function _loadSpotlightModule() {

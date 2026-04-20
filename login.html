@@ -457,11 +457,10 @@
     const redirectTo = sessionStorage.getItem('sg_login_redirect') || '/';
 
     function performRedirect(url) {
-        if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
-            window.history.back();
-        } else {
-            window.location.replace(url);
-        }
+        // Always use location.replace() for a fresh page load after sign-in.
+        // history.back() restores from BFCache where Firebase auth state is stale,
+        // causing cart & wishlist badges to not update until manual refresh.
+        window.location.replace(url);
     }
 
     // ─── PASSWORD RESET MODE ──────────────────────────────────────────────────
