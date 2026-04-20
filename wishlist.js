@@ -103,22 +103,32 @@ async function getFS() {
     return _fsModule;
 }
 
-/** Write current _data to Firestore. Silent on failure. */
+let _wishlistSyncTimer = null;
+
+/** Write current _data to Firestore with debounce. Silent on failure. */
 async function cloudWrite() {
     const ref = getWishRef();
     if (!ref) return;
 
-    // Snapshot data before async operation to avoid race conditions (e.g. sign out wiping it)
-    const snapData = [..._data];
-
-    try {
-        const { doc, setDoc } = await getFS();
-        const wishRef = doc(ref.db, 'artifacts', ref.appId, 'users', ref.uid, 'data', 'wishlist');
-        await setDoc(wishRef, { ids: snapData });
-        console.log('[Wishlist] Cloud saved:', snapData.length, 'items');
-    } catch (err) {
-        console.error('[Wishlist] Cloud write failed:', err.code, err.message);
-    }
+    if (_wishlistSyncTimer) clearTimeout(_wishlistSyncTimer);
+    
+    _wishlistSyncTimer = setTimeout(async () => {
+        try {
+            // Check auth again just in case user logged out during the delay
+            const currentRef = getWishRef();
+            if (!currentRef) return;
+            
+            // IMPORTANT: Snapshot data just before grabbing FS to avoid rapid click overwrites
+            const snapData = [..._data];
+            
+            const { doc, setDoc } = await getFS();
+            const wishRef = doc(currentRef.db, 'artifacts', currentRef.appId, 'users', currentRef.uid, 'data', 'wishlist');
+            await setDoc(wishRef, { ids: snapData });
+            console.log('[Wishlist] Cloud saved:', snapData.length, 'items');
+        } catch (err) {
+            console.error('[Wishlist] Cloud write failed:', err.code, err.message);
+        }
+    }, 800); // 800ms debounce
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

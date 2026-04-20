@@ -193,7 +193,7 @@ async function fetchData() {
             }
         }
 
-        setupSearchBackNavigationStep();
+        // setupSearchBackNavigationStep(); // Removed per user request
 
         // Render products — wishlist already loaded via initWishlist() above
         renderCategoryChips();

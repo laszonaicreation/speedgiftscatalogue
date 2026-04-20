@@ -456,7 +456,15 @@
 
     const redirectTo = sessionStorage.getItem('sg_login_redirect') || '/';
 
-    // â”€â”€ PASSWORD RESET MODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function performRedirect(url) {
+        if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
+            window.history.back();
+        } else {
+            window.location.replace(url);
+        }
+    }
+
+    // ─── PASSWORD RESET MODE ──────────────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
     const urlMode = urlParams.get('mode');
     const oobCode = urlParams.get('oobCode');
@@ -469,7 +477,7 @@
         onAuthStateChanged(auth, (user) => {
             if (user && !user.isAnonymous) {
                 sessionStorage.removeItem('sg_login_redirect');
-                window.location.href = redirectTo;
+                performRedirect(redirectTo);
             }
         });
     }
@@ -583,7 +591,7 @@
                 showToast('Account created!');
             }
             sessionStorage.removeItem('sg_login_redirect');
-            setTimeout(() => { window.location.href = redirectTo; }, 800);
+            setTimeout(() => { performRedirect(redirectTo); }, 800);
         } catch (err) {
             const msg = err.message?.replace('Firebase:', '').trim() || 'Authentication failed';
             showToast(msg);
@@ -598,7 +606,7 @@
             await signInWithPopup(auth, provider);
             showToast('Signed in with Google!');
             sessionStorage.removeItem('sg_login_redirect');
-            setTimeout(() => { window.location.href = redirectTo; }, 800);
+            setTimeout(() => { performRedirect(redirectTo); }, 800);
         } catch {
             showToast('Google sign-in cancelled or failed');
         }
