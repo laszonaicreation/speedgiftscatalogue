@@ -218,9 +218,9 @@ window.clearSearch = () => {
     if (deskInput) deskInput.value = '';
     if (deskClear) deskClear.style.display = 'none';
 };
-window.handleFavoritesClick = () => window.location.href = '/favourites.html';
-window.openFavoritesSidebar = () => window.location.href = '/favourites.html';
-window.closeFavoritesSidebar = () => {};
+window.handleFavoritesClick = () => window.location.href = 'favourites.html';
+window.openFavoritesSidebar = () => window.location.href = 'favourites.html';
+window.closeFavoritesSidebar = () => { };
 
 // Cart sidebar wired from cart.js module globals
 window.openCartSidebar = openCartSidebar;

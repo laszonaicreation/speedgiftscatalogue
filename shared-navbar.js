@@ -124,10 +124,10 @@ export function initSharedNavbar(config) {
     };
 
     window.handleFavoritesClick = () => {
-        window.location.href = '/favourites.html';
+        window.location.href = 'favourites.html';
     };
 
-    window.closeFavoritesSidebar = () => {};
+    window.closeFavoritesSidebar = () => { };
 
     window.openCategoriesSidebar = () => {
         renderSidebarCategories();

@@ -571,11 +571,19 @@ window.addEventListener('pageshow', (e) => {
 
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+        // Don't trigger a data refresh if the admin panel is actively open
+        const adminPanel = document.getElementById('admin-panel');
+        if (adminPanel && !adminPanel.classList.contains('hidden')) return;
         setTimeout(handleReentry, 250);
     }
 });
 
-window.onfocus = () => { handleReentry(); };
+window.onfocus = () => {
+    // Don't trigger a data refresh if the admin panel is actively open
+    const adminPanel = document.getElementById('admin-panel');
+    if (adminPanel && !adminPanel.classList.contains('hidden')) return;
+    handleReentry();
+};
 
 window.onpopstate = () => {
     refreshData(true);
@@ -1417,11 +1425,11 @@ window.shareProduct = async (id, name) => {
 };
 
 window.handleFavoritesClick = () => {
-    window.location.href = '/favourites.html';
+    window.location.href = 'favourites.html';
 };
 
 window.openFavoritesSidebar = () => {
-    window.location.href = '/favourites.html';
+    window.location.href = 'favourites.html';
 };
 
 window.closeFavoritesSidebar = () => { };
@@ -2081,3 +2089,12 @@ function initMainSharedNavbar() {
     }
 }
 
+if (_urlParams.get('admin') === 'true') {
+    let atab = _urlParams.get('atab');
+    if (atab) state.adminTab = atab;
+    setTimeout(() => {
+        if (typeof window.showAdminPanel === 'function') {
+            window.showAdminPanel();
+        }
+    }, 200);
+}

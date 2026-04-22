@@ -114,9 +114,9 @@ window.__cartPageRemoveWish = (id) => {
 };
 
 // ── Favorites: navigate to page ───────────────────────────────────────────────
-window.handleFavoritesClick = () => window.location.href = '/favourites.html';
-window.openFavoritesSidebar = () => window.location.href = '/favourites.html';
-window.closeFavoritesSidebar = () => {};
+window.handleFavoritesClick = () => window.location.href = 'favourites.html';
+window.openFavoritesSidebar = () => window.location.href = 'favourites.html';
+window.closeFavoritesSidebar = () => { };
 
 // ── Auth User UI ──────────────────────────────────────────────────────────────
 function updateAuthUserUI() {
