@@ -33,12 +33,12 @@ for (const file of jsFiles) {
             // Rewrite imports to point to their .min.js counterparts
             const newContent = content.replace(/(["'])(\.\/[^"']+)\.js(\?[^"']*)?\1/g, (match, quote, pathBase, qs) => {
                 if (pathBase.endsWith('.min')) return match; // already .min.js
-                return `${quote}${pathBase}.min.js${qs || ''}${quote}`;
+                return `${quote}${pathBase}.min.js?v=${Date.now()}${quote}`;
             });
             
             if (content !== newContent) {
                 fs.writeFileSync(minPath, newContent, 'utf8');
-                console.log(`  -> Automatically updated internal imports -> .min.js`);
+                console.log(`  -> Automatically updated internal imports -> .min.js with cachebuster`);
             }
         }
         successCount++;

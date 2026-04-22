@@ -700,6 +700,7 @@ async function refreshData(isNavigationOnly = false) {
             };
             const oldVisualSig = buildSig(DATA.p, DATA.c, DATA.m, DATA.s);
 
+            const isAdminUser = auth.currentUser && auth.currentUser.email === "laszonaicreation@gmail.com";
             const bundle = await fetchHomeDataBundle({
                 db,
                 appId,
@@ -711,7 +712,8 @@ async function refreshData(isNavigationOnly = false) {
                 catCol,
                 megaCol,
                 sliderCol,
-                popupSettingsCol
+                popupSettingsCol,
+                isAdmin: isAdminUser
             });
 
             DATA.p = bundle.products;
@@ -742,6 +744,9 @@ async function refreshData(isNavigationOnly = false) {
             renderDesktopMegaMenu();
             initMainSharedNavbar();
             sharedNavMain?.refresh();
+            if (typeof window.renderAdminUI === 'function') {
+                window.renderAdminUI();
+            }
             // Defer non-critical preloading until the first paint is done.
             if ('requestIdleCallback' in window) {
                 window.requestIdleCallback(() => window.preloadInitialBatch(), { timeout: 1200 });

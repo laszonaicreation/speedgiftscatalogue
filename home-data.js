@@ -11,7 +11,8 @@ export async function fetchHomeDataBundle({
     catCol,
     megaCol,
     sliderCol,
-    popupSettingsCol
+    popupSettingsCol,
+    isAdmin = false
 }) {
     const today = getTodayStr();
     const todayRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
@@ -22,19 +23,34 @@ export async function fetchHomeDataBundle({
     const qFeatured = query(prodCol, where('isFeatured', '==', true));
     const qFallback = query(prodCol, limit(30)); // Provides a fallback if no items are featured
 
-    const [configSnap, featuredSnap, fallbackSnap, cSnap, mSnap, sSnap, popSnap, todaySnap] = await Promise.all([
-        getDocs(qConfig).catch(() => ({ docs: [] })),
-        getDocs(qFeatured).catch(() => ({ docs: [] })),
-        getDocs(qFallback).catch(() => ({ docs: [] })),
-        getDocs(catCol),
-        getDocs(megaCol).catch(() => ({ docs: [] })),
-        getDocs(sliderCol).catch(() => ({ docs: [] })),
-        getDocs(popupSettingsCol).catch(() => ({ empty: true })),
-        getDoc(todayRef).catch(() => null)
-    ]);
+    let cSnap, mSnap, sSnap, popSnap, todaySnap, allDocs;
 
+    if (isAdmin) {
+        const [allProdSnap, ...otherSnaps] = await Promise.all([
+            getDocs(prodCol).catch(() => ({ docs: [] })),
+            getDocs(catCol),
+            getDocs(megaCol).catch(() => ({ docs: [] })),
+            getDocs(sliderCol).catch(() => ({ docs: [] })),
+            getDocs(popupSettingsCol).catch(() => ({ empty: true })),
+            getDoc(todayRef).catch(() => null)
+        ]);
+        allDocs = allProdSnap.docs;
+        [cSnap, mSnap, sSnap, popSnap, todaySnap] = otherSnaps;
+    } else {
+        const [configSnap, featuredSnap, fallbackSnap, ...otherSnaps] = await Promise.all([
+            getDocs(qConfig).catch(() => ({ docs: [] })),
+            getDocs(qFeatured).catch(() => ({ docs: [] })),
+            getDocs(qFallback).catch(() => ({ docs: [] })),
+            getDocs(catCol),
+            getDocs(megaCol).catch(() => ({ docs: [] })),
+            getDocs(sliderCol).catch(() => ({ docs: [] })),
+            getDocs(popupSettingsCol).catch(() => ({ empty: true })),
+            getDoc(todayRef).catch(() => null)
+        ]);
+        allDocs = [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs];
+        [cSnap, mSnap, sSnap, popSnap, todaySnap] = otherSnaps;
+    }
     const uniqueMap = new Map();
-    const allDocs = [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs];
     allDocs.forEach(d => {
         if (!uniqueMap.has(d.id)) {
             uniqueMap.set(d.id, { id: d.id, ...d.data() });
