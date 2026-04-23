@@ -34,6 +34,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /artifacts/{anyAppId}/public/data/landingSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
     // 2. Leads (Customer Data): Public Create, ONLY ADMIN Can Read/Delete
     match /artifacts/{anyAppId}/public/data/leads/{leadId} {

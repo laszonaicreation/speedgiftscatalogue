@@ -1152,6 +1152,10 @@ export function initAdmin(ctx) {
         if (select) select.innerHTML = `<option value="all">All Categories</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     }
 
+    // Expose so admin-page.js can call after pre-loading HTML (showAdminPanel skips these when HTML already in DOM)
+    window.populateCatSelect = populateCatSelect;
+    window.populateAdminCatFilter = populateAdminCatFilter;
+
     window.resetForm = () => {
         // Basic fields
         const fields = ['edit-id', 'edit-cat-id', 'p-name', 'p-price', 'p-original-price', 'p-desc', 'p-details', 'p-keywords', 'c-name', 'c-img', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Added 'p-badge', 'm-name', 'c-img', 'edit-cat-id', 'p-original-price'

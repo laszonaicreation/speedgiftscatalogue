@@ -7,8 +7,8 @@ import { initSharedAuth } from "./shared-auth.js";
 import { mountSharedShell } from "./shared-shell.js?v=2";
 import { renderCategoriesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initWishlist, loadWishlist, getWishlistItems, clearWishlistOnLogout } from "./wishlist.js";
-import { createAdminProxyFactory } from "./home-admin-bridge.js";
 import { fetchHomeDataBundle } from "./home-data.js";
+
 import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, ensureHomeLoadMoreContainer, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection, renderHomeCategoryRow, getHomeBestsellerProducts, applyHomeBestsellerSeo, ensureHomeViewScaffold, getHomeRenderElements, runHomePostRenderTasks } from "./home-ui2.js";
 import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
 
@@ -855,12 +855,12 @@ async function refreshData(isNavigationOnly = false) {
         populateCatSelect();
         populateAdminCatFilter();
 
-        // PERSISTENCE: Auto-open admin if in URL
+        // PERSISTENCE: ?admin=true — redirect to standalone admin.html
         const openAdmin = urlParams.get('admin') === 'true';
         const activeTab = urlParams.get('atab');
         if (openAdmin) {
-            if (activeTab) state.adminTab = activeTab;
-            window.showAdminPanel();
+            const target = 'admin.html' + (activeTab ? `?atab=${activeTab}` : '');
+            window.location.replace(target);
         }
 
 
@@ -1189,36 +1189,10 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
     }
 };
 
-// Admin item editors are lazy-loaded from app-admin.js
 
-const createAdminProxy = createAdminProxyFactory(() => ({
-    db, auth, state, DATA, appId,
-    prodCol, catCol, sliderCol, megaCol,
-    popupSettingsCol, landingSettingsCol, leadsCol,
-    doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs,
-    collection, increment, writeBatch, arrayUnion,
-    query, where, documentId,
-    showToast, refreshData, renderHome, getAuth,
-    getBadgeLabel, getOptimizedUrl, getColumnsCount,
-    renderSlider, renderInsights: (...args) => window.renderInsights(...args)
-}));
+// Admin panel moved to admin.html — no longer lazy-loaded here.
 
-window.saveProduct = createAdminProxy('saveProduct');
-window.saveCategory = createAdminProxy('saveCategory');
-window.deleteProduct = createAdminProxy('deleteProduct');
-window.deleteCategory = createAdminProxy('deleteCategory');
-window.saveMegaMenu = createAdminProxy('saveMegaMenu');
-window.deleteMegaMenu = createAdminProxy('deleteMegaMenu');
-window.editMegaMenu = createAdminProxy('editMegaMenu');
-window.addColorVariationRow = createAdminProxy('addColorVariationRow');
-window.addVariationRow = createAdminProxy('addVariationRow');
 
-window.editProduct = createAdminProxy('editProduct');
-window.editCategory = createAdminProxy('editCategory');
-window.exportData = createAdminProxy('exportData');
-window.exportExcel = createAdminProxy('exportExcel');
-window.copyUniversalJSON = createAdminProxy('copyUniversalJSON');
-window.importData = createAdminProxy('importData');
 
 window.sendBulkInquiry = () => {
     // Customer flow: bulk inquiry is for Favorites only (selection/share moved to shop page).
@@ -1291,7 +1265,8 @@ window.handleFloatingWhatsAppClick = () => {
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
-window.renderAdminUI = createAdminProxy('renderAdminUI');
+window.renderAdminUI = () => {}; // no-op: admin moved to admin.html
+
 
 window.handleCategoryRowScroll = (el) => {
     const container = el.parentElement;
@@ -1385,11 +1360,13 @@ window.toggleHomeBestView = (expand) => {
     }
 };
 
-window.showAdminPanel = createAdminProxy('showAdminPanel');
-window.hideAdminPanel = createAdminProxy('hideAdminPanel');
-window.toggleSidebarGroup = createAdminProxy('toggleSidebarGroup');
-window.expandSidebarGroupForTab = createAdminProxy('expandSidebarGroupForTab');
-window.switchAdminTab = createAdminProxy('switchAdminTab');
+// Admin panel redirect — admin.html is the standalone admin entry point
+window.showAdminPanel = () => window.location.href = 'admin.html';
+window.hideAdminPanel = () => {};
+window.toggleSidebarGroup = () => {};
+window.expandSidebarGroupForTab = () => {};
+window.switchAdminTab = () => {};
+
 
 /* CATEGORY PICKER LOGIC */
 
@@ -1408,16 +1385,8 @@ function populateAdminCatFilter() {
     if (select) select.innerHTML = `<option value="all">All Categories</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 
-window.resetForm = createAdminProxy('resetForm');
-window.addImageToGrid = createAdminProxy('addImageToGrid');
-window.handleMultiDrop = createAdminProxy('handleMultiDrop');
-window.cloudinaryMultiUpload = createAdminProxy('cloudinaryMultiUpload');
-window.handleDragOver = createAdminProxy('handleDragOver');
-window.handleDragLeave = createAdminProxy('handleDragLeave');
-window.handleDrop = createAdminProxy('handleDrop');
-window.handleVariationDrop = createAdminProxy('handleVariationDrop');
-window.cloudinaryUpload = createAdminProxy('cloudinaryUpload');
-window.cloudinaryUploadForVariation = createAdminProxy('cloudinaryUploadForVariation');
+// (Admin form/image functions live in admin.html / app-admin.js)
+
 
 function showToast(msg) {
     const t = document.getElementById('toast'); if (!t) return;
@@ -1758,18 +1727,12 @@ async function _loadSliderModule() {
 // (renderSlider body moved to app-slider.js)
 
 
-// ADMIN SLIDER FUNCTIONS (proxy stubs — admin logic lives in app-admin.js)
-window.saveSlider = createAdminProxy('saveSlider');
-window.cloudinaryBulkSliderUpload = createAdminProxy('cloudinaryBulkSliderUpload');
-window.handleSliderBulkDrop = createAdminProxy('handleSliderBulkDrop');
-window.editSlider = createAdminProxy('editSlider');
-window.deleteSlider = createAdminProxy('deleteSlider');
+// (Slider admin functions live in admin.html / app-admin.js)
 
 // (Announcement bar code lives in app-slider.js — loaded lazily after data fetch)
 
-// ADMIN ANNOUNCEMENTS (proxy stubs)
-window.addAnnouncementRow = createAdminProxy('addAnnouncementRow');
-window.saveAnnouncements = createAdminProxy('saveAnnouncements');
+// (Admin announcements live in admin.html / app-admin.js)
+
 
 // Auth state and data fetching are handled by onAuthStateChanged.
 
@@ -1852,21 +1815,8 @@ window.submitLead = async (e) => {
 };
 
 // --- ADMIN LEAD MANAGEMENT ---
-window.savePopupSettings = createAdminProxy('savePopupSettings');
-window.searchLandingProducts = createAdminProxy('searchLandingProducts');
-window.landingSetCat = createAdminProxy('landingSetCat');
-window.addLandingProduct = createAdminProxy('addLandingProduct');
-window.removeLandingProduct = createAdminProxy('removeLandingProduct');
-window.renderLandingPills = createAdminProxy('renderLandingPills');
-window.populateLandingProductSelects = createAdminProxy('populateLandingProductSelects');
-window.populateLandingSettingsUI = createAdminProxy('populateLandingSettingsUI');
-window.saveLandingSettings = createAdminProxy('saveLandingSettings');
-window.addSpotlightProduct = createAdminProxy('addSpotlightProduct');
-window.removeSpotlightProduct = createAdminProxy('removeSpotlightProduct');
-window.renderSpotlightPills = createAdminProxy('renderSpotlightPills');
-window.searchSpotlightProducts = createAdminProxy('searchSpotlightProducts');
-window.populateHomeAdminUI = createAdminProxy('populateHomeAdminUI');
-window.saveHomeSettings = createAdminProxy('saveHomeSettings');
+// (All admin popup/landing/spotlight/leads functions live in admin.html / app-admin.js)
+
 
 // Global mousedown to close dropdowns (mousedown fires before click, so dropdown items still register their click)
 document.addEventListener('mousedown', (e) => {
@@ -1908,9 +1858,8 @@ async function _loadSpotlightModule() {
 // (renderSpotlightSection body moved to app-spotlight.js)
 
 
-window.renderAdminLeads = createAdminProxy('renderAdminLeads');
-window.deleteLead = createAdminProxy('deleteLead');
-window.exportLeadsExcel = createAdminProxy('exportLeadsExcel');
+// (Admin leads functions live in admin.html / app-admin.js)
+
 
 window.resetInsightsData = async function () {
     await _loadInsights();
