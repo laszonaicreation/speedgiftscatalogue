@@ -364,9 +364,17 @@ async function trackImageError(src) {
 
 async function trackNormalVisit() {
     const today = getTodayStr();
-    const sessionKey = `normal_visit_tracked_${today}`; // Daily tracking
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, 'true');
+    const normalKey = `normal_visit_tracked_${today}`;
+    const adKey = `ad_visit_tracked_${today}`;
+    // Cross-tab deduplication: skip if already tracked in ANY tab today
+    if (sessionStorage.getItem(normalKey) || localStorage.getItem(normalKey)) return;
+    // Mutual exclusion: if this browser already logged an Ad visit today, don't also count as normal
+    if (localStorage.getItem(adKey)) {
+        console.log('[Traffic] Skipping normal visit — Ad visit already recorded today.');
+        return;
+    }
+    sessionStorage.setItem(normalKey, 'true');
+    localStorage.setItem(normalKey, 'true');
 
     await waitForAuth();
     try {
@@ -461,9 +469,16 @@ async function trackAdHop() {
 
 async function trackAdVisit() {
     const today = getTodayStr();
-    const sessionKey = `ad_visit_tracked_${today}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, 'true');
+    const adKey = `ad_visit_tracked_${today}`;
+    const normalKey = `normal_visit_tracked_${today}`;
+    // Cross-tab deduplication: skip if already tracked in ANY tab today
+    if (sessionStorage.getItem(adKey) || localStorage.getItem(adKey)) return;
+    // Lock both keys immediately — prevents any tab from counting a normal visit today
+    sessionStorage.setItem(adKey, 'true');
+    localStorage.setItem(adKey, 'true');
+    // Mutual exclusion: block normal visit from being recorded in any other tab today
+    sessionStorage.setItem(normalKey, 'true');
+    localStorage.setItem(normalKey, 'true');
 
     await waitForAuth();
     try {
