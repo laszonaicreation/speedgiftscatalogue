@@ -1154,11 +1154,15 @@ export function initAdmin(ctx) {
 
     window.resetForm = () => {
         // Basic fields
-        const fields = ['edit-id', 'edit-cat-id', 'p-name', 'p-price', 'p-desc', 'p-details', 'p-keywords', 'c-name', 'c-img', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Added 'p-badge', 'm-name', 'c-img', 'edit-cat-id'
+        const fields = ['edit-id', 'edit-cat-id', 'p-name', 'p-price', 'p-original-price', 'p-desc', 'p-details', 'p-keywords', 'c-name', 'c-img', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Added 'p-badge', 'm-name', 'c-img', 'edit-cat-id', 'p-original-price'
         fields.forEach(f => {
             const el = document.getElementById(f);
             if (el) el.value = "";
         });
+
+        // Reset featured/home dropdown to default
+        const pFeatured = document.getElementById('p-featured');
+        if (pFeatured) pFeatured.value = 'false';
 
         // Reset c-img to default placeholder (not empty)
         const cImgField = document.getElementById('c-img');
