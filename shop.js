@@ -350,11 +350,16 @@ function getFilteredSorted() {
 
     // Search
     if (q) {
-        list = list.filter(p =>
-            (p.name || '').toLowerCase().includes(q) ||
-            (p.desc || '').toLowerCase().includes(q) ||
-            (p.material || '').toLowerCase().includes(q)
-        );
+        const terms = q.split(/\s+/).filter(Boolean);
+        list = list.filter(p => {
+            const searchStr = ` ${p.name || ''} ${p.desc || ''} ${p.material || ''} `.toLowerCase();
+            return terms.every(term => {
+                // escape special regex characters
+                const safeTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // match if term is at the start of a word (preceded by non-word character)
+                return new RegExp(`(?:^|\\W)${safeTerm}`, 'i').test(searchStr);
+            });
+        });
     }
 
     // Sort
