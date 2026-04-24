@@ -424,19 +424,20 @@
         <div id="customer-search-container" class="md:hidden mb-1 px-5 relative">
             <div class="max-w-2xl mx-auto z-[60]">
                 <!-- Search Input with its own relative wrapper to keep the icon fixed -->
-                <div class="relative group">
+                <form class="relative group" action="javascript:void(0)" onsubmit="return false;" role="search">
                     <i
                         class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-sm transition-colors group-focus-within:text-black"></i>
-                    <input type="text" id="customer-search"
+                    <input type="search" id="customer-search"
                         class="w-full bg-white border py-4 pl-14 pr-14 text-[11px] md:text-[12px] font-normal tracking-wider outline-none transition-all shadow-[0_10px_30px_rgba(0,0,0,0.02)]"
                         style="font-family: 'Poppins', sans-serif;" placeholder="Search our collection..."
-                        autocomplete="off">
+                        autocomplete="off"
+                        enterkeyhint="search">
                     <!-- CLEAR SEARCH BUTTON -->
-                    <button id="clear-search-btn" onclick="window.clearCustomerSearch()"
+                    <button id="clear-search-btn" onclick="window.clearCustomerSearch()" type="button"
                         class="hidden absolute right-5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-black hover:bg-gray-100 transition-all">
                         <i class="fa-solid fa-xmark text-sm"></i>
                     </button>
-                </div>
+                </form>
 
 
             </div>
