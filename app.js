@@ -437,7 +437,6 @@ async function syncSessionDuration() {
 window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') syncSessionDuration();
 });
-window.addEventListener('beforeunload', syncSessionDuration);
 
 // IMPRESSION TRACKING
 const impressionCache = new Set();
