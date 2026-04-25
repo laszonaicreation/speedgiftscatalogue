@@ -1216,12 +1216,6 @@ window.sendBulkInquiry = () => {
         msg += `${i + 1}. *${p.name}* - ${price} AED${details}\nLink: ${pUrl}\n\n`;
     });
 
-    const source = sessionStorage.getItem('traffic_source');
-    if (source === 'Google Ads') {
-        msg += `\n*Note: Customer joined via Google Ads* 🔍`;
-    } else if (source) {
-        msg += `\n\n[Source: ${source}]`;
-    }
 
     const productIdsToTrack = sourceData.map(entry => typeof entry === 'string' ? entry : entry.id);
     window.trackWhatsAppInquiry(productIdsToTrack);
@@ -1240,12 +1234,6 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
 
     let msg = `*Inquiry regarding:* ${p.name}\n*Price:* ${price} AED${details}\n\n*Product Link:* ${pUrl}\n\nPlease let me know the availability.`;
 
-    const source = sessionStorage.getItem('traffic_source');
-    if (source === 'Google Ads') {
-        msg += `\n\n*Note: Customer joined via Google Ads* 🔍`;
-    } else if (source) {
-        msg += `\n\n[Source: ${source}]`;
-    }
 
     window.trackWhatsAppInquiry(p.id);
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
@@ -1254,10 +1242,6 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
 window.handleFloatingWhatsAppClick = () => {
     let msg = `*Hello Speed Gifts!* \nI visited your website and would like to know more about your premium gift collections.`;
 
-    const source = sessionStorage.getItem('traffic_source');
-    if (source === 'Google Ads') {
-        msg += `\n\n*Note: Customer joined via Google Ads* 🔍`;
-    }
 
     // Tracking the inquiry specifically from the floating button
     window.trackWhatsAppInquiry('floating_button');
