@@ -406,6 +406,95 @@ export function initAdmin(ctx) {
         } catch (err) { showToast("Export Failed"); }
     };
 
+    // ── Google Merchant Center Feed Export ────────────────────────────────────
+    window.exportGoogleFeed = () => {
+        try {
+            if (!DATA.p || DATA.p.length === 0) return showToast("No products to export");
+
+            const STORE_URL = 'https://speedgifts.net';
+            const BRAND = 'Speed Gifts';
+            const CONDITION = 'new';
+            const CURRENCY = 'AED';
+            // Google product category for gift items (Official taxonomy)
+            const GOOGLE_CATEGORY = 'Arts & Entertainment > Party & Celebration > Gift Giving';
+
+            // TSV headers — exact Google Merchant Center column names
+            const headers = [
+                'id',
+                'title',
+                'description',
+                'link',
+                'image_link',
+                'price',
+                'availability',
+                'condition',
+                'brand',
+                'identifier_exists',
+                'google_product_category',
+                'product_type',
+            ];
+
+            const rows = DATA.p
+                .filter(p => p.id && p.name && p.price)
+                .map(p => {
+                    const inStock = p.inStock !== false;
+                    const price = `${parseFloat(p.price).toFixed(2)} ${CURRENCY}`;
+                    const availability = inStock ? 'in_stock' : 'out_of_stock';
+
+                    // Build product URL using the site's existing URL format
+                    const link = `${STORE_URL}/product-detail.html?id=${p.id}`;
+
+                    // Use first image — prefer images[] array, fallback to img field
+                    const imageUrl = (Array.isArray(p.images) && p.images.length > 0)
+                        ? p.images[0]
+                        : (p.img && p.img !== 'img/' ? p.img : '');
+
+                    // Clean description — strip extra whitespace, limit to 5000 chars
+                    const desc = (p.desc || p.name || '')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .substring(0, 5000);
+
+                    // Category name for product_type
+                    const catName = DATA.c.find(c => c.id === p.catId)?.name || 'Gifts';
+
+                    return [
+                        p.id,
+                        p.name,
+                        desc || p.name,
+                        link,
+                        imageUrl,
+                        price,
+                        availability,
+                        CONDITION,
+                        BRAND,
+                        'FALSE',          // identifier_exists = FALSE for custom/handmade items
+                        GOOGLE_CATEGORY,
+                        catName,
+                    ].map(v => {
+                        // Escape tabs and newlines inside values
+                        return String(v ?? '').replace(/\t/g, ' ').replace(/\n/g, ' ');
+                    }).join('\t');
+                });
+
+            const tsvContent = '\uFEFF' + headers.join('\t') + '\n' + rows.join('\n');
+            const blob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+            a.download = `speedgifts_google_feed_${today}.tsv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`Google Feed exported — ${rows.length} products ✓`);
+        } catch (err) {
+            console.error('[Google Feed] Export failed:', err);
+            showToast("Export Failed");
+        }
+    };
+
     // NEW: UNIVERSAL MIGRATION LOGIC (FOR FUTURE DB SWITCHING)
     window.copyUniversalJSON = () => {
         try {
