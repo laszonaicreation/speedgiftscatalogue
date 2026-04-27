@@ -26,6 +26,12 @@
                             class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium transition-all bg-black text-white shadow-lg"><i
                                 class="fa-solid fa-box opacity-70" style="width: 20px; text-align: center;"></i>
                             <span>Products</span></button>
+                        <button onclick="switchAdminTab('orders')" id="tab-orders"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-cart-shopping opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span class="flex-1 text-left">Orders</span>
+                            <span id="orders-badge" class="hidden bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">New</span>
+                        </button>
                         <button onclick="switchAdminTab('categories')" id="tab-c"
                             class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
                                 class="fa-solid fa-tags opacity-70" style="width: 20px; text-align: center;"></i>
@@ -759,6 +765,9 @@
                             <div id="admin-product-list" class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 fade-in"></div>
                         </div>
                         <div id="admin-category-list" class="hidden grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 fade-in overflow-y-auto max-h-[calc(100vh-250px)] pr-2 scrollbar-thin scrollbar-thumb-gray-300"></div>
+                        <div id="admin-orders-list" class="hidden space-y-4 fade-in">
+                            <div id="orders-container" class="space-y-4 overflow-y-auto max-h-[calc(100vh-250px)] pr-2 scrollbar-thin scrollbar-thumb-gray-300"></div>
+                        </div>
                         <div id="admin-megamenu-list" class="hidden space-y-4 fade-in"></div>
                         <div id="admin-slider-list" class="hidden space-y-4 fade-in pb-20"></div>
                         <div id="admin-announcements-list" class="hidden"></div>

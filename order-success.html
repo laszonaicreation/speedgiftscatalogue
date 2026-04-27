@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Order Confirmed | Speed Gifts</title>
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777297995084">
+    <link rel="stylesheet" href="style.min.css?v=1777297995084">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: hidden; font-family: 'Poppins', sans-serif; background: #f8f8f6; }
+
+        .os-wrap {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 80px 16px 5rem;
+        }
+
+        /* ── Success Header ── */
+        .os-hero {
+            text-align: center;
+            padding: 2rem 0 1.5rem;
+        }
+        .os-check-ring {
+            width: 80px; height: 80px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.25rem;
+            animation: os-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes os-pop {
+            from { transform: scale(0); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+        .os-check-ring i { font-size: 2rem; color: #16a34a; }
+        .os-hero h1 { font-size: 1.5rem; font-weight: 900; color: #111; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+        .os-hero p  { font-size: 0.82rem; color: #9ca3af; margin: 0; }
+
+        /* ── Order ID + Status ── */
+        .os-id-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 1.25rem 1.5rem;
+            border: 1px solid #f0f0f0;
+            margin: 1.25rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .os-id-left {}
+        .os-id-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #9ca3af; margin-bottom: 0.2rem; }
+        .os-id-value { font-size: 1.35rem; font-weight: 900; color: #111; letter-spacing: 0.04em; }
+        .os-id-date  { font-size: 0.7rem; color: #9ca3af; margin-top: 0.15rem; }
+        #order-status {
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 0.4rem 0.875rem;
+            border-radius: 100px;
+        }
+
+        /* ── Section Card ── */
+        .os-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 1.25rem 1.5rem;
+            border: 1px solid #f0f0f0;
+            margin-bottom: 1rem;
+        }
+        .os-card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        /* ── Items ── */
+        .os-item {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            padding: 0.625rem 0;
+            border-bottom: 1px solid #f9fafb;
+        }
+        .os-item:last-child { border-bottom: none; }
+        .os-item img, .os-item-ph {
+            width: 56px; height: 56px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #f4f4f4;
+            border: 1px solid #f0f0f0;
+        }
+        .os-item-ph { display:flex; align-items:center; justify-content:center; color:#d1d5db; font-size:1.25rem; }
+        .os-item-info { flex: 1; min-width: 0; }
+        .os-item-name { font-size: 0.82rem; font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .os-item-var  { font-size: 0.7rem; color: #9ca3af; margin-top: 0.1rem; }
+        .os-item-qty  { font-size: 0.7rem; color: #9ca3af; }
+        .os-item-price { font-size: 0.85rem; font-weight: 700; color: #111; white-space: nowrap; }
+
+        /* ── Totals ── */
+        .os-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0;
+            font-size: 0.82rem;
+        }
+        .os-total-label { color: #6b7280; }
+        .os-total-value { font-weight: 600; color: #111; }
+        .os-total-row.grand {
+            border-top: 1px solid #f0f0f0;
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+        }
+        .os-total-row.grand .os-total-label { font-size: 0.9rem; font-weight: 800; color: #111; }
+        .os-total-row.grand .os-total-value { font-size: 1.1rem; font-weight: 900; color: #111; }
+
+        /* ── Address ── */
+        #os-address { font-size: 0.82rem; color: #374151; line-height: 1.8; }
+
+        /* ── WhatsApp Button ── */
+        .os-wa-btn {
+            width: 100%;
+            background: #25D366;
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            padding: 1rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .os-wa-btn:hover { background: #128C7E; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,211,102,0.3); }
+
+        /* ── CTA Buttons ── */
+        .os-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem;
+            border-radius: 14px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            margin-bottom: 0.625rem;
+            transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .os-btn-primary  { background: #111; color: #fff; }
+        .os-btn-primary:hover  { background: #333; transform: translateY(-1px); }
+        .os-btn-secondary { background: #f4f4f4; color: #374151; }
+        .os-btn-secondary:hover { background: #e5e7eb; }
+        .os-btn-danger { background: #fff; border: 1px solid #fee2e2; color: #ef4444; margin-bottom: 1.5rem; }
+        .os-btn-danger:hover { background: #fef2f2; }
+
+        /* ── Account Prompt ── */
+        .os-account-prompt {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 14px;
+            padding: 1rem;
+            margin-bottom: 0.875rem;
+        }
+        .os-ap-icon {
+            width: 36px; height: 36px;
+            background: #e0f2fe;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: #0284c7; font-size: 0.875rem; flex-shrink: 0;
+        }
+        .os-ap-text { display: flex; flex-direction: column; gap: 0.2rem; }
+        .os-ap-text strong { font-size: 0.82rem; font-weight: 700; color: #0c4a6e; }
+        .os-ap-text span   { font-size: 0.72rem; color: #0369a1; line-height: 1.5; }
+
+        /* ── Loading skeleton ── */
+        .os-skel {
+            height: 14px; background: #f0f0f0; border-radius: 7px; margin-bottom: 8px;
+            animation: skel-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes skel-pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+    </style>
+</head>
+<body>
+    <div id="shared-shell-root"></div>
+
+    <div class="os-wrap">
+
+        <!-- Hero -->
+        <div class="os-hero">
+            <div class="os-check-ring"><i class="fa-solid fa-check"></i></div>
+            <h1>Order Confirmed!</h1>
+            <p>Thank you for shopping with Speed Gifts 🎁</p>
+        </div>
+
+        <!-- Order ID + Status -->
+        <div class="os-id-card">
+            <div class="os-id-left">
+                <div class="os-id-label">Order ID</div>
+                <div class="os-id-value" id="success-order-id">Loading...</div>
+                <div class="os-id-date" id="order-date"></div>
+            </div>
+            <div id="order-status" style="background:#fef9c3;color:#854d0e;">Pending</div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="os-card">
+            <div class="os-card-title">
+                <i class="fa-solid fa-bag-shopping" style="margin-right:6px;opacity:0.5;"></i>Order Items
+            </div>
+            <div id="order-items-list">
+                <div class="os-skel" style="width:100%;"></div>
+                <div class="os-skel" style="width:80%;"></div>
+                <div class="os-skel" style="width:60%;"></div>
+            </div>
+        </div>
+
+        <!-- Price Breakdown -->
+        <div class="os-card">
+            <div class="os-card-title">
+                <i class="fa-solid fa-receipt" style="margin-right:6px;opacity:0.5;"></i>Price Breakdown
+            </div>
+            <div class="os-total-row">
+                <span class="os-total-label">Subtotal</span>
+                <span class="os-total-value" id="os-subtotal">—</span>
+            </div>
+            <div class="os-total-row">
+                <span class="os-total-label">
+                    <i class="fa-solid fa-truck" style="margin-right:4px;font-size:0.7rem;color:#9ca3af;"></i>Delivery
+                </span>
+                <span class="os-total-value" id="os-delivery">35.00 AED</span>
+            </div>
+            <div class="os-total-row grand">
+                <span class="os-total-label">Total Paid</span>
+                <span class="os-total-value" id="os-total">—</span>
+            </div>
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="os-card">
+            <div class="os-card-title">
+                <i class="fa-solid fa-location-dot" style="margin-right:6px;opacity:0.5;"></i>Delivery Address
+            </div>
+            <div id="os-address">
+                <div class="os-skel" style="width:70%;"></div>
+                <div class="os-skel" style="width:90%;"></div>
+                <div class="os-skel" style="width:50%;"></div>
+            </div>
+        </div>
+
+        <!-- WhatsApp Confirm Button -->
+        <button class="os-wa-btn" id="wa-send-btn">
+            <i class="fa-brands fa-whatsapp" style="font-size:1.1rem;"></i>
+            Discuss Customization on WhatsApp
+        </button>
+
+        <!-- Cancel Request Button (Hidden by default, shown if Pending) -->
+        <button class="os-btn os-btn-danger" id="cancel-req-btn" style="display:none;">
+            <i class="fa-solid fa-ban"></i> Request Cancellation
+        </button>
+
+        <!-- CTAs (dynamic based on auth) -->
+        <div id="os-cta-section">
+            <div style="height:48px;background:#f0f0f0;border-radius:14px;animation:skel-pulse 1.5s infinite;margin-bottom:0.625rem;"></div>
+            <div style="height:48px;background:#f0f0f0;border-radius:14px;animation:skel-pulse 1.5s infinite;"></div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer id="sg-footer">
+        <style>
+            #sg-footer{background:#0a0a0a;color:#fff;font-family:'Poppins',sans-serif;margin-top:0;padding:5rem 3rem 2rem;border-top:1px solid #1a1a1a;}
+            #sg-footer .sg-inner{width:100%;max-width:1400px;margin:0 auto;}
+            #sg-footer .sg-grid{display:grid;grid-template-columns:1fr;gap:3rem;margin-bottom:4rem;}
+            @media(min-width:1024px){#sg-footer .sg-grid{grid-template-columns:1.4fr 1fr 1fr;gap:4rem;}}
+            #sg-footer .sg-brand{font-size:1.75rem;font-weight:600;color:#fff;margin:0 0 0.75rem;letter-spacing:-0.01em;}
+            #sg-footer .sg-desc{font-size:0.8125rem;color:#6b7280;font-weight:400;line-height:1.8;margin:0 0 1.5rem;}
+            #sg-footer .sg-col-title{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:#fff;margin:0 0 1.25rem;padding-bottom:0.75rem;border-bottom:1px solid #1f2937;}
+            #sg-footer .sg-ql{list-style:none;padding:0;margin:0;}
+            #sg-footer .sg-ql li{margin-bottom:0.75rem;}
+            #sg-footer .sg-ql a{font-size:0.8125rem;color:#6b7280;text-decoration:none;display:block;transition:color .2s;}
+            #sg-footer .sg-ql a:hover{color:#fff;}
+            #sg-footer .sg-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#374151;border-top:1px solid #1a1a1a;padding-top:1.75rem;margin-top:1rem;}
+            @media(max-width:640px){#sg-footer{padding:4rem 1.25rem 2rem;}}
+        </style>
+        <div class="sg-inner">
+            <div class="sg-grid">
+                <div>
+                    <h2 class="sg-brand">Speed Gifts</h2>
+                    <p class="sg-desc">A leading personalized gift shop in Abu Dhabi offering custom engraving, photo gifts, and unique creations for every occasion.</p>
+                </div>
+                <div>
+                    <p class="sg-col-title">Customer Care</p>
+                    <ul class="sg-ql">
+                        <li><a href="/faq.html">Help &amp; FAQ</a></li>
+                        <li><a href="/shipping.html">Shipping &amp; Returns</a></li>
+                        <li><a href="/privacy.html">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="sg-col-title">Quick Links</p>
+                    <ul class="sg-ql">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/shop.html">Shop</a></li>
+                        <li><a href="/account.html">My Account</a></li>
+                        <li><a href="https://wa.me/971561010387">WhatsApp Us</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="sg-bottom">
+                <span>&copy; <span class="sg-year"></span> Speed Gifts. All Rights Reserved.</span>
+                <span style="color:#1f2937;font-size:0.6rem;">speedgifts.net</span>
+            </div>
+        </div>
+        <script>document.querySelectorAll('.sg-year').forEach(function(el){el.innerText=new Date().getFullYear();});</script>
+    </footer>
+
+    <script type="module" src="order-success.min.js?v=1777297995084"></script>
+</body>
+</html>

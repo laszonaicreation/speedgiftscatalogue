@@ -14,8 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777121184104">
-    <link rel="stylesheet" href="style.min.css?v=1777121184104">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777297995084">
+    <link rel="stylesheet" href="style.min.css?v=1777297995084">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -28,7 +28,7 @@
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
 
     <!-- Cart Page CSS -->
-    <link rel="stylesheet" href="cart.min.css?v=1777121184104">
+    <link rel="stylesheet" href="cart.min.css?v=1777297995084">
 
     <meta name="robots" content="noindex, nofollow">
 </head>
@@ -98,10 +98,11 @@
                         </div>
                         <div class="summary-row">
                             <span class="summary-label">Delivery</span>
-                            <span class="summary-value green">
-                                <i class="fa-solid fa-truck" style="font-size:9px;margin-right:4px;"></i>
-                                Confirmed on WhatsApp
-                            </span>
+                            <span class="summary-value" style="color:#111;font-weight:600;">35.00 AED</span>
+                        </div>
+                        <div class="summary-row" style="margin-top:-0.5rem;">
+                            <span></span>
+                            <span style="font-size:0.68rem;color:#9ca3af;">Est. 2 business days</span>
                         </div>
 
                         <div class="summary-divider"></div>
@@ -111,10 +112,10 @@
                         </div>
 
                         <button id="checkout-btn" class="checkout-btn" onclick="window.cartPageCheckout()">
-                            <i class="fa-brands fa-whatsapp wa-icon"></i>
+                            <i class="fa-solid fa-lock" style="font-size: 14px; margin-right: 8px; opacity: 0.8;"></i>
                             <div>
-                                Checkout via WhatsApp
-                                <span class="checkout-btn-sub">Instant confirmation · Free enquiry</span>
+                                Guest Checkout
+                                <span class="checkout-btn-sub">No account needed · Cash on Delivery</span>
                             </div>
                         </button>
 
@@ -125,8 +126,8 @@
                                     <i class="fa-solid fa-truck-fast"></i>
                                 </div>
                                 <div class="trust-text">
-                                    Fast Delivery
-                                    <span>Within UAE — same or next day</span>
+                                    2-Day Delivery
+                                    <span>1 day production + 1 day shipping</span>
                                 </div>
                             </div>
                             <div class="trust-item">
@@ -153,8 +154,8 @@
 
                 <!-- Promo note -->
                 <div class="promo-note">
-                    <i class="fa-solid fa-tag" style="margin-right:6px;"></i>
-                    Discount codes &amp; special offers applied at checkout via WhatsApp
+                    <i class="fa-solid fa-clock" style="margin-right:6px;"></i>
+                    Order today — delivered within 2 business days across UAE
                 </div>
             </div>
         </div>
@@ -168,8 +169,8 @@
                 <div class="mob-total-amount" id="mob-total">0.00 AED</div>
             </div>
             <button class="mob-checkout-btn" id="mob-checkout-btn" onclick="window.cartPageCheckout()">
-                <i class="fa-brands fa-whatsapp wa-icon"></i>
-                Checkout
+                <i class="fa-solid fa-lock" style="font-size: 12px; margin-right: 6px; opacity: 0.8;"></i>
+                Guest Checkout
             </button>
         </div>
     </div>
@@ -258,6 +259,6 @@
     </footer>
 
     <script>if (document.getElementById('year')) document.getElementById('year').innerText = new Date().getFullYear();</script>
-    <script type="module" src="cart-page.min.js?v=1777121184104"></script>
+    <script type="module" src="cart-page.min.js?v=1777297995084"></script>
 </body>
 </html>

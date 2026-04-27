@@ -45,6 +45,25 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // 2.1 Orders (E-commerce)
+    //   • Anyone can CREATE (guest checkout)
+    //   • Admin can read/update/delete all orders
+    //   • Authenticated users can read orders where customer.uid matches their uid
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read: if isAdmin() ||
+                     (isAuthenticated() && resource.data.customer.uid == request.auth.uid) ||
+                     (isAuthenticated() && resource.data.customer.email == request.auth.token.email);
+      
+      allow update: if isAdmin() || (
+                     isAuthenticated() && 
+                     resource.data.customer.uid == null && 
+                     resource.data.customer.email == request.auth.token.email &&
+                     request.resource.data.customer.uid == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
     // 3. Wishlists & Cart: Only the owner can read/write their own data
     match /artifacts/{anyAppId}/users/{userId}/data/wishlist {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;

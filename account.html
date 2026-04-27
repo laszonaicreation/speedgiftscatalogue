@@ -15,8 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS (same as main page) -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777121184104">
-    <link rel="stylesheet" href="style.min.css?v=1777121184104">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777297995084">
+    <link rel="stylesheet" href="style.min.css?v=1777297995084">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -460,11 +460,11 @@
 
         <!-- My Orders -->
         <p class="sg-section-title" id="orders">My Orders</p>
-        <div class="sg-orders-empty">
-            <div class="sg-orders-empty-icon"><i class="fa-solid fa-box-open"></i></div>
-            <h3>No orders yet</h3>
-            <p>Your order history will appear here once you place an order through our website.</p>
-            <span class="sg-orders-coming">⚙️ Online ordering coming soon</span>
+        <div id="sg-orders-wrap">
+            <!-- Loading state -->
+            <div id="sg-orders-loading" style="padding:2rem;text-align:center;color:#9ca3af;font-size:0.82rem;">
+                <i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Loading orders...
+            </div>
         </div>
 
         <!-- My Items -->
@@ -542,6 +542,9 @@
     <script type="module">
         import { mountSharedShell } from './shared-shell.min.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+                 collection, query, where, getDocs, orderBy, limit }
+            from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile }
             from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
@@ -621,7 +624,183 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db   = initializeFirestore(app, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
         let currentUser = null;
+
+        // ── Status badge styles ────────────────────────────────────────────
+        const ORDER_STATUS = {
+            Pending:    { bg:'#fef9c3', color:'#854d0e', icon:'fa-clock' },
+            Processing: { bg:'#dbeafe', color:'#1e40af', icon:'fa-gear' },
+            Shipped:    { bg:'#ede9fe', color:'#6d28d9', icon:'fa-truck' },
+            Delivered:  { bg:'#dcfce7', color:'#15803d', icon:'fa-circle-check' },
+            Cancelled:  { bg:'#fee2e2', color:'#b91c1c', icon:'fa-circle-xmark' },
+        };
+
+        function fmtDate(ts) {
+            if (!ts) return '';
+            const d = ts.toDate ? ts.toDate() : new Date(ts * 1000);
+            return d.toLocaleDateString('en-AE', { day:'numeric', month:'short', year:'numeric' });
+        }
+        function imgThumb(url) {
+            if (!url) return '';
+            if (url.includes('res.cloudinary.com') && !url.includes('/upload/w_'))
+                return url.replace('/upload/', '/upload/w_56,c_fill,f_auto,q_auto/');
+            return url;
+        }
+
+        // ── Helper: Render Order Card ──────────────────────────────────────
+        function renderOrderCard(o) {
+            const st = ORDER_STATUS[o.status] || ORDER_STATUS.Pending;
+            const previewItems = (o.items || []).slice(0, 3);
+            const extraItems   = (o.items?.length || 0) - 3;
+            const itemsHtml = previewItems.map(item => {
+                const img = imgThumb(item.img);
+                return img
+                    ? `<img src="${img}" alt="${item.name||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #f0f0f0;">`
+                    : `<div style="width:40px;height:40px;border-radius:8px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-gift" style="color:#d1d5db;font-size:0.8rem;"></i></div>`;
+            }).join('');
+
+            return `
+            <div style="background:#fff;border:1px solid #f0f0f0;border-radius:18px;padding:1.25rem;margin-bottom:0.875rem;cursor:pointer;" onclick="window.location.href='order-success.html?orderId=${o.orderId}'">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
+                    <div>
+                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#9ca3af;margin-bottom:0.15rem;">Order ID</div>
+                        <div style="font-size:0.95rem;font-weight:900;color:#111;letter-spacing:0.02em;">${o.orderId || '—'}</div>
+                        <div style="font-size:0.68rem;color:#9ca3af;margin-top:0.1rem;">${fmtDate(o.createdAt)}</div>
+                    </div>
+                    <span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;padding:0.35rem 0.75rem;border-radius:100px;background:${st.bg};color:${st.color};">
+                        <i class="fa-solid ${st.icon}" style="margin-right:4px;"></i>${o.status || 'Pending'}
+                    </span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.875rem;">
+                    ${itemsHtml}
+                    ${extraItems > 0 ? `<div style="width:40px;height:40px;border-radius:8px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#6b7280;">+${extraItems}</div>` : ''}
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding-top:0.75rem;border-top:1px solid #f5f5f5;">
+                    <span style="font-size:0.75rem;color:#6b7280;">${o.items?.length || 0} item${(o.items?.length||0)===1?'':'s'}</span>
+                    <span style="font-size:0.95rem;font-weight:900;color:#111;">${(o.total||0).toFixed(2)} AED</span>
+                </div>
+            </div>`;
+        }
+
+        // ── Background Order Claiming ──────────────────────────────────────
+        async function claimGuestOrders(user) {
+            if (!user || !user.email) return;
+            try {
+                // Find orders with matching email where we can run an update
+                const q = query(collection(db, 'orders'), where('customer.email', '==', user.email));
+                const snap = await getDocs(q);
+                let claimedAny = false;
+                
+                // We use Promise.all to update concurrently
+                const promises = snap.docs.map(async (docSnap) => {
+                    const data = docSnap.data();
+                    if (data.customer && data.customer.uid === null) {
+                        // Import updateDoc and doc dynamically to keep global scope clean if not imported
+                        const { updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+                        await updateDoc(doc(db, 'orders', docSnap.id), {
+                            'customer.uid': user.uid
+                        });
+                        claimedAny = true;
+                    }
+                });
+                
+                await Promise.all(promises);
+                
+                if (claimedAny) {
+                    // Reload orders silently
+                    loadOrders(user, true); 
+                }
+            } catch (err) {
+                console.log('Background claim silently failed (expected if rules block or index missing):', err);
+            }
+        }
+
+        // ── Load & Render Orders ───────────────────────────────────────────
+        async function loadOrders(user, isSilentReload = false) {
+            const wrap = document.getElementById('sg-orders-wrap');
+            if (!wrap) return;
+
+            if (!user || user.isAnonymous) {
+                // ── Guest Preview Logic ──
+                let guestOrderHtml = '';
+                try {
+                    const cached = JSON.parse(sessionStorage.getItem('sg_last_order'));
+                    if (cached && cached.orderId) {
+                        guestOrderHtml = `
+                        <div style="margin-bottom:1.5rem;">
+                            <span style="display:inline-block;background:#fef3c7;color:#d97706;font-size:0.65rem;font-weight:800;padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em;">Recent Guest Order</span>
+                            ${renderOrderCard(cached)}
+                        </div>`;
+                    }
+                } catch(e) {}
+
+                wrap.innerHTML = guestOrderHtml + `
+                <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:16px;padding:1.5rem;text-align:center;">
+                    <i class="fa-solid fa-user-circle" style="font-size:2rem;color:#0284c7;margin-bottom:0.75rem;display:block;"></i>
+                    <strong style="display:block;font-size:0.9rem;color:#0c4a6e;margin-bottom:0.35rem;">Track all your orders</strong>
+                    <span style="font-size:0.78rem;color:#0369a1;display:block;margin-bottom:1rem;">Create a free account or sign in using your order email to save your history permanently.</span>
+                    <a href="login.html" style="display:inline-block;background:#0284c7;color:#fff;padding:0.6rem 1.25rem;border-radius:10px;font-size:0.78rem;font-weight:700;text-decoration:none;">Sign In / Register</a>
+                </div>`;
+                return;
+            }
+
+            if (!isSilentReload) {
+                // Trigger background claim
+                claimGuestOrders(user);
+            }
+
+            try {
+                // Fetch user orders by UID
+                const qUid = query(collection(db, 'orders'), where('customer.uid', '==', user.uid));
+                const snapUid = await getDocs(qUid);
+                let docsList = snapUid.docs.map(doc => doc.data());
+
+                // Fetch user orders by Email (for orders that might have just been claimed or linked)
+                try {
+                    const qEmail = query(collection(db, 'orders'), where('customer.email', '==', user.email));
+                    const snapEmail = await getDocs(qEmail);
+                    const emailDocs = snapEmail.docs.map(doc => doc.data());
+                    
+                    // Merge and deduplicate by orderId
+                    const allDocs = [...docsList, ...emailDocs];
+                    const uniqueMap = new Map();
+                    allDocs.forEach(d => uniqueMap.set(d.orderId, d));
+                    docsList = Array.from(uniqueMap.values());
+                } catch (e) {
+                    console.log('Email query failed, falling back to UID only');
+                }
+
+                // Sort in memory
+                docsList.sort((a, b) => {
+                    const ta = a.createdAt?.seconds || a.createdAt || 0;
+                    const tb = b.createdAt?.seconds || b.createdAt || 0;
+                    return tb - ta;
+                });
+
+                if (docsList.length === 0) {
+                    wrap.innerHTML = `
+                    <div class="sg-orders-empty">
+                        <div class="sg-orders-empty-icon"><i class="fa-solid fa-box-open"></i></div>
+                        <h3>No orders yet</h3>
+                        <p>Your orders will appear here after you make a purchase.</p>
+                        <a href="shop.html" style="display:inline-block;margin-top:0.75rem;background:#111;color:#fff;padding:0.6rem 1.25rem;border-radius:10px;font-size:0.78rem;font-weight:700;text-decoration:none;">Browse Products</a>
+                    </div>`;
+                    return;
+                }
+
+                wrap.innerHTML = docsList.map(o => renderOrderCard(o)).join('');
+
+            } catch(err) {
+                console.error('loadOrders error:', err);
+                if (!isSilentReload) {
+                    wrap.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#9ca3af;font-size:0.82rem;">Could not load orders. Please try again.</div>`;
+                }
+            }
+        }
+
 
         // Load favourites count from localStorage
         function loadFavouritesCount() {
@@ -681,13 +860,17 @@
             const loading = document.getElementById('sg-loading');
             const page = document.getElementById('sg-page');
             currentUser = user;
-            document.getElementById('acc-name').textContent = user.displayName || 'Speed Gifts User';
-            document.getElementById('acc-email').textContent = user.email || '';
+            
+            const isGuest = !user;
+            const uName = user?.displayName || 'Guest User';
+            const uEmail = user?.email || 'Create an account to track permanently';
+
+            document.getElementById('acc-name').textContent = uName;
+            document.getElementById('acc-email').textContent = uEmail;
 
             // Avatar — modern initial with dynamic gradient
             const av = document.getElementById('acc-avatar');
-            const name = user.displayName || 'U';
-            const letter = name.trim()[0].toUpperCase();
+            const letter = isGuest ? 'G' : uName.trim()[0].toUpperCase();
             const palettes = [
                 ['#6366f1','#8b5cf6'],
                 ['#0ea5e9','#6366f1'],
@@ -705,11 +888,11 @@
                 av.innerHTML = `<span class="sg-avatar-initial">${letter}</span>`;
             }
 
-            if (user.photoURL) {
+            if (user && user.photoURL) {
                 av.style.background = 'transparent';
                 const img = new Image();
                 img.onload = () => {
-                    av.innerHTML = `<img src="${user.photoURL}" alt="${name}" style="width:100%;height:100%;object-fit:cover;">`;
+                    av.innerHTML = `<img src="${user.photoURL}" alt="${uName}" style="width:100%;height:100%;object-fit:cover;">`;
                 };
                 img.onerror = () => showInitialAvatar();
                 img.src = user.photoURL;
@@ -720,13 +903,14 @@
 
             // Update shared navbar user icon to show logged-in state
             const deskIcon = document.getElementById('desk-user-icon');
-            if (deskIcon) deskIcon.style.color = '#111';
+            if (deskIcon) deskIcon.style.color = isGuest ? '#6b7280' : '#111';
             const mobUserText = document.getElementById('mob-user-text');
-            const firstName = user.displayName?.split(' ')[0] || 'Account';
+            const firstName = uName.split(' ')[0] || 'Account';
             if (mobUserText) mobUserText.textContent = firstName.length > 7 ? 'Account' : firstName;
 
             loadFavouritesCount();
             loadCartCount();
+            loadOrders(user);   // ← load order history
             loading.style.opacity = '0';
             setTimeout(() => { loading.style.display = 'none'; page.style.display = 'block'; }, 300);
 
@@ -737,13 +921,21 @@
 
         let _authSettled = false;
 
-        // Safety timeout: if Firebase hasn't resolved auth in 3 seconds → redirect.
-        // This only fires if the user is genuinely not logged in.
+        function handleGuestOrRedirect() {
+            const hasGuestOrder = !!sessionStorage.getItem('sg_last_order');
+            if (hasGuestOrder) {
+                showAccountPage(null);
+            } else {
+                sessionStorage.setItem('sg_login_redirect', '/account.html');
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Safety timeout: if Firebase hasn't resolved auth in 3 seconds.
         const _authRedirectTimer = setTimeout(() => {
             if (!_authSettled) {
                 _authSettled = true;
-                sessionStorage.setItem('sg_login_redirect', '/account.html');
-                window.location.href = '/login.html';
+                handleGuestOrRedirect();
             }
         }, 3000);
 
@@ -755,9 +947,12 @@
                 _authSettled = true;
                 clearTimeout(_authRedirectTimer);
                 showAccountPage(user);
+            } else {
+                // User is fully resolved as logged out
+                _authSettled = true;
+                clearTimeout(_authRedirectTimer);
+                handleGuestOrRedirect();
             }
-            // If user is null or anonymous: do NOT redirect immediately.
-            // The safety timeout above handles the logged-out case after 3s.
         });
 
         // Edit Profile Modal

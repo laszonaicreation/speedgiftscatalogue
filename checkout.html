@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Secure Checkout | Speed Gifts</title>
+
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777297995084">
+    <link rel="stylesheet" href="style.min.css?v=1777297995084">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+
+    <link rel="stylesheet" href="checkout.min.css?v=1777297995084">
+
+    <meta name="robots" content="noindex, nofollow">
+
+    <style>
+        /* All layout CSS is in checkout.css / checkout.min.css */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: hidden; font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body>
+
+    <div id="toast"></div>
+    <div id="shared-shell-root"></div>
+
+    <div class="chk-page-wrap">
+
+        <!-- Page Header (no back button) -->
+        <div style="margin-bottom:1.5rem;">
+            <h1 style="font-size:1.4rem;font-weight:900;color:#111;letter-spacing:-0.02em;margin:0 0 0.25rem;">Secure Checkout</h1>
+            <p style="font-size:0.78rem;color:#9ca3af;margin:0;">No account needed &mdash; fill in your details below.</p>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="chk-grid">
+
+            <!-- Form sections -->
+            <div class="chk-form-col">
+
+                <!-- Section 1: Contact -->
+                <div class="chk-section">
+                    <div class="chk-section-head">
+                        <div class="chk-section-num">1</div>
+                        <div class="chk-section-title">Contact Details</div>
+                    </div>
+
+                    <div class="chk-contact-row">
+                        <div class="chk-field">
+                            <label class="chk-label" for="chk-name">Full Name <span class="req">*</span></label>
+                            <input type="text" id="chk-name" class="chk-input" placeholder="e.g. Ahmed Al Mansoori" autocomplete="name">
+                            <div class="chk-error-msg" id="err-name"><i class="fa-solid fa-circle-exclamation"></i> Full name is required</div>
+                        </div>
+                        <div class="chk-field">
+                            <label class="chk-label" for="chk-phone">WhatsApp Number <span class="req">*</span></label>
+                            <input type="tel" id="chk-phone" class="chk-input" placeholder="e.g. +971 50 123 4567" autocomplete="tel">
+                            <div class="chk-error-msg" id="err-phone"><i class="fa-solid fa-circle-exclamation"></i> Phone number is required</div>
+                        </div>
+                    </div>
+
+                    <div class="chk-field" style="margin-top:1rem;">
+                        <label class="chk-label" for="chk-email">
+                            Email Address
+                            <span style="color:#9ca3af;font-weight:500;text-transform:none;letter-spacing:0;font-size:0.7rem;">(Optional)</span>
+                        </label>
+                        <input type="email" id="chk-email" class="chk-input" placeholder="e.g. ahmed@email.com" autocomplete="email">
+                    </div>
+                </div>
+
+                <!-- Section 2: Shipping -->
+                <div class="chk-section">
+                    <div class="chk-section-head">
+                        <div class="chk-section-num">2</div>
+                        <div class="chk-section-title">Shipping Address</div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:1rem;">
+
+                        <div class="chk-field">
+                            <label class="chk-label" for="chk-emirate">Emirate <span class="req">*</span></label>
+                            <select id="chk-emirate" class="chk-input">
+                                <option value="">Select your Emirate</option>
+                                <option value="Abu Dhabi">Abu Dhabi</option>
+                                <option value="Dubai">Dubai</option>
+                                <option value="Sharjah">Sharjah</option>
+                                <option value="Ajman">Ajman</option>
+                                <option value="Umm Al Quwain">Umm Al Quwain</option>
+                                <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+                                <option value="Fujairah">Fujairah</option>
+                            </select>
+                            <div class="chk-error-msg" id="err-emirate"><i class="fa-solid fa-circle-exclamation"></i> Please select an emirate</div>
+                        </div>
+
+                        <div class="chk-addr-row">
+                            <div class="chk-field">
+                                <label class="chk-label" for="chk-city">City / Area <span class="req">*</span></label>
+                                <input type="text" id="chk-city" class="chk-input" placeholder="e.g. Al Khalidiyah" autocomplete="address-level2">
+                                <div class="chk-error-msg" id="err-city"><i class="fa-solid fa-circle-exclamation"></i> City is required</div>
+                            </div>
+                            <div class="chk-field">
+                                <label class="chk-label" for="chk-street">Street Name <span class="req">*</span></label>
+                                <input type="text" id="chk-street" class="chk-input" placeholder="e.g. Hamdan Street" autocomplete="street-address">
+                                <div class="chk-error-msg" id="err-street"><i class="fa-solid fa-circle-exclamation"></i> Street name is required</div>
+                            </div>
+                        </div>
+
+                        <div class="chk-field">
+                            <label class="chk-label" for="chk-building">Building / Villa No. <span class="req">*</span></label>
+                            <input type="text" id="chk-building" class="chk-input" placeholder="e.g. Al Noor Tower, Apt 12B" autocomplete="address-line2">
+                            <div class="chk-error-msg" id="err-building"><i class="fa-solid fa-circle-exclamation"></i> Building / villa is required</div>
+                        </div>
+
+                        <div class="chk-field">
+                            <label class="chk-label" for="chk-notes">
+                                Delivery Notes
+                                <span style="color:#9ca3af;font-weight:500;text-transform:none;letter-spacing:0;font-size:0.7rem;">(Optional)</span>
+                            </label>
+                            <textarea id="chk-notes" class="chk-input" rows="2" style="resize:none;" placeholder="Any special instructions..."></textarea>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div><!-- /.chk-form-col -->
+
+            <!-- Order Summary -->
+            <div class="chk-summary-col">
+                <div class="chk-summary-box">
+                    <div class="chk-summary-title">
+                        <i class="fa-solid fa-bag-shopping" style="margin-right:0.5rem;opacity:0.4;font-size:0.8rem;"></i>
+                        Order Summary
+                    </div>
+
+                    <div class="checkout-items-wrap" id="checkout-items-list">
+                        <div style="text-align:center;color:#9ca3af;padding:1.5rem 0;font-size:0.78rem;">
+                            <i class="fa-solid fa-spinner fa-spin" style="margin-right:0.4rem;"></i>Loading...
+                        </div>
+                    </div>
+
+                    <div class="chk-totals">
+                        <div class="chk-total-row">
+                            <span class="chk-total-label">Subtotal</span>
+                            <span class="chk-total-value" id="chk-subtotal">0.00 AED</span>
+                        </div>
+                        <div class="chk-total-row">
+                            <span class="chk-total-label">Delivery</span>
+                            <span class="chk-total-value" style="font-weight:700;">35.00 AED</span>
+                        </div>
+                        <div class="chk-total-row" style="padding-top:0;margin-top:-0.3rem;">
+                            <span></span>
+                            <span style="font-size:0.65rem;color:#9ca3af;">
+                                <i class="fa-solid fa-truck" style="margin-right:3px;"></i>Est. 2 business days
+                            </span>
+                        </div>
+                        <div class="chk-total-row grand">
+                            <span class="chk-total-label">Total</span>
+                            <span class="chk-total-value" id="chk-total">0.00 AED</span>
+                        </div>
+                    </div>
+
+                    <div class="chk-cod-badge">
+                        <div class="chk-cod-icon">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                        </div>
+                        <div class="chk-cod-text">
+                            <div class="chk-cod-title">Cash on Delivery</div>
+                            <div class="chk-cod-sub">Pay with cash or card when your order arrives.</div>
+                        </div>
+                    </div>
+
+                    <button id="place-order-btn" onclick="window.submitOrder()">
+                        <i class="fa-solid fa-check"></i>
+                        Place Order
+                    </button>
+
+                    <div class="chk-secure-note">
+                        <i class="fa-solid fa-lock" style="font-size:0.6rem;"></i>
+                        Secure &amp; Encrypted Checkout
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.chk-grid -->
+    </div><!-- /.chk-page-wrap -->
+
+    <script type="module" src="checkout.min.js?v=1777297995084"></script>
+</body>
+</html>

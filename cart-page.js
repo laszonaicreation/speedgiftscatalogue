@@ -178,15 +178,17 @@ function renderCartPage() {
     const pill = document.getElementById('cart-count-pill');
     if (pill) pill.textContent = count;
 
-    // Summary totals
+    // Summary totals — 35 AED fixed delivery fee
+    const DELIVERY_FEE = 35;
     const subtotalEl = document.getElementById('summary-subtotal');
     const totalEl = document.getElementById('summary-total');
     const mobTotalEl = document.getElementById('mob-total');
-    const totalStr = total.toFixed(2) + ' AED';
+    const grandTotal = total + DELIVERY_FEE;
 
-    if (subtotalEl) subtotalEl.textContent = totalStr;
-    if (totalEl) totalEl.textContent = totalStr;
-    if (mobTotalEl) mobTotalEl.textContent = totalStr;
+    if (subtotalEl) subtotalEl.textContent = total.toFixed(2) + ' AED';
+    if (totalEl) totalEl.textContent = grandTotal.toFixed(2) + ' AED';
+    if (mobTotalEl) mobTotalEl.textContent = grandTotal.toFixed(2) + ' AED';
+
 
     // Checkout buttons
     const checkoutBtn = document.getElementById('checkout-btn');
@@ -296,7 +298,7 @@ window.cartPageCheckout = () => {
         setTimeout(() => b.style.transform = '', 150);
     });
 
-    checkoutViaWhatsApp();
+    window.location.href = 'checkout.html';
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────────

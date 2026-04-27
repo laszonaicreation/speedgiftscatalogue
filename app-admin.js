@@ -1134,6 +1134,7 @@ export function initAdmin(ctx) {
         const isLanding = tab === 'landing';
         const isHomepage = tab === 'homepage';
         const isMigration = tab === 'migration';
+        const isOrder = tab === 'orders';
 
         document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
         document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isMigration);
@@ -1149,11 +1150,11 @@ export function initAdmin(ctx) {
         // Populate homepage admin UI when switching to it
         if (isHomepage) populateHomeAdminUI();
 
-        // Center Insights View Full Width
+        // Center Insights & Orders View Full Width
         const formContainer = document.getElementById('admin-form-container');
-        formContainer.classList.toggle('hidden', isInsight);
+        formContainer.classList.toggle('hidden', isInsight || isOrder);
         const rightCol = document.getElementById('admin-right-column');
-        if (isInsight) {
+        if (isInsight || isOrder) {
             rightCol.className = "transition-all duration-500";
             rightCol.style.gridColumn = "1 / -1";
             rightCol.style.maxWidth = "1000px";
@@ -1175,6 +1176,7 @@ export function initAdmin(ctx) {
 
         document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
         document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
+        document.getElementById('admin-orders-list')?.classList.toggle('hidden', !isOrder);
         document.getElementById('admin-megamenu-list')?.classList.toggle('hidden', !isMega);
         document.getElementById('admin-slider-list').classList.toggle('hidden', !isSlider);
         document.getElementById('admin-announcements-list').classList.toggle('hidden', !isAnnounce);
@@ -1198,6 +1200,14 @@ export function initAdmin(ctx) {
         const tabHp = document.getElementById('tab-hp');
         if (tabHp) tabHp.className = isHomepage ? activeClass : inactiveClass;
         const tabMig = document.getElementById('tab-mig');
+        if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
+        const tabOrders = document.getElementById('tab-orders');
+        if (tabOrders) tabOrders.className = isOrder ? activeClass : inactiveClass;
+        
+        if (isOrder) {
+            document.getElementById('list-title').innerText = "Recent Orders";
+            loadOrders();
+        }
         if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
 
         document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : (isMigration ? "Migration & Cloud Tools" : ""))))))));
@@ -2703,6 +2713,117 @@ export function initAdmin(ctx) {
         }
         if (state.adminTab === 'megamenu') {
             renderAdminMegaMenus();
+        }
+        if (state.adminTab === 'orders') {
+            window.loadOrders();
+        }
+    };
+
+    // ── Orders Management ────────────────────────────────────────────────────────
+    window.loadOrders = async () => {
+        const container = document.getElementById('orders-container');
+        if (!container) return;
+        
+        container.innerHTML = `<div class="text-center py-20 text-[11px] text-gray-300 italic"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading orders...</div>`;
+        
+        try {
+            const { collection, getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+            const snap = await getDocs(q);
+            const orders = snap.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
+            window.renderOrders(orders);
+        } catch (err) {
+            console.error("Failed to load orders", err);
+            container.innerHTML = `<div class="text-center py-20 text-[11px] text-red-300 italic">Error loading orders.</div>`;
+        }
+    };
+
+    window.renderOrders = (orders) => {
+        const container = document.getElementById('orders-container');
+        if (!container) return;
+
+        if (!orders || orders.length === 0) {
+            container.innerHTML = `<div class="text-center py-20 text-[11px] text-gray-300 italic">No orders found.</div>`;
+            return;
+        }
+
+        container.innerHTML = orders.map(o => {
+            const date = o.createdAt ? new Date(o.createdAt.toMillis ? o.createdAt.toMillis() : o.createdAt).toLocaleString() : 'N/A';
+            const statusColor = o.status === 'Delivered' ? 'text-green-600 bg-green-50' : (o.status === 'Processing' ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50');
+            
+            const itemsHtml = (o.items || []).map(i => `
+                <div class="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                    <div class="flex gap-3 items-center">
+                        <img src="${getOptimizedUrl(i.img, 60)}" class="w-10 h-10 rounded shadow-sm object-cover bg-gray-100" onerror="this.src='https://placehold.co/60x60'">
+                        <div>
+                            <p class="text-[11px] font-bold text-gray-800">${i.name}</p>
+                            <p class="text-[9px] text-gray-400 uppercase tracking-widest">${[i.size, i.color].filter(Boolean).join(' · ')}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[11px] font-bold text-gray-800">${i.price} AED</p>
+                        <p class="text-[9px] text-gray-400 uppercase tracking-widest">Qty: ${i.qty || 1}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            return `
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-4">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-sm font-black tracking-widest text-black mb-1">${o.orderId || o.firebaseId}</h3>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${date}</p>
+                    </div>
+                    <select onchange="window.updateOrderStatus('${o.firebaseId}', this.value)" class="text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border border-gray-100 cursor-pointer ${statusColor}">
+                        <option value="Pending" ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
+                        <option value="Delivered" ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                        <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4 bg-gray-50 p-4 rounded-xl">
+                    <div>
+                        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Customer</p>
+                        <p class="text-[11px] font-bold text-gray-800">${o.customer?.name || 'N/A'}</p>
+                        <p class="text-[11px] text-gray-500 flex items-center gap-1"><i class="fa-brands fa-whatsapp text-green-500"></i> ${o.customer?.phone || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Delivery Address</p>
+                        <p class="text-[11px] font-bold text-gray-800">${o.shipping?.city}, ${o.shipping?.emirate}</p>
+                        <p class="text-[11px] text-gray-500">${o.shipping?.street}, ${o.shipping?.building}</p>
+                        ${o.shipping?.notes ? `<p class="text-[10px] text-orange-500 italic mt-1 font-medium">Note: ${o.shipping.notes}</p>` : ''}
+                    </div>
+                </div>
+
+                <div class="border border-gray-100 rounded-xl p-4">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-100 pb-2 mb-2">Order Items</p>
+                    ${itemsHtml}
+                    <div class="flex justify-between items-center pt-3 mt-2 border-t border-gray-100">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Amount</span>
+                        <span class="text-[13px] font-black text-black">${(o.total || 0).toFixed(2)} AED</span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex gap-2">
+                    <button onclick="window.open('https://wa.me/${(o.customer?.phone || '').replace(/[^0-9]/g, '')}', '_blank')" class="flex-1 bg-green-50 text-green-600 hover:bg-green-100 transition-colors py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Customer
+                    </button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    };
+
+    window.updateOrderStatus = async (docId, newStatus) => {
+        try {
+            const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            const orderRef = doc(db, 'orders', docId);
+            await updateDoc(orderRef, { status: newStatus });
+            showToast("Order status updated!");
+        } catch (err) {
+            console.error("Status update failed:", err);
+            showToast("Failed to update status");
         }
     };
 } // end initAdmin

@@ -70,9 +70,16 @@ export function initSharedAuth(config) {
                 }
             }
         } else {
-            // Not logged in → go to login page
-            sessionStorage.setItem('sg_login_redirect', window.location.href);
-            window.location.href = '/login.html';
+            // Check if user has a recent guest order
+            const hasGuestOrder = !!sessionStorage.getItem('sg_last_order');
+            if (hasGuestOrder) {
+                // Route them to account page to see guest preview
+                window.location.href = '/account.html';
+            } else {
+                // Not logged in → go to login page
+                sessionStorage.setItem('sg_login_redirect', window.location.href);
+                window.location.href = '/login.html';
+            }
         }
     };
 

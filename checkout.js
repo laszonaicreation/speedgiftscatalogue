@@ -1,0 +1,256 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import {
+    initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+    collection, addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import {
+    getAuth, onAuthStateChanged, signInAnonymously
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+import { mountSharedShell } from './shared-shell.js?v=4';
+import { getCartItems, getCartTotal, clearCart, loadCart } from './cart.js';
+
+// ── Firebase Initialization ───────────────────────────────────────────────────
+const firebaseConfig = {
+    apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
+    authDomain: "speedgifts.net",
+    projectId: "speed-catalogue",
+    storageBucket: "speed-catalogue.firebasestorage.app",
+    messagingSenderId: "84589409246",
+    appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+const auth = getAuth(app);
+
+window._sgAuth = auth;
+window._sgDb = db;
+
+// ── Mount Shell ───────────────────────────────────────────────────────────────
+mountSharedShell('checkout');
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    clearTimeout(toastTimer);
+    t.textContent = msg;
+    t.style.display = 'block';
+    toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+window.showToast = showToast;
+
+// ── Image Optimizer ───────────────────────────────────────────────────────────
+function getOptimizedUrl(url, size = 150) {
+    if (!url) return '';
+    if (url.includes('res.cloudinary.com') && !url.includes('/upload/w_')) {
+        return url.replace('/upload/', `/upload/w_${size},c_fill,f_auto,q_auto/`);
+    }
+    return url;
+}
+
+// ── Delivery Fee ─────────────────────────────────────────────────────────────
+const DELIVERY_FEE = 35; // Fixed UAE delivery — 35 AED
+
+// ── Render Summary ────────────────────────────────────────────────────────────
+let cartItems = [];
+let cartTotal = 0;
+
+function renderOrderSummary() {
+    loadCart();
+    cartItems = getCartItems();
+    cartTotal = getCartTotal();
+
+    if (cartItems.length === 0) {
+        window.location.href = 'cart.html';
+        return;
+    }
+
+    const listEl = document.getElementById('checkout-items-list');
+    const subtotalEl = document.getElementById('chk-subtotal');
+    const totalEl = document.getElementById('chk-total');
+
+    let html = '';
+    cartItems.forEach(item => {
+        const imgUrl = getOptimizedUrl(item.img, 150) || 'https://placehold.co/150x150?text=Gift';
+        const safeName = (item.name || 'Product').replace(/"/g, '&quot;');
+        const varLabel = [item.size, item.color].filter(Boolean).join(' · ');
+        const lineTotal = ((parseFloat(item.price) || 0) * (item.qty || 1)).toFixed(2);
+
+        html += `
+        <div class="checkout-item">
+            <img src="${imgUrl}" alt="${safeName}">
+            <div class="checkout-item-details">
+                <div class="checkout-item-title">${safeName}</div>
+                <div class="checkout-item-meta">
+                    ${varLabel ? `${varLabel} <br>` : ''}
+                    Qty: ${item.qty || 1}
+                </div>
+            </div>
+            <div class="checkout-item-price">${lineTotal} AED</div>
+        </div>`;
+    });
+
+    listEl.innerHTML = html;
+    subtotalEl.innerText = `${cartTotal.toFixed(2)} AED`;
+    totalEl.innerText = `${(cartTotal + DELIVERY_FEE).toFixed(2)} AED`;
+}
+
+// ── Field Validation Helpers ──────────────────────────────────────────────────
+function setFieldError(inputId, errId, show) {
+    const input = document.getElementById(inputId);
+    const err   = document.getElementById(errId);
+    if (!input) return;
+    if (show) {
+        input.classList.add('error');
+        input.classList.remove('success');
+        if (err) err.classList.add('show');
+    } else {
+        input.classList.remove('error');
+        input.classList.add('success');
+        if (err) err.classList.remove('show');
+    }
+}
+
+function clearFieldError(inputId, errId) {
+    const input = document.getElementById(inputId);
+    const err   = document.getElementById(errId);
+    if (!input) return;
+    input.classList.remove('error');
+    if (err) err.classList.remove('show');
+}
+
+// Live validation — clear errors as user types
+['chk-name','chk-phone','chk-city','chk-street','chk-building'].forEach(id => {
+    document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', () => clearFieldError(id, 'err-' + id.replace('chk-','')));
+    });
+});
+document.addEventListener('DOMContentLoaded', () => {
+    const emirate = document.getElementById('chk-emirate');
+    if (emirate) emirate.addEventListener('change', () => clearFieldError('chk-emirate','err-emirate'));
+});
+
+// ── Submit Order ──────────────────────────────────────────────────────────────
+window.submitOrder = async () => {
+    // 1. Get Values
+    const name     = document.getElementById('chk-name').value.trim();
+    const phone    = document.getElementById('chk-phone').value.trim();
+    const email    = document.getElementById('chk-email').value.trim();
+    const emirate  = document.getElementById('chk-emirate').value.trim();
+    const city     = document.getElementById('chk-city').value.trim();
+    const street   = document.getElementById('chk-street').value.trim();
+    const building = document.getElementById('chk-building').value.trim();
+    const notes    = document.getElementById('chk-notes').value.trim();
+
+    // 2. Per-field Validation
+    let hasError = false;
+    const fields = [
+        { id:'chk-name',     errId:'err-name',     value: name },
+        { id:'chk-phone',    errId:'err-phone',     value: phone },
+        { id:'chk-emirate',  errId:'err-emirate',   value: emirate },
+        { id:'chk-city',     errId:'err-city',      value: city },
+        { id:'chk-street',   errId:'err-street',    value: street },
+        { id:'chk-building', errId:'err-building',  value: building },
+    ];
+
+    fields.forEach(f => {
+        if (!f.value) {
+            setFieldError(f.id, f.errId, true);
+            // Shake each empty field
+            const el = document.getElementById(f.id);
+            el?.classList.remove('chk-shake');
+            void el?.offsetWidth; // reflow to restart animation
+            el?.classList.add('chk-shake');
+            setTimeout(() => el?.classList.remove('chk-shake'), 500);
+            hasError = true;
+        } else {
+            setFieldError(f.id, f.errId, false);
+        }
+    });
+
+    if (hasError) {
+        // Scroll to first error
+        const firstErr = document.querySelector('.chk-input.error');
+        if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast('Please fill in all required fields');
+        return;
+    }
+
+    if (cartItems.length === 0) {
+        showToast('Your cart is empty');
+        return;
+    }
+
+    // 3. Loading State
+    const btn = document.getElementById('place-order-btn');
+    btn.classList.add('btn-loading');
+    btn.innerHTML = `<i class="fa-solid fa-spinner"></i> Processing...`;
+
+    try {
+        // 4. Generate Order ID
+        const orderId = 'SG-' + Math.floor(10000 + Math.random() * 90000);
+
+        // 5. Construct Order Object
+        const orderData = {
+            orderId,
+            customer: { name, phone, email, uid: auth.currentUser ? auth.currentUser.uid : null },
+            shipping: { emirate, city, street, building, notes },
+            items: cartItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                qty: item.qty,
+                size: item.size || null,
+                color: item.color || null,
+                img: item.img
+            })),
+            total: cartTotal + DELIVERY_FEE,
+            subtotal: cartTotal,
+            deliveryFee: DELIVERY_FEE,
+            status: 'Pending',
+            paymentMethod: 'COD',
+            createdAt: serverTimestamp()
+        };
+
+        // 6. Save to Firestore
+        const ordersCol = collection(db, 'orders');
+        const docRef = await addDoc(ordersCol, orderData);
+
+        // Save locally for guest fallback on success page
+        try {
+            // Convert serverTimestamp to a local format so the success page doesn't crash on it
+            const cachedOrder = { ...orderData, createdAt: Math.floor(Date.now() / 1000), docId: docRef.id };
+            sessionStorage.setItem('sg_last_order', JSON.stringify(cachedOrder));
+        } catch(e) { /* ignore */ }
+
+        // 7. Clear Cart & Redirect
+        clearCart();
+        window.location.href = `order-success.html?orderId=${orderId}`;
+
+    } catch (err) {
+        console.error('Order submission failed:', err);
+        showToast('Error processing order. Please try again.');
+        btn.classList.remove('btn-loading');
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> Place Order`;
+    }
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        signInAnonymously(auth).catch(() => { /* no-op */ });
+    }
+});
+
+// Wait for DOM
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial render might fail if cart.js hasn't loaded data from localstorage yet.
+    // Give it a tiny delay to ensure cart module is ready.
+    setTimeout(renderOrderSummary, 100);
+});

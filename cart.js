@@ -96,6 +96,7 @@ export function removeFromCart(id, size, color) {
     saveCart();
 }
 
+
 export function updateQty(id, size, color, delta) {
     const key = makeKey(id, size, color);
     const item = _cartItems.find(x => makeKey(x.id, x.size, x.color) === key);
