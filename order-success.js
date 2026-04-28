@@ -201,4 +201,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Auth state → CTAs
     onAuthStateChanged(auth, (user) => setupCTAs(user));
+
+    // ── Back Button Hijack ────────────────────────────────────────────────────────
+    // Prevent user from going back to cart/checkout. Send them to home page instead.
+    // Only do this if they just checked out (not if they clicked an old order from account page).
+    const isFromCheckout = urlParams.get('fromCheckout') === '1';
+    
+    if (isFromCheckout) {
+        window.history.replaceState({ os_page: 1 }, "", window.location.href);
+        window.history.pushState({ os_page: 2 }, "", window.location.href);
+
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.os_page === 1) {
+                window.location.replace('index.html');
+            }
+        });
+    }
 });

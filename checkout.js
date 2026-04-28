@@ -302,7 +302,7 @@ window.submitOrder = async () => {
 
         // 7. Clear Cart & Redirect
         clearCart();
-        window.location.href = `order-success.html?orderId=${orderId}`;
+        window.location.replace(`order-success.html?orderId=${orderId}&fromCheckout=1`);
 
     } catch (err) {
         console.error('Order submission failed:', err);
