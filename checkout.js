@@ -4,7 +4,8 @@ import {
     collection, addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import {
-    getAuth, onAuthStateChanged, signInAnonymously
+    getAuth, onAuthStateChanged, signInAnonymously,
+    createUserWithEmailAndPassword, updateProfile
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 import { mountSharedShell } from './shared-shell.js?v=4';
@@ -134,6 +135,42 @@ function clearFieldError(inputId, errId) {
 document.addEventListener('DOMContentLoaded', () => {
     const emirate = document.getElementById('chk-emirate');
     if (emirate) emirate.addEventListener('change', () => clearFieldError('chk-emirate','err-emirate'));
+
+    const createAccCheck = document.getElementById('chk-create-acc');
+    const pwWrap = document.getElementById('chk-password-wrap');
+    const emailOpt = document.getElementById('chk-email-opt');
+    const emailReq = document.getElementById('chk-email-req');
+    if (createAccCheck) {
+        createAccCheck.addEventListener('change', function() {
+            if (this.checked) {
+                pwWrap.style.display = 'block';
+                if (emailOpt) emailOpt.style.display = 'none';
+                if (emailReq) emailReq.style.display = 'inline';
+            } else {
+                pwWrap.style.display = 'none';
+                if (emailOpt) emailOpt.style.display = 'inline';
+                if (emailReq) emailReq.style.display = 'none';
+                clearFieldError('chk-email', 'err-email');
+                clearFieldError('chk-password', 'err-password');
+            }
+        });
+    }
+
+    const pwToggle = document.getElementById('chk-pw-toggle');
+    const pwInput = document.getElementById('chk-password');
+    if (pwToggle && pwInput) {
+        pwToggle.addEventListener('click', function() {
+            if (pwInput.type === 'password') {
+                pwInput.type = 'text';
+                this.classList.remove('fa-eye');
+                this.classList.add('fa-eye-slash');
+            } else {
+                pwInput.type = 'password';
+                this.classList.remove('fa-eye-slash');
+                this.classList.add('fa-eye');
+            }
+        });
+    }
 });
 
 // ── Submit Order ──────────────────────────────────────────────────────────────
@@ -148,6 +185,9 @@ window.submitOrder = async () => {
     const building = document.getElementById('chk-building').value.trim();
     const notes    = document.getElementById('chk-notes').value.trim();
 
+    const isCreateAcc = document.getElementById('chk-create-acc')?.checked;
+    const password    = document.getElementById('chk-password')?.value || '';
+
     // 2. Per-field Validation
     let hasError = false;
     const fields = [
@@ -158,6 +198,21 @@ window.submitOrder = async () => {
         { id:'chk-street',   errId:'err-street',    value: street },
         { id:'chk-building', errId:'err-building',  value: building },
     ];
+
+    if (isCreateAcc) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            fields.push({ id:'chk-email', errId:'err-email', value: false });
+        } else {
+            setFieldError('chk-email', 'err-email', false);
+        }
+        
+        if (password.length < 6) {
+            fields.push({ id:'chk-password', errId:'err-password', value: false });
+        } else {
+            setFieldError('chk-password', 'err-password', false);
+        }
+    }
 
     fields.forEach(f => {
         if (!f.value) {
@@ -178,7 +233,7 @@ window.submitOrder = async () => {
         // Scroll to first error
         const firstErr = document.querySelector('.chk-input.error');
         if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showToast('Please fill in all required fields');
+        showToast('Please fill in all required fields correctly');
         return;
     }
 
@@ -193,13 +248,29 @@ window.submitOrder = async () => {
     btn.innerHTML = `<i class="fa-solid fa-spinner"></i> Processing...`;
 
     try {
+        let finalUid = auth.currentUser && !auth.currentUser.isAnonymous ? auth.currentUser.uid : null;
+
+        if (isCreateAcc && email && password) {
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(cred.user, { displayName: name });
+                finalUid = cred.user.uid;
+            } catch (err) {
+                const msg = err.message?.replace('Firebase:', '').trim() || 'Could not create account';
+                showToast(msg);
+                btn.classList.remove('btn-loading');
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Place Order`;
+                return;
+            }
+        }
+
         // 4. Generate Order ID
         const orderId = 'SG-' + Math.floor(10000 + Math.random() * 90000);
 
         // 5. Construct Order Object
         const orderData = {
             orderId,
-            customer: { name, phone, email, uid: auth.currentUser ? auth.currentUser.uid : null },
+            customer: { name, phone, email, uid: finalUid },
             shipping: { emirate, city, street, building, notes },
             items: cartItems.map(item => ({
                 id: item.id,

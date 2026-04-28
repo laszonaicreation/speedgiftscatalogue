@@ -11,15 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777297995084">
-    <link rel="stylesheet" href="style.min.css?v=1777297995084">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777361003953">
+    <link rel="stylesheet" href="style.min.css?v=1777361003953">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
 
-    <link rel="stylesheet" href="checkout.min.css?v=1777297995084">
+    <link rel="stylesheet" href="checkout.min.css?v=1777361003953">
 
     <meta name="robots" content="noindex, nofollow">
 
@@ -71,9 +71,30 @@
                     <div class="chk-field" style="margin-top:1rem;">
                         <label class="chk-label" for="chk-email">
                             Email Address
-                            <span style="color:#9ca3af;font-weight:500;text-transform:none;letter-spacing:0;font-size:0.7rem;">(Optional)</span>
+                            <span id="chk-email-opt" style="color:#9ca3af;font-weight:500;text-transform:none;letter-spacing:0;font-size:0.7rem;">(Optional)</span>
+                            <span id="chk-email-req" class="req" style="display:none;">*</span>
                         </label>
                         <input type="email" id="chk-email" class="chk-input" placeholder="e.g. ahmed@email.com" autocomplete="email">
+                        <div class="chk-error-msg" id="err-email"><i class="fa-solid fa-circle-exclamation"></i> Valid email is required to create an account</div>
+                    </div>
+
+                    <!-- Create Account Checkbox -->
+                    <div style="margin-top:1rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:1rem;">
+                        <label style="display:flex;align-items:center;cursor:pointer;gap:0.75rem;">
+                            <input type="checkbox" id="chk-create-acc" style="width:1.2rem;height:1.2rem;accent-color:#111;cursor:pointer;">
+                            <span style="font-size:0.85rem;font-weight:600;color:#111;">Create an account to track your orders</span>
+                        </label>
+                        
+                        <div id="chk-password-wrap" style="display:none;margin-top:1rem;">
+                            <div class="chk-field" style="margin-bottom:0;">
+                                <label class="chk-label" for="chk-password">Password <span class="req">*</span></label>
+                                <div style="position:relative;">
+                                    <input type="password" id="chk-password" class="chk-input" placeholder="Min. 6 characters" style="padding-right:2.5rem;">
+                                    <i class="fa-regular fa-eye" id="chk-pw-toggle" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);cursor:pointer;color:#9ca3af;font-size:0.9rem;"></i>
+                                </div>
+                                <div class="chk-error-msg" id="err-password"><i class="fa-solid fa-circle-exclamation"></i> Password must be at least 6 characters</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -193,6 +214,6 @@
         </div><!-- /.chk-grid -->
     </div><!-- /.chk-page-wrap -->
 
-    <script type="module" src="checkout.min.js?v=1777297995084"></script>
+    <script type="module" src="checkout.min.js?v=1777361003953"></script>
 </body>
 </html>
