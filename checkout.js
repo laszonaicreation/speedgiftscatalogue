@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import {
     getAuth, onAuthStateChanged, signInAnonymously,
-    createUserWithEmailAndPassword, updateProfile
+    createUserWithEmailAndPassword, updateProfile, sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
 import { mountSharedShell } from './shared-shell.js?v=4';
@@ -255,6 +255,12 @@ window.submitOrder = async () => {
                 const cred = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(cred.user, { displayName: name });
                 finalUid = cred.user.uid;
+                // Send email verification — does NOT block the order
+                try {
+                    await sendEmailVerification(cred.user);
+                } catch (verifyErr) {
+                    console.warn('Verification email failed (non-critical):', verifyErr);
+                }
             } catch (err) {
                 const msg = err.message?.replace('Firebase:', '').trim() || 'Could not create account';
                 showToast(msg);

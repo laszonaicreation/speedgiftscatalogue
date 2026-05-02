@@ -24,8 +24,10 @@ const auth = getAuth(app);
 mountSharedShell('order-success');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const urlParams = new URLSearchParams(window.location.search);
-const orderId   = urlParams.get('orderId') || '';
+const urlParams      = new URLSearchParams(window.location.search);
+const orderId        = urlParams.get('orderId') || '';
+const isFromCheckout = urlParams.get('fromCheckout') === '1';
+
 
 function fmt(ts) {
     if (!ts) return '';
@@ -145,6 +147,20 @@ function setupCTAs(user) {
     const el = document.getElementById('os-cta-section');
     if (!el) return;
     if (user && !user.isAnonymous) {
+        // Show email verification banner if user just created account and hasn't verified yet
+        const verifyBannerEl = document.getElementById('os-verify-banner');
+        if (verifyBannerEl && !user.emailVerified && isFromCheckout) {
+            verifyBannerEl.innerHTML = `
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:0.75rem;text-align:left;">
+                <i class="fa-solid fa-envelope-circle-check" style="color:#d97706;font-size:1.2rem;margin-top:2px;flex-shrink:0;"></i>
+                <div>
+                    <strong style="display:block;font-size:0.82rem;color:#92400e;margin-bottom:0.2rem;">Verify your email address</strong>
+                    <span style="font-size:0.76rem;color:#b45309;">A verification link has been sent to <b>${user.email}</b>. Click it to activate your account fully.</span>
+                </div>
+            </div>`;
+            verifyBannerEl.style.display = 'block';
+        }
+
         el.innerHTML = `
         <a href="account.html#orders" class="os-btn os-btn-primary">
             <i class="fa-solid fa-box-open"></i> View My Orders
@@ -205,7 +221,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Back Button Hijack ────────────────────────────────────────────────────────
     // Prevent user from going back to cart/checkout. Send them to home page instead.
     // Only do this if they just checked out (not if they clicked an old order from account page).
-    const isFromCheckout = urlParams.get('fromCheckout') === '1';
     
     if (isFromCheckout) {
         window.history.replaceState({ os_page: 1 }, "", window.location.href);

@@ -1184,6 +1184,7 @@ export function initAdmin(ctx) {
         document.getElementById('admin-leads-list').classList.toggle('hidden', !isLeads);
 
         document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
+        document.getElementById('order-admin-filters')?.classList.toggle('hidden', !isOrder);
 
         const activeClass = "w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium transition-all bg-black text-white shadow-lg";
         const inactiveClass = "w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all";
@@ -2731,11 +2732,21 @@ export function initAdmin(ctx) {
             const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
             const snap = await getDocs(q);
             const orders = snap.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
-            window.renderOrders(orders);
+            DATA.orders = orders;
+            window.filterOrders();
         } catch (err) {
             console.error("Failed to load orders", err);
             container.innerHTML = `<div class="text-center py-20 text-[11px] text-red-300 italic">Error loading orders.</div>`;
         }
+    };
+
+    window.filterOrders = () => {
+        const statusFilter = document.getElementById('admin-order-status-filter')?.value || 'all';
+        let filtered = DATA.orders || [];
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(o => o.status === statusFilter);
+        }
+        window.renderOrders(filtered);
     };
 
     window.renderOrders = (orders) => {
@@ -2809,6 +2820,9 @@ export function initAdmin(ctx) {
                     <button onclick="window.open('https://wa.me/${(o.customer?.phone || '').replace(/[^0-9]/g, '')}', '_blank')" class="flex-1 bg-green-50 text-green-600 hover:bg-green-100 transition-colors py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
                         <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Customer
                     </button>
+                    <button onclick="window.deleteOrder('${o.firebaseId}')" class="bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors py-2 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trash text-sm"></i> Delete
+                    </button>
                 </div>
             </div>
             `;
@@ -2824,6 +2838,21 @@ export function initAdmin(ctx) {
         } catch (err) {
             console.error("Status update failed:", err);
             showToast("Failed to update status");
+        }
+    };
+
+    window.deleteOrder = async (docId) => {
+        if (!confirm("Delete this order? This cannot be undone.")) return;
+        try {
+            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            await deleteDoc(doc(db, 'orders', docId));
+            // Remove from local cache and re-render
+            DATA.orders = (DATA.orders || []).filter(o => o.firebaseId !== docId);
+            window.filterOrders();
+            showToast("Order deleted.");
+        } catch (err) {
+            console.error("Delete order failed:", err);
+            showToast("Failed to delete order");
         }
     };
 } // end initAdmin

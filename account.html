@@ -15,8 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS (same as main page) -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777367372372">
-    <link rel="stylesheet" href="style.min.css?v=1777367372372">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777453622163">
+    <link rel="stylesheet" href="style.min.css?v=1777453622163">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -524,13 +524,20 @@
             </a>
         </div>
 
-        <!-- Sign Out -->
-        <p class="sg-section-title">Session</p>
+        <!-- Sign Out & Delete Account -->
+        <p class="sg-section-title">Session & Danger Zone</p>
         <div class="sg-menu">
             <button class="sg-menu-item danger" onclick="handleSignOut()">
                 <div class="sg-menu-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
                 <div class="sg-menu-label">
                     <div class="sg-menu-label-title">Sign Out</div>
+                </div>
+            </button>
+            <button class="sg-menu-item" style="color: #ef4444; margin-top: 4px;" onclick="handleDeleteAccount()">
+                <div class="sg-menu-icon" style="background:#fff0f0; color:#ef4444;"><i class="fa-solid fa-trash-can"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title" style="color:#ef4444;">Delete My Account</div>
+                    <div class="sg-menu-label-sub" style="color:#f87171;">Permanently delete your profile</div>
                 </div>
             </button>
         </div>
@@ -543,9 +550,9 @@
         import { mountSharedShell } from './shared-shell.min.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-                 collection, query, where, getDocs, orderBy, limit }
+                 collection, query, where, getDocs, orderBy, limit, doc, deleteDoc }
             from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile }
+        import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile, deleteUser }
             from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
         // Mount shared navbar (same as main page)
@@ -1023,6 +1030,61 @@
                 setTimeout(() => window.location.href = '/', 800);
             } catch { showToast('Error signing out'); }
         };
+
+        window.handleDeleteAccount = async () => {
+            if (!currentUser) return;
+            
+            // 1. Check for active orders
+            try {
+                const q = query(collection(db, 'orders'), where('customer.uid', '==', currentUser.uid));
+                const snap = await getDocs(q);
+                const hasActiveOrder = snap.docs.some(doc => {
+                    const status = doc.data().status;
+                    return status === 'Pending' || status === 'Processing' || status === 'Shipped';
+                });
+                
+                if (hasActiveOrder) {
+                    showToast('You have active orders. Please wait for delivery or cancel them before deleting your account.');
+                    return;
+                }
+            } catch(e) {
+                console.error("Failed to check orders:", e);
+                showToast('Could not verify active orders. Please try again later.');
+                return;
+            }
+
+            // 2. Confirm Deletion
+            if (!confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
+                return;
+            }
+
+            // 3. Delete Personal Data & Auth
+            try {
+                // Optional: Delete cloud cart/wishlist docs if you had them structured by UID.
+                // Here we just delete the user auth. Firestore Rules / Cloud functions should handle the rest 
+                // or we rely on the fact that without Auth, the data is orphaned.
+                // We also clear local storage.
+                
+                localStorage.removeItem('speedgifts_wishlist');
+                localStorage.removeItem('speedgifts_wishlist_ping');
+                localStorage.removeItem('speedgifts_cart');
+                localStorage.removeItem('speedgifts_guest_additions');
+                
+                await deleteUser(currentUser);
+                
+                showToast('Account deleted successfully.');
+                setTimeout(() => window.location.href = '/', 1000);
+            } catch (err) {
+                console.error("Error deleting account:", err);
+                if (err.code === 'auth/requires-recent-login') {
+                    showToast('For security reasons, please sign in again to delete your account. Redirecting...');
+                    setTimeout(() => window.handleSignOut(), 2500);
+                } else {
+                    showToast('Failed to delete account. ' + err.message);
+                }
+            }
+        };
+
 
         function showToast(msg) {
             const t = document.getElementById('sg-toast');
