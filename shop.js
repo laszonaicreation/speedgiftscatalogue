@@ -1144,7 +1144,7 @@ window.handleAuthSubmit = async (e) => {
         window.closeAuthModals();
         document.getElementById('auth-form')?.reset();
     } catch (err) {
-        showToast(err.message?.replace('Firebase:', '').trim() || 'Authentication Failed');
+        showToast(window._sgGetFriendlyError ? window._sgGetFriendlyError(err) : (err.message?.replace('Firebase:', '').trim() || 'Authentication Failed'));
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -1169,7 +1169,7 @@ window.handleForgotPassword = async () => {
         await sendPasswordResetEmail(auth, email);
         showToast('Password reset email sent');
     } catch (err) {
-        showToast(err.message?.replace('Firebase:', '').trim() || 'Error sending reset email');
+        showToast(window._sgGetFriendlyError ? window._sgGetFriendlyError(err) : (err.message?.replace('Firebase:', '').trim() || 'Error sending reset email'));
     }
 };
 

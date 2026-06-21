@@ -5,40 +5,60 @@ const path = require('path');
 const dir = __dirname;
 const files = fs.readdirSync(dir);
 
-const jsFiles = files.filter(f => f.endsWith('.js') && !f.endsWith('.min.js') && f !== 'build.js');
-const cssFiles = files.filter(f => f.endsWith('.css') && !f.endsWith('.min.css'));
+// ── CLI flags ─────────────────────────────────────────────────────────────────
+// Usage:
+//   node build.js          → incremental (only changed files)
+//   node build.js --force  → rebuild everything
+const FORCE = process.argv.includes('--force') || process.argv.includes('-f');
+
+const jsFiles   = files.filter(f => f.endsWith('.js')  && !f.endsWith('.min.js')  && f !== 'build.js');
+const cssFiles  = files.filter(f => f.endsWith('.css')  && !f.endsWith('.min.css'));
 const htmlFiles = files.filter(f => f.endsWith('.html') && f !== 'index.dev.html');
 
 console.log(`\n========================================`);
-console.log(`  Speed Gifts - Smart JS & CSS Minification`);
+console.log(`  Speed Gifts - Smart Incremental Build`);
+console.log(`  ${FORCE ? '⚠️  FORCE MODE (rebuilding all)' : '⚡ Incremental (skipping unchanged files)'}`);
 console.log(`========================================\n`);
-console.log(`Found ${jsFiles.length} JS files to minify.`);
-console.log(`Found ${cssFiles.length} CSS files to minify.\n`);
+
+// ── Helper: does source need rebuilding? ─────────────────────────────────────
+function needsRebuild(srcFile, outFile) {
+    if (FORCE) return true;
+    const outPath = path.join(dir, outFile);
+    if (!fs.existsSync(outPath)) return true;
+    const srcMtime = fs.statSync(path.join(dir, srcFile)).mtimeMs;
+    const outMtime = fs.statSync(outPath).mtimeMs;
+    return srcMtime > outMtime;
+}
 
 let successCount = 0;
-let failCount = 0;
+let skippedCount = 0;
+let failCount    = 0;
 
+// ── JS Minification ───────────────────────────────────────────────────────────
+console.log(`JS Files (${jsFiles.length} total):`);
 for (const file of jsFiles) {
     const minFile = file.replace(/\.js$/, '.min.js');
-    console.log(`Minifying ${file} -> ${minFile}...`);
+    if (!needsRebuild(file, minFile)) {
+        console.log(`  ⏭  Skipping ${file} (unchanged)`);
+        skippedCount++;
+        continue;
+    }
+    console.log(`  🔨 Minifying ${file} -> ${minFile}...`);
     try {
-        // Run terser via npx
-        execSync(`npx terser ${file} --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output ${minFile}`, { stdio: 'inherit' });
-        
-        // Read the newly created minified file
+        execSync(
+            `npx terser ${file} --module --compress passes=3,drop_console=false,pure_getters=true --mangle --output ${minFile}`,
+            { stdio: 'inherit' }
+        );
         const minPath = path.join(dir, minFile);
         if (fs.existsSync(minPath)) {
             let content = fs.readFileSync(minPath, 'utf8');
-            
-            // Rewrite imports to point to their .min.js counterparts
-            const newContent = content.replace(/(["'])(\.\/[^"']+)\.js(\?[^"']*)?\1/g, (match, quote, pathBase, qs) => {
-                if (pathBase.endsWith('.min')) return match; // already .min.js
+            const newContent = content.replace(/(['"])(\.\/[^'"]+)\.js(\?[^'"]*)?['"]/g, (match, quote, pathBase, qs) => {
+                if (pathBase.endsWith('.min')) return match;
                 return `${quote}${pathBase}.min.js?v=${Date.now()}${quote}`;
             });
-            
             if (content !== newContent) {
                 fs.writeFileSync(minPath, newContent, 'utf8');
-                console.log(`  -> Automatically updated internal imports -> .min.js with cachebuster`);
+                console.log(`    -> Automatically updated internal imports -> .min.js with cachebuster`);
             }
         }
         successCount++;
@@ -48,10 +68,16 @@ for (const file of jsFiles) {
     }
 }
 
-console.log(`\nStarting CSS Minification...`);
+// ── CSS Minification ──────────────────────────────────────────────────────────
+console.log(`\nCSS Files (${cssFiles.length} total):`);
 for (const file of cssFiles) {
     const minFile = file.replace(/\.css$/, '.min.css');
-    console.log(`Minifying ${file} -> ${minFile}...`);
+    if (!needsRebuild(file, minFile)) {
+        console.log(`  ⏭  Skipping ${file} (unchanged)`);
+        skippedCount++;
+        continue;
+    }
+    console.log(`  🔨 Minifying ${file} -> ${minFile}...`);
     try {
         execSync(`npx clean-css-cli -o ${minFile} ${file}`, { stdio: 'inherit' });
         successCount++;
@@ -61,69 +87,62 @@ for (const file of cssFiles) {
     }
 }
 
-console.log(`\nUpdating HTML files to use .min.css and .min.js with cache-busters...`);
-const ts = Date.now();
-for (const file of htmlFiles) {
-    try {
-        const filePath = path.join(dir, file);
-        if (!fs.existsSync(filePath)) continue;
-        let content = fs.readFileSync(filePath, 'utf8');
-        
-        let newContent = content.replace(/href=["']([^"']+\.css)(\?[^"']*)?["']/gi, (match, pathStr, qs) => {
-            if (pathStr.includes('http') || pathStr.endsWith('.min.css')) {
-                if (pathStr.endsWith('.min.css') && !pathStr.includes('http')) {
-                    return `href="${pathStr}?v=${ts}"`;
-                }
-                return match;
-            }
-            const newPath = pathStr.replace(/\.css$/, '.min.css');
-            return `href="${newPath}?v=${ts}"`;
-        });
+// ── HTML Cache-buster Update (only if something was rebuilt) ─────────────────
+if (successCount > 0) {
+    console.log(`\nUpdating HTML files to use .min.css and .min.js with cache-busters...`);
+    const ts = Date.now();
+    for (const file of htmlFiles) {
+        try {
+            const filePath = path.join(dir, file);
+            if (!fs.existsSync(filePath)) continue;
+            let content = fs.readFileSync(filePath, 'utf8');
 
-        newContent = newContent.replace(/src=["']([^"']+\.js)(\?[^"']*)?["']/gi, (match, pathStr, qs) => {
-            if (pathStr.includes('http') || pathStr.endsWith('.min.js')) {
-                if (pathStr.endsWith('.min.js') && !pathStr.includes('http')) {
-                    return `src="${pathStr}?v=${ts}"`;
-                }
-                return match;
-            }
-            const newPath = pathStr.replace(/\.js$/, '.min.js');
-            return `src="${newPath}?v=${ts}"`;
-        });
+            let newContent = content.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
+                if (pathStr.includes('http')) return match;
+                if (pathStr.endsWith('.min.css')) return `href="${pathStr}?v=${ts}"`;
+                return `href="${pathStr.replace(/\.css$/, '.min.css')}?v=${ts}"`;
+            });
 
-        if (content !== newContent) {
-            fs.writeFileSync(filePath, newContent, 'utf8');
-            console.log(`  -> Updated CSS/JS links in ${file}`);
+            newContent = newContent.replace(/src=['"]([^'"]+\.js)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
+                if (pathStr.includes('http')) return match;
+                if (pathStr.endsWith('.min.js')) return `src="${pathStr}?v=${ts}"`;
+                return `src="${pathStr.replace(/\.js$/, '.min.js')}?v=${ts}"`;
+            });
+
+            if (content !== newContent) {
+                fs.writeFileSync(filePath, newContent, 'utf8');
+                console.log(`  -> Updated CSS/JS links in ${file}`);
+            }
+        } catch (e) {
+            console.error(`  => Failed to update HTML ${file}:`, e.message);
         }
-    } catch (e) {
-        console.error(`  => Failed to update HTML ${file}:`, e.message);
     }
+
+    // Special case: index.dev.html
+    try {
+        const devHtml = path.join(dir, 'index.dev.html');
+        if (fs.existsSync(devHtml)) {
+            let content = fs.readFileSync(devHtml, 'utf8');
+            let newContent = content.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
+                if (pathStr.includes('http') || pathStr.endsWith('.min.css')) return match;
+                return match.replace(pathStr, pathStr.replace(/\.css$/, '.min.css'));
+            });
+            if (content !== newContent) fs.writeFileSync(devHtml, newContent, 'utf8');
+        }
+    } catch (e) {}
+} else {
+    console.log(`\n⏭  No HTML update needed (no files were rebuilt).`);
 }
 
-// Special case for index.dev.html which builds into index.html
-try {
-    const devHtml = path.join(dir, 'index.dev.html');
-    if (fs.existsSync(devHtml)) {
-        let content = fs.readFileSync(devHtml, 'utf8');
-        let newContent = content.replace(/href=["']([^"']+\.css)(\?[^"']*)?["']/gi, (match, pathStr, qs) => {
-            if (pathStr.includes('http') || pathStr.endsWith('.min.css')) return match;
-            const newPath = pathStr.replace(/\.css$/, '.min.css');
-            return match.replace(pathStr, newPath);
-        });
-        if (content !== newContent) {
-            fs.writeFileSync(devHtml, newContent, 'utf8');
-            console.log(`  -> Updated CSS links in index.dev.html`);
-        }
-    }
-} catch (e) {}
-
+// ── Summary ───────────────────────────────────────────────────────────────────
 console.log(`\n========================================`);
-console.log(`Minification complete!`);
-console.log(`Successfully generated: ${successCount} files`);
+console.log(`Build complete!`);
+console.log(`  ✅ Rebuilt : ${successCount} files`);
+console.log(`  ⏭  Skipped : ${skippedCount} files (already up-to-date)`);
 if (failCount > 0) {
-    console.log(`Failed files: ${failCount}`);
+    console.log(`  ❌ Failed  : ${failCount} files`);
     process.exit(1);
 } else {
-    console.log(`All operations completely successfully.`);
+    console.log(`  All operations completed successfully.`);
 }
 console.log(`========================================\n`);

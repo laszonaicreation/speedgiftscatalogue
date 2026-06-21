@@ -453,6 +453,19 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    
+    function getFriendlyAuthError(err) {
+        if (!err) return 'An error occurred';
+        const msg = (err.message || '').toLowerCase();
+        const code = (err.code || '').toLowerCase();
+        if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) return 'This email is already registered. Please sign in.';
+        if (code === 'auth/invalid-email' || msg.includes('invalid-email')) return 'Please enter a valid email address.';
+        if (code === 'auth/weak-password' || msg.includes('weak-password')) return 'Password must be at least 6 characters.';
+        if (code === 'auth/user-not-found' || msg.includes('user-not-found')) return 'No account found with this email.';
+        if (code === 'auth/wrong-password' || msg.includes('wrong-password') || code === 'auth/invalid-credential' || msg.includes('invalid-credential')) return 'Incorrect email or password.';
+        if (code === 'auth/too-many-requests' || msg.includes('too-many-requests')) return 'Too many attempts. Please try again later.';
+        return err.message?.replace('Firebase:', '').replace(/\(auth\/.*\)\.?/, '').trim() || 'Authentication failed. Please try again.';
+    }
 
     const redirectTo = sessionStorage.getItem('sg_login_redirect') || '/';
 
@@ -541,8 +554,8 @@
                 window.history.replaceState({}, '', '/login.html');
                 setTimeout(() => window.location.reload(), 2000);
             } catch (err) {
-                showToast(err.message?.replace('Firebase:', '').trim() || 'Failed to reset password');
-                btn.disabled = false;
+                showToast(getFriendlyAuthError(err));
+            } finally {  btn.disabled = false;
                 btn.innerHTML = orig;
             }
         };
@@ -592,9 +605,8 @@
             sessionStorage.removeItem('sg_login_redirect');
             setTimeout(() => { performRedirect(redirectTo); }, 800);
         } catch (err) {
-            const msg = err.message?.replace('Firebase:', '').trim() || 'Authentication failed';
-            showToast(msg);
-            btn.disabled = false;
+            showToast(getFriendlyAuthError(err));
+        } finally {  btn.disabled = false;
             btn.innerHTML = orig;
         }
     };
@@ -633,7 +645,8 @@
             document.getElementById('forgot-form-view').style.display = 'none';
             document.getElementById('forgot-success-view').classList.add('show');
         } catch (err) {
-            showToast(err.message?.replace('Firebase:', '').trim() || 'Error sending email');
+            showToast(getFriendlyAuthError(err));
+        } finally {
             btn.disabled = false;
             document.getElementById('forgot-btn-text').textContent = 'Send Reset Link';
         }

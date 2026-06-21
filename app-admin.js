@@ -2754,78 +2754,164 @@ export function initAdmin(ctx) {
         if (!container) return;
 
         if (!orders || orders.length === 0) {
-            container.innerHTML = `<div class="text-center py-20 text-[11px] text-gray-300 italic">No orders found.</div>`;
+            container.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 0;gap:1rem;">
+                <div style="width:56px;height:56px;border-radius:16px;background:#f4f4f5;display:flex;align-items:center;justify-content:center;">
+                    <i class="fa-solid fa-inbox" style="font-size:1.5rem;color:#a1a1aa;"></i>
+                </div>
+                <div style="text-align:center;">
+                    <p style="font-size:0.875rem;font-weight:700;color:#374151;margin:0 0 4px;">No orders yet</p>
+                    <p style="font-size:0.75rem;color:#9ca3af;margin:0;">Orders will appear here once customers place them.</p>
+                </div>
+            </div>`;
             return;
         }
 
+        const STATUS_COLORS = {
+            Pending:    { dot: '#f59e0b', text: '#b45309' },
+            Processing: { dot: '#3b82f6', text: '#1d4ed8' },
+            Shipped:    { dot: '#8b5cf6', text: '#6d28d9' },
+            Delivered:  { dot: '#10b981', text: '#065f46' },
+            Cancelled:  { dot: '#f87171', text: '#b91c1c' },
+        };
+
         container.innerHTML = orders.map(o => {
-            const date = o.createdAt ? new Date(o.createdAt.toMillis ? o.createdAt.toMillis() : o.createdAt).toLocaleString() : 'N/A';
-            const statusColor = o.status === 'Delivered' ? 'text-green-600 bg-green-50' : (o.status === 'Processing' ? 'text-blue-600 bg-blue-50' : 'text-orange-600 bg-orange-50');
-            
-            const itemsHtml = (o.items || []).map(i => `
-                <div class="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                    <div class="flex gap-3 items-center">
-                        <img src="${getOptimizedUrl(i.img, 60)}" class="w-10 h-10 rounded shadow-sm object-cover bg-gray-100" onerror="this.src='https://placehold.co/60x60'">
-                        <div>
-                            <p class="text-[11px] font-bold text-gray-800">${i.name}</p>
-                            <p class="text-[9px] text-gray-400 uppercase tracking-widest">${[i.size, i.color].filter(Boolean).join(' · ')}</p>
-                        </div>
+            const sc = STATUS_COLORS[o.status] || STATUS_COLORS.Pending;
+            const dateObj = o.createdAt ? new Date(o.createdAt.toMillis ? o.createdAt.toMillis() : o.createdAt) : null;
+            const dateStr = dateObj ? dateObj.toLocaleDateString('en-AE', { day:'numeric', month:'short', year:'numeric' }) : '—';
+            const timeStr = dateObj ? dateObj.toLocaleTimeString('en-AE', { hour:'2-digit', minute:'2-digit' }) : '';
+            const nameParts = (o.customer?.name || 'G').split(' ');
+            const initials = (nameParts[0][0] + (nameParts[1]?.[0] || '')).toUpperCase();
+            const phoneRaw = (o.customer?.phone || '').replace(/[^0-9]/g, '');
+
+            const itemsHtml = (o.items || []).slice(0, 3).map(i => `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;">
+                    <div style="position:relative;flex-shrink:0;">
+                        <img src="${getOptimizedUrl(i.img, 48)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #e5e7eb;background:#f9fafb;" onerror="this.src='https://placehold.co/48x48'">
+                        <span style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#111;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #fff;">${i.qty||1}</span>
                     </div>
-                    <div class="text-right">
-                        <p class="text-[11px] font-bold text-gray-800">${i.price} AED</p>
-                        <p class="text-[9px] text-gray-400 uppercase tracking-widest">Qty: ${i.qty || 1}</p>
+                    <div style="flex:1;min-width:0;">
+                        <p style="font-size:12px;font-weight:600;color:#111827;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.name}</p>
+                        ${[i.size,i.color].filter(Boolean).length ? `<p style="font-size:10px;color:#9ca3af;margin:2px 0 0;">${[i.size,i.color].filter(Boolean).join(' · ')}</p>` : ''}
                     </div>
+                    <p style="font-size:12px;font-weight:700;color:#111827;white-space:nowrap;margin:0;">${(parseFloat(i.price)||0).toFixed(2)} AED</p>
                 </div>
             `).join('');
 
+            const extraItems = (o.items?.length || 0) - 3;
+
             return `
-            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-4">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-sm font-black tracking-widest text-black mb-1">${o.orderId || o.firebaseId}</h3>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${date}</p>
+            <div style="background:#fff;border-radius:20px;border:1px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:20px;overflow:hidden;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.10)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.06)'">
+
+                <!-- TOP BAR -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #f3f4f6;background:linear-gradient(to right,#f9fafb,#fff);flex-wrap:wrap;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:${sc.dot};display:inline-block;"></span>
+                            <span style="font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${sc.text};">${o.status||'Pending'}</span>
+                        </div>
+                        <span style="color:#d1d5db;">|</span>
+                        <span style="font-size:12px;font-weight:900;color:#111827;">${o.orderId||'—'}</span>
+                        <span style="color:#d1d5db;">|</span>
+                        <span style="font-size:11px;color:#6b7280;display:flex;align-items:center;gap:4px;"><i class="fa-regular fa-clock" style="color:#9ca3af;"></i> ${dateStr} &nbsp;${timeStr}</span>
                     </div>
-                    <select onchange="window.updateOrderStatus('${o.firebaseId}', this.value)" class="text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border border-gray-100 cursor-pointer ${statusColor}">
-                        <option value="Pending" ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                        <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
-                        <option value="Delivered" ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                        <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-                    </select>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 mb-4 bg-gray-50 p-4 rounded-xl">
-                    <div>
-                        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Customer</p>
-                        <p class="text-[11px] font-bold text-gray-800">${o.customer?.name || 'N/A'}</p>
-                        <p class="text-[11px] text-gray-500 flex items-center gap-1"><i class="fa-brands fa-whatsapp text-green-500"></i> ${o.customer?.phone || 'N/A'}</p>
-                    </div>
-                    <div>
-                        <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Delivery Address</p>
-                        <p class="text-[11px] font-bold text-gray-800">${o.shipping?.city}, ${o.shipping?.emirate}</p>
-                        <p class="text-[11px] text-gray-500">${o.shipping?.street}, ${o.shipping?.building}</p>
-                        ${o.shipping?.notes ? `<p class="text-[10px] text-orange-500 italic mt-1 font-medium">Note: ${o.shipping.notes}</p>` : ''}
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <select onchange="window.updateOrderStatus('${o.firebaseId}', this.value)"
+                            style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;outline:none;box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                            <option value="Pending"    ${o.status==='Pending'   ?'selected':''}>⏳ Pending</option>
+                            <option value="Processing" ${o.status==='Processing'?'selected':''}>⚙️ Processing</option>
+                            <option value="Shipped"    ${o.status==='Shipped'   ?'selected':''}>🚚 Shipped</option>
+                            <option value="Delivered"  ${o.status==='Delivered' ?'selected':''}>✅ Delivered</option>
+                            <option value="Cancelled"  ${o.status==='Cancelled' ?'selected':''}>❌ Cancelled</option>
+                        </select>
+                        <button onclick="window.deleteOrder('${o.firebaseId}')"
+                            style="width:32px;height:32px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#9ca3af;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#fef2f2';this.style.color='#ef4444';this.style.borderColor='#fca5a5';"
+                            onmouseout="this.style.background='#fff';this.style.color='#9ca3af';this.style.borderColor='#e5e7eb';">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div class="border border-gray-100 rounded-xl p-4">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-100 pb-2 mb-2">Order Items</p>
-                    ${itemsHtml}
-                    <div class="flex justify-between items-center pt-3 mt-2 border-t border-gray-100">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Amount</span>
-                        <span class="text-[13px] font-black text-black">${(o.total || 0).toFixed(2)} AED</span>
+                <!-- 3-COLUMN BODY (inline grid) -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:0;">
+
+                    <!-- Col 1: Customer -->
+                    <div style="padding:20px;border-right:1px solid #f3f4f6;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;flex-shrink:0;">
+                                ${initials}
+                            </div>
+                            <div style="min-width:0;">
+                                <p style="font-size:13px;font-weight:700;color:#111827;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${o.customer?.name||'Guest'}</p>
+                                <p style="font-size:11px;color:#6b7280;margin:2px 0 0;text-transform:lowercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${o.customer?.email||'No email'}</p>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;background:#f9fafb;border-radius:10px;padding:8px 12px;margin-bottom:12px;">
+                            <i class="fa-solid fa-phone" style="color:#9ca3af;font-size:10px;"></i>
+                            <span style="font-size:12px;font-weight:600;color:#374151;">${o.customer?.phone||'—'}</span>
+                        </div>
+                        <button onclick="window.open('https://wa.me/${phoneRaw}','_blank')"
+                            style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;border-radius:12px;background:#25D366;color:#fff;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:background 0.15s;"
+                            onmouseover="this.style.background='#1fb855'" onmouseout="this.style.background='#25D366'">
+                            <i class="fa-brands fa-whatsapp" style="font-size:14px;"></i> WhatsApp Customer
+                        </button>
                     </div>
+
+                    <!-- Col 2: Delivery -->
+                    <div style="padding:20px;border-right:1px solid #f3f4f6;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                            <div style="width:24px;height:24px;border-radius:8px;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="fa-solid fa-location-dot" style="color:#8b5cf6;font-size:11px;"></i>
+                            </div>
+                            <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#374151;">Delivery</span>
+                        </div>
+                        <div style="margin-left:32px;">
+                            <p style="font-size:13px;font-weight:700;color:#111827;margin:0 0 4px;">${o.shipping?.emirate||''} — ${o.shipping?.city||''}</p>
+                            <p style="font-size:12px;color:#6b7280;margin:0 0 2px;">${o.shipping?.street||''}</p>
+                            <p style="font-size:12px;color:#6b7280;margin:0;">${o.shipping?.building||''}</p>
+                            ${o.shipping?.notes ? `
+                            <div style="margin-top:10px;display:flex;align-items:flex-start;gap:6px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 10px;">
+                                <i class="fa-solid fa-note-sticky" style="color:#f59e0b;font-size:11px;margin-top:1px;flex-shrink:0;"></i>
+                                <span style="font-size:11px;font-weight:500;color:#92400e;">${o.shipping.notes}</span>
+                            </div>` : `<p style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:8px;">No special notes</p>`}
+                        </div>
+                    </div>
+
+                    <!-- Col 3: Items + Totals -->
+                    <div style="padding:20px;display:flex;flex-direction:column;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="width:24px;height:24px;border-radius:8px;background:#fff7ed;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <i class="fa-solid fa-bag-shopping" style="color:#f97316;font-size:11px;"></i>
+                                </div>
+                                <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#374151;">Order Items</span>
+                            </div>
+                            <span style="font-size:10px;font-weight:700;color:#9ca3af;">${(o.items||[]).length} item${(o.items||[]).length!==1?'s':''}</span>
+                        </div>
+                        <div style="flex:1;">
+                            ${itemsHtml}
+                            ${extraItems > 0 ? `<p style="text-align:center;font-size:11px;color:#6366f1;font-weight:700;margin-top:6px;">+ ${extraItems} more item${extraItems>1?'s':''}</p>` : ''}
+                        </div>
+                        <!-- Totals -->
+                        <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #e5e7eb;">
+                            <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:5px;">
+                                <span>Subtotal</span><span style="font-weight:600;">${(o.subtotal||0).toFixed(2)} AED</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:10px;">
+                                <span>Delivery</span><span style="font-weight:600;">${(o.deliveryFee??35).toFixed(2)} AED</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #e5e7eb;">
+                                <span style="font-size:12px;font-weight:900;color:#111827;text-transform:uppercase;letter-spacing:0.05em;">Total</span>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span style="font-size:10px;font-weight:700;background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:6px;">COD</span>
+                                    <span style="font-size:18px;font-weight:900;color:#111827;">${(o.total||0).toFixed(2)} <span style="font-size:11px;font-weight:600;color:#6b7280;">AED</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                
-                <div class="mt-4 flex gap-2">
-                    <button onclick="window.open('https://wa.me/${(o.customer?.phone || '').replace(/[^0-9]/g, '')}', '_blank')" class="flex-1 bg-green-50 text-green-600 hover:bg-green-100 transition-colors py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                        <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Customer
-                    </button>
-                    <button onclick="window.deleteOrder('${o.firebaseId}')" class="bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors py-2 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-trash text-sm"></i> Delete
-                    </button>
-                </div>
-            </div>
-            `;
+            </div>`;
         }).join('');
     };
 

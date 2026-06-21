@@ -60,7 +60,12 @@ export function initPasswordReset(auth) {
             document.getElementById('auth-login-modal')?.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
             document.getElementById('auth-reset-form')?.reset();
         } catch (err) {
-            showToast(err.message.replace('Firebase:', '').trim() || 'Failed to reset password');
+            let msg = err.message || 'Failed to reset password';
+            const code = err.code || '';
+            if (code === 'auth/expired-action-code' || code === 'auth/invalid-action-code') msg = 'This reset link has expired or is invalid. Please request a new one.';
+            else if (code === 'auth/weak-password') msg = 'Password must be at least 6 characters.';
+            else msg = msg.replace('Firebase:', '').replace(/\(auth\/.*\)\.?/, '').trim();
+            showToast(msg);
         } finally {
             if(btn) {
                 btn.disabled = false;

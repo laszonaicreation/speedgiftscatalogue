@@ -1,4 +1,21 @@
 export function initSharedAuth(config) {
+    window._sgGetFriendlyError = function(err) {
+        if (!err) return 'An error occurred';
+        const msg = (err.message || '').toLowerCase();
+        const code = (err.code || '').toLowerCase();
+        
+        if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) return 'This email is already registered. Please sign in.';
+        if (code === 'auth/invalid-email' || msg.includes('invalid-email')) return 'Please enter a valid email address.';
+        if (code === 'auth/weak-password' || msg.includes('weak-password')) return 'Password must be at least 6 characters.';
+        if (code === 'auth/user-not-found' || msg.includes('user-not-found')) return 'No account found with this email.';
+        if (code === 'auth/wrong-password' || msg.includes('wrong-password') || code === 'auth/invalid-credential' || msg.includes('invalid-credential')) return 'Incorrect email or password.';
+        if (code === 'auth/too-many-requests' || msg.includes('too-many-requests')) return 'Too many attempts. Please try again later.';
+        if (code === 'auth/network-request-failed' || msg.includes('network-request-failed')) return 'Network error. Please check your connection.';
+        if (code === 'auth/requires-recent-login' || msg.includes('requires-recent-login')) return 'Please log out and log in again to do this.';
+        
+        return err.message?.replace('Firebase:', '').replace(/\(auth\/.*\)\.?/, '').trim() || 'An error occurred. Please try again.';
+    };
+
     const {
         auth,
         firebaseAuth,
@@ -154,7 +171,7 @@ export function initSharedAuth(config) {
             document.getElementById('auth-form')?.reset();
             updateAuthUserUI?.();
         } catch (err) {
-            showToast?.(err.message?.replace('Firebase:', '').trim() || 'Authentication Failed');
+            showToast?.(window._sgGetFriendlyError(err));
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -180,7 +197,7 @@ export function initSharedAuth(config) {
             await sendPasswordResetEmail(auth, email);
             showToast?.('Password reset email sent');
         } catch (err) {
-            showToast?.(err.message?.replace('Firebase:', '').trim() || 'Error sending reset email');
+            showToast?.(window._sgGetFriendlyError(err));
         }
     };
 

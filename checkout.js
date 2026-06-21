@@ -178,7 +178,7 @@ window.submitOrder = async () => {
     // 1. Get Values
     const name     = document.getElementById('chk-name').value.trim();
     const phone    = document.getElementById('chk-phone').value.trim();
-    const email    = document.getElementById('chk-email').value.trim();
+    const email    = document.getElementById('chk-email').value.trim().toLowerCase();
     const emirate  = document.getElementById('chk-emirate').value.trim();
     const city     = document.getElementById('chk-city').value.trim();
     const street   = document.getElementById('chk-street').value.trim();
@@ -262,7 +262,13 @@ window.submitOrder = async () => {
                     console.warn('Verification email failed (non-critical):', verifyErr);
                 }
             } catch (err) {
-                const msg = err.message?.replace('Firebase:', '').trim() || 'Could not create account';
+                let msg = err.message || 'Could not create account';
+                const code = err.code || '';
+                if (code === 'auth/email-already-in-use') msg = 'This email is already registered. Please login instead.';
+                else if (code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
+                else if (code === 'auth/weak-password') msg = 'Password must be at least 6 characters.';
+                else msg = msg.replace('Firebase:', '').replace(/\(auth\/.*\)\.?/, '').trim();
+                
                 showToast(msg);
                 btn.classList.remove('btn-loading');
                 btn.innerHTML = `<i class="fa-solid fa-check"></i> Place Order`;

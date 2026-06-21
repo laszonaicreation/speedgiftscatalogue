@@ -15,8 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS (same as main page) -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1777453622163">
-    <link rel="stylesheet" href="style.min.css?v=1777453622163">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782053787783">
+    <link rel="stylesheet" href="style.min.css?v=1782053787783">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -558,6 +558,17 @@
         // Mount shared navbar (same as main page)
         mountSharedShell('account');
 
+        function getFriendlyAuthError(err) {
+            if (!err) return 'An error occurred';
+            const msg = (err.message || '').toLowerCase();
+            const code = (err.code || '').toLowerCase();
+            if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) return 'This email is already registered. Please sign in.';
+            if (code === 'auth/invalid-email' || msg.includes('invalid-email')) return 'Please enter a valid email address.';
+            if (code === 'auth/weak-password' || msg.includes('weak-password')) return 'Password must be at least 6 characters.';
+            if (code === 'auth/requires-recent-login' || msg.includes('requires-recent-login')) return 'Please log out and log in again to do this.';
+            return err.message?.replace('Firebase:', '').replace(/\(auth\/.*\)\.?/, '').trim() || 'Authentication failed. Please try again.';
+        }
+
         // ── Stub out sidebar functions that shared-shell HTML references ──
         window.closeCartSidebar = () => {
             document.getElementById('cart-sidebar')?.classList.remove('open');
@@ -635,6 +646,15 @@
             localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
         });
         let currentUser = null;
+        window._sgUserOrders = [];
+
+        window.viewOrder = (orderId) => {
+            const o = window._sgUserOrders.find(x => x.orderId === orderId);
+            if (o) {
+                try { sessionStorage.setItem('sg_last_order', JSON.stringify(o)); } catch(e){}
+            }
+            window.location.href = 'order-success.html?orderId=' + orderId;
+        };
 
         // ── Status badge styles ────────────────────────────────────────────
         const ORDER_STATUS = {
@@ -670,7 +690,7 @@
             }).join('');
 
             return `
-            <div style="background:#fff;border:1px solid #f0f0f0;border-radius:18px;padding:1.25rem;margin-bottom:0.875rem;cursor:pointer;" onclick="window.location.href='order-success.html?orderId=${o.orderId}'">
+            <div style="background:#fff;border:1px solid #f0f0f0;border-radius:18px;padding:1.25rem;margin-bottom:0.875rem;cursor:pointer;" onclick="window.viewOrder('${o.orderId}')">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
                     <div>
                         <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#9ca3af;margin-bottom:0.15rem;">Order ID</div>
@@ -736,6 +756,7 @@
                 try {
                     const cached = JSON.parse(sessionStorage.getItem('sg_last_order'));
                     if (cached && cached.orderId) {
+                        window._sgUserOrders = [cached];
                         guestOrderHtml = `
                         <div style="margin-bottom:1.5rem;">
                             <span style="display:inline-block;background:#fef3c7;color:#d97706;font-size:0.65rem;font-weight:800;padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em;">Recent Guest Order</span>
@@ -786,6 +807,8 @@
                     const tb = b.createdAt?.seconds || b.createdAt || 0;
                     return tb - ta;
                 });
+                
+                window._sgUserOrders = docsList;
 
                 if (docsList.length === 0) {
                     wrap.innerHTML = `
@@ -993,7 +1016,7 @@
                 document.getElementById('edit-modal').classList.remove('open');
                 showToast('Name updated successfully!');
             } catch (err) {
-                showToast(err.message?.replace('Firebase:', '').trim() || 'Update failed');
+                showToast(getFriendlyAuthError(err) || 'Update failed');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Save Changes';
@@ -1011,7 +1034,7 @@
                 await sendPasswordResetEmail(auth, currentUser.email);
                 showToast('Password reset email sent to ' + currentUser.email);
             } catch (err) {
-                showToast(err.message?.replace('Firebase:', '').trim() || 'Error sending email');
+                showToast(getFriendlyAuthError(err) || 'Error sending email');
             }
         };
 
@@ -1080,7 +1103,7 @@
                     showToast('For security reasons, please sign in again to delete your account. Redirecting...');
                     setTimeout(() => window.handleSignOut(), 2500);
                 } else {
-                    showToast('Failed to delete account. ' + err.message);
+                    showToast('Failed to delete account. ' + getFriendlyAuthError(err));
                 }
             }
         };
