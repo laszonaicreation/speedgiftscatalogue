@@ -489,6 +489,53 @@ async function trackAdVisit() {
     }
 }
 
+// ── Admin Order Notification ────────────────────────────────────────────────
+let _orderUnsubscribe = null;
+let _isFirstLoadForOrders = true;
+
+function setupAdminOrderNotification(user) {
+    if (!user || user.email !== "laszonaicreation@gmail.com") {
+        if (_orderUnsubscribe) {
+            _orderUnsubscribe();
+            _orderUnsubscribe = null;
+        }
+        return;
+    }
+
+    if (_orderUnsubscribe) return; // Already listening
+
+    console.log("[Admin] Setting up real-time order notifications...");
+    const ordersCol = collection(db, 'orders');
+
+    _orderUnsubscribe = onSnapshot(ordersCol, (snapshot) => {
+        if (_isFirstLoadForOrders) {
+            _isFirstLoadForOrders = false;
+            return; 
+        }
+
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+                const order = change.doc.data();
+                // Only alert for new pending orders
+                if (order.status && order.status !== 'Pending') return;
+                
+                // Play Sound
+                try {
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    audio.play().catch(e => console.error('Audio play blocked:', e));
+                } catch(e) {}
+                
+                // Show notification
+                if (typeof window.showToast === 'function') {
+                    window.showToast(`🔔 New Order Received: ${order.orderId || ''}`);
+                } else {
+                    alert(`🔔 New Order Received: ${order.orderId || ''}`);
+                }
+            }
+        });
+    });
+}
+
 onAuthStateChanged(auth, async (u) => {
     state.user = u;
 
@@ -544,6 +591,9 @@ onAuthStateChanged(auth, async (u) => {
             trackNormalVisit();
         }
     }
+
+    // Set up real-time order notification if the logged-in user is the Admin
+    setupAdminOrderNotification(u);
 });
 
 // ============================================================================
