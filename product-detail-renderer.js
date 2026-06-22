@@ -261,4 +261,32 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         // Small delay to prioritize initial page rendering
         setTimeout(() => { tempImg.src = highResUrl; }, 400);
     }
+
+    // --- Add JSON-LD Structured Data for Googlebot ---
+    let existingScript = document.getElementById('product-schema');
+    if (existingScript) existingScript.remove();
+    
+    const schemaScript = document.createElement('script');
+    schemaScript.id = 'product-schema';
+    schemaScript.type = 'application/ld+json';
+    
+    const productSchema = {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": product.name,
+        "image": [allImages[0] || product.img],
+        "description": product.desc || product.name,
+        "sku": product.id,
+        "offers": {
+            "@type": "Offer",
+            "url": window.location.href,
+            "priceCurrency": "AED",
+            "price": product.price,
+            "availability": product.inStock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            "itemCondition": "https://schema.org/NewCondition"
+        }
+    };
+    
+    schemaScript.textContent = JSON.stringify(productSchema);
+    document.head.appendChild(schemaScript);
 }

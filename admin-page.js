@@ -208,7 +208,7 @@ async function loadAdminPanelHTML() {
     if (!mount) return;
 
     try {
-        const res = await fetch('./admin-panel.html');
+        const res = await fetch('./admin-panel.html?v=' + Date.now());
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const html = await res.text();
         mount.outerHTML = html;

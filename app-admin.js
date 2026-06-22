@@ -407,9 +407,10 @@ export function initAdmin(ctx) {
     };
 
     // ── Google Merchant Center Feed Export ────────────────────────────────────
-    window.exportGoogleFeed = () => {
+    window.exportGoogleFeed = (productId = null) => {
         try {
-            if (!DATA.p || DATA.p.length === 0) return showToast("No products to export");
+            const productsToExport = productId ? DATA.p.filter(p => p.id === productId) : DATA.p;
+            if (!productsToExport || productsToExport.length === 0) return showToast("No products to export");
 
             const STORE_URL = 'https://speedgifts.net';
             const BRAND = 'Speed Gifts';
@@ -434,7 +435,7 @@ export function initAdmin(ctx) {
                 'product_type',
             ];
 
-            const rows = DATA.p
+            const rows = productsToExport
                 .filter(p => p.id && p.name && p.price)
                 .map(p => {
                     const inStock = p.inStock !== false;
@@ -483,7 +484,12 @@ export function initAdmin(ctx) {
             const a = document.createElement('a');
             a.href = url;
             const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-            a.download = `speedgifts_google_feed_${today}.tsv`;
+            if (productId && productsToExport.length === 1) {
+                const safeName = (productsToExport[0].name || 'product').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                a.download = `speedgifts_google_feed_${safeName}.tsv`;
+            } else {
+                a.download = `speedgifts_google_feed_${today}.tsv`;
+            }
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -491,6 +497,44 @@ export function initAdmin(ctx) {
             showToast(`Google Feed exported — ${rows.length} products ✓`);
         } catch (err) {
             console.error('[Google Feed] Export failed:', err);
+            showToast("Export Failed");
+        }
+    };
+
+    // ── Sitemap Export ────────────────────────────────────────────────────────
+    window.exportSitemap = () => {
+        try {
+            if (!DATA.p || DATA.p.length === 0) return showToast("No products found for sitemap");
+            const STORE_URL = 'https://speedgifts.net';
+            
+            let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+            xmlContent += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+            
+            // Add static pages
+            const staticPages = ['index.html', 'shop.html', 'about.html', 'contact.html'];
+            staticPages.forEach(page => {
+                xmlContent += `  <url>\n    <loc>${STORE_URL}/${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+            });
+            
+            // Add all products
+            DATA.p.filter(p => p.id && p.name).forEach(p => {
+                xmlContent += `  <url>\n    <loc>${STORE_URL}/product-detail.html?id=${p.id}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+            });
+            
+            xmlContent += `</urlset>`;
+            
+            const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sitemap.xml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`Sitemap exported — ${DATA.p.length} products ✓`);
+        } catch (err) {
+            console.error('[Sitemap] Export failed:', err);
             showToast("Export Failed");
         }
     };
@@ -843,6 +887,9 @@ export function initAdmin(ctx) {
                                 ${pinIcon}
                                 ${badgeHtml}
                                 <div class="admin-card-actions">
+                                    <button onclick="exportGoogleFeed('${p.id}')" class="admin-action-btn" title="Download TSV (Google Merchant)" style="color: #4285f4;">
+                                        <i class="fa-solid fa-file-csv text-[11px]"></i>
+                                    </button>
                                     <button onclick="editProduct('${p.id}')" class="admin-action-btn" title="Edit Item">
                                         <i class="fa-solid fa-pen-to-square text-[11px]"></i>
                                     </button>

@@ -126,7 +126,7 @@ function clearFieldError(inputId, errId) {
 }
 
 // Live validation — clear errors as user types
-['chk-name','chk-phone','chk-city','chk-street','chk-building'].forEach(id => {
+['chk-name','chk-phone','chk-email','chk-city','chk-street','chk-building'].forEach(id => {
     document.addEventListener('DOMContentLoaded', () => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', () => clearFieldError(id, 'err-' + id.replace('chk-','')));
@@ -138,19 +138,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const createAccCheck = document.getElementById('chk-create-acc');
     const pwWrap = document.getElementById('chk-password-wrap');
-    const emailOpt = document.getElementById('chk-email-opt');
-    const emailReq = document.getElementById('chk-email-req');
+    
     if (createAccCheck) {
         createAccCheck.addEventListener('change', function() {
             if (this.checked) {
                 pwWrap.style.display = 'block';
-                if (emailOpt) emailOpt.style.display = 'none';
-                if (emailReq) emailReq.style.display = 'inline';
             } else {
                 pwWrap.style.display = 'none';
-                if (emailOpt) emailOpt.style.display = 'inline';
-                if (emailReq) emailReq.style.display = 'none';
-                clearFieldError('chk-email', 'err-email');
                 clearFieldError('chk-password', 'err-password');
             }
         });
@@ -199,14 +193,15 @@ window.submitOrder = async () => {
         { id:'chk-building', errId:'err-building',  value: building },
     ];
 
+    // Always validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+        fields.push({ id:'chk-email', errId:'err-email', value: false });
+    } else {
+        setFieldError('chk-email', 'err-email', false);
+    }
+
     if (isCreateAcc) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email || !emailRegex.test(email)) {
-            fields.push({ id:'chk-email', errId:'err-email', value: false });
-        } else {
-            setFieldError('chk-email', 'err-email', false);
-        }
-        
         if (password.length < 6) {
             fields.push({ id:'chk-password', errId:'err-password', value: false });
         } else {
