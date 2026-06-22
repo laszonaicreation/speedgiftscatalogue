@@ -1,4 +1,4 @@
-export function renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel }) {
+export function renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews = [] }) {
     const appMain = document.getElementById('app');
     if (!appMain) return;
 
@@ -56,6 +56,19 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             }
             return `<p class="detail-price-text text-xl md:text-2xl">${product.price} AED</p>`;
         })()}
+                    ${(() => {
+                        const count = reviews ? reviews.length : 0;
+                        const avgRating = count > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / count).toFixed(1) : '0.0';
+                        return `
+                        <div class="flex items-center gap-2 mt-3 cursor-pointer" onclick="document.getElementById('reviews-section').scrollIntoView({behavior: 'smooth'})">
+                            <div class="flex text-[#FFB800] text-[11px]">
+                                ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= Math.round(parseFloat(avgRating)) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
+                            </div>
+                            <span class="text-[12px] font-bold text-gray-900">${avgRating}</span>
+                            <span class="text-[11px] text-gray-500 underline decoration-gray-200 underline-offset-2">(${count} reviews)</span>
+                        </div>
+                        `;
+                    })()}
                 </div>
 
                 ${((product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0)) ? `
@@ -162,6 +175,79 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             </div>
         </div>
     </div>
+
+    ${(() => {
+        // --- REVIEWS SECTION ---
+        const count = reviews ? reviews.length : 0;
+        const avgRating = count > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / count).toFixed(1) : '0.0';
+        
+        return `
+        <div id="reviews-section" style="margin-top: 5rem; padding-top: 4rem;" class="border-t border-gray-100 w-full max-w-3xl mx-auto">
+            <!-- Header -->
+            <div class="flex flex-col items-center text-center mb-10">
+                <h3 class="text-[24px] font-bold text-gray-900 mb-3">Customer Reviews</h3>
+                <div class="flex items-center justify-center gap-3">
+                    <div class="flex text-[#FFB800] text-[18px]">
+                        ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= Math.round(parseFloat(avgRating)) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
+                    </div>
+                    <span class="text-[18px] font-black text-gray-900">${avgRating}</span>
+                </div>
+                <p class="text-[13px] text-gray-500 mt-2">Based on ${count} reviews</p>
+            </div>
+
+            <!-- Write a Review Form -->
+            <div class="bg-gray-50 rounded-[2rem] p-6 md:p-10 mb-12 border border-gray-100">
+                <h4 class="text-[16px] font-bold text-gray-900 mb-6 text-center">Share Your Thoughts</h4>
+                <form onsubmit="event.preventDefault(); window.submitProductReview('${product.id}', this.name.value, this.rating.value, this.review.value); this.reset();" class="max-w-lg mx-auto flex flex-col gap-6">
+                    <div class="flex flex-col items-center">
+                        <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">Your Rating</label>
+                        <div class="flex items-center gap-3 text-[#FFB800] text-3xl cursor-pointer" id="star-rating-input">
+                            <label><input type="radio" name="rating" value="1" class="hidden" required> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
+                            <label><input type="radio" name="rating" value="2" class="hidden" required> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
+                            <label><input type="radio" name="rating" value="3" class="hidden" required> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
+                            <label><input type="radio" name="rating" value="4" class="hidden" required> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
+                            <label><input type="radio" name="rating" value="5" class="hidden" required checked> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full">
+                        <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-4">Your Name</label>
+                        <input type="text" name="name" required class="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl text-[14px] outline-none focus:border-black focus:ring-1 focus:ring-black transition-all shadow-sm" placeholder="e.g. John Doe">
+                    </div>
+                    
+                    <div class="w-full">
+                        <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-4">Your Review</label>
+                        <textarea name="review" required rows="4" class="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl text-[14px] outline-none focus:border-black focus:ring-1 focus:ring-black transition-all shadow-sm resize-none" placeholder="What did you love about this product?"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-black text-white text-[14px] font-bold uppercase tracking-widest py-4 rounded-2xl hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all mt-2">
+                        Post Review
+                    </button>
+                </form>
+            </div>
+
+            <!-- Reviews List -->
+            <div class="space-y-5">
+                ${reviews.length === 0 ? '<div class="text-center py-10"><p class="text-[14px] text-gray-400 italic">No reviews yet. Be the first to share your experience!</p></div>' : 
+                    reviews.map(r => `
+                        <div class="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                                    <span class="font-bold text-gray-900 text-[15px]">${r.reviewerName}</span>
+                                    <span class="hidden md:block text-gray-300">•</span>
+                                    <span class="text-[12px] text-gray-400 font-medium">${new Date(r.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <div class="flex text-[#FFB800] text-[12px]">
+                                    ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= r.rating ? 'fa-solid' : 'fa-regular'} fa-star mr-[2px]"></i>`).join('')}
+                                </div>
+                            </div>
+                            <p class="text-[14px] text-gray-600 leading-relaxed">${r.reviewText}</p>
+                        </div>
+                    `).join('')}
+            </div>
+        </div>
+        `;
+    })()}
 
     ${(() => {
             const currentCatId = String(product.catId || "");

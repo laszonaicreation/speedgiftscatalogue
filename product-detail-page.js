@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
@@ -297,6 +297,53 @@ window.viewDetail = (id) => {
     renderById(id);
 };
 
+// ─── Reviews Logic ────────────────────────────────────────────────────────────
+window.submitProductReview = async (productId, name, rating, text) => {
+    try {
+        const reviewData = {
+            productId: productId,
+            reviewerName: name,
+            rating: parseInt(rating) || 5,
+            reviewText: text,
+            createdAt: Date.now(),
+            status: 'approved'
+        };
+        const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
+        await addDoc(revCol, reviewData);
+        window.showToast("Review submitted successfully!");
+        
+        // Refresh reviews for the current product
+        const updatedReviews = await fetchReviews(productId);
+        const product = DATA.p.find(x => x.id === productId);
+        renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: updatedReviews });
+    } catch (e) {
+        console.error("Failed to submit review", e);
+        window.showToast("Failed to submit review");
+    }
+};
+
+async function fetchReviews(productId) {
+    try {
+        const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
+        const q = query(revCol, where("productId", "==", productId), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+        console.warn("Failed to fetch reviews", e);
+        // Fallback for missing index:
+        try {
+            const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
+            const q = query(revCol, where("productId", "==", productId));
+            const snap = await getDocs(q);
+            const reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return reviews.sort((a, b) => b.createdAt - a.createdAt);
+        } catch(e2) {
+            console.error("Double failure fetching reviews", e2);
+            return [];
+        }
+    }
+}
+
 async function renderById(id) {
     const product = DATA.p.find(x => x.id === id);
     if (!product) {
@@ -304,7 +351,11 @@ async function renderById(id) {
         return;
     }
     document.title = `${product.name} | Speed Gifts`;
-    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel });
+    
+    // Fetch reviews before rendering
+    const reviews = await fetchReviews(id);
+    
+    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews });
     trackProductView(id).catch(() => { /* no-op */ });
 }
 

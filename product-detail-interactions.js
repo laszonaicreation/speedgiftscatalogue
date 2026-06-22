@@ -276,4 +276,22 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
             }, 2000);
         }
     };
+
+    // Global listener for interactive star rating in the review form
+    document.addEventListener('change', (e) => {
+        if (e.target.name === 'rating' && e.target.closest('#star-rating-input')) {
+            const val = parseInt(e.target.value);
+            const container = e.target.closest('#star-rating-input');
+            const icons = container.querySelectorAll('i');
+            icons.forEach((icon, index) => {
+                if (index < val) {
+                    icon.classList.remove('fa-regular');
+                    icon.classList.add('fa-solid');
+                } else {
+                    icon.classList.remove('fa-solid');
+                    icon.classList.add('fa-regular');
+                }
+            });
+        }
+    });
 }
