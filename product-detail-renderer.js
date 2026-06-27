@@ -151,26 +151,33 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
             </div>
 
-            <div class="flex gap-3 mt-10 lg:mt-auto pt-6">
+            <div class="flex gap-2 sm:gap-3 md:gap-4 mt-10 lg:mt-auto pt-6 items-center w-full">
                 <button id="main-add-to-cart-btn" onclick="window.addToCart('${product.id}')"
-                    class="flex-[3] bg-black text-white py-4 rounded-2xl shadow-xl flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-95 transition-all">
-                    <i class="fa-solid fa-cart-shopping text-2xl"></i>
-                    <div class="flex flex-col items-start leading-tight">
-                        <span class="text-[8px] font-bold opacity-60 uppercase tracking-[0.2em]">Add to</span>
-                        <span class="text-[13px] font-black uppercase tracking-widest leading-none mt-0.5">Cart</span>
+                    class="flex-1 max-w-[150px] sm:max-w-[170px] bg-black text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0" style="border-radius: 999px;">
+                    <i class="fa-solid fa-cart-shopping text-base sm:text-lg md:text-xl flex-shrink-0"></i>
+                    <div class="flex flex-col items-start leading-tight truncate">
+                        <span class="text-[7px] md:text-[8px] font-bold opacity-60 uppercase tracking-widest truncate">Add to</span>
+                        <span class="text-[10px] md:text-[13px] font-black uppercase tracking-widest leading-none mt-0.5 truncate">Cart</span>
                     </div>
                 </button>
+                
                 <button id="main-inquiry-btn" onclick="inquireOnWhatsApp('${product.id}'${product.variations && product.variations.length > 0 ? `, '${product.variations[0].size}', '${product.variations[0].price}'` : (product.colorVariations && product.colorVariations.length > 0 ? `, null, '${product.colorVariations[0].price}', '${product.colorVariations[0].color}'` : '')})"
-                    class="flex-1 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-[#25D366] hover:bg-green-50 transition-all active:scale-90 border border-gray-100">
-                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                    class="flex-1 max-w-[150px] sm:max-w-[170px] text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0" style="background-color: #25D366; border-radius: 999px;">
+                    <i class="fa-brands fa-whatsapp text-base sm:text-lg md:text-xl flex-shrink-0"></i>
+                    <div class="flex flex-col items-start leading-tight truncate">
+                        <span class="text-[7px] md:text-[8px] font-bold opacity-90 uppercase tracking-widest truncate">Order via</span>
+                        <span class="text-[10px] md:text-[13px] font-black uppercase tracking-widest leading-none mt-0.5 truncate">WhatsApp</span>
+                    </div>
                 </button>
+                
                 <button id="detail-share-btn" onclick="window.shareProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}')"
-                    class="flex-1 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-black hover:bg-gray-100 transition-all active:scale-90 border border-gray-100">
-                    <i class="fa-solid fa-share-nodes text-xl"></i>
+                    class="flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-600 hover:text-black hover:bg-gray-200 transition-all active:scale-90 border border-gray-200 shadow-sm" style="width: 50px; height: 50px; border-radius: 50%;">
+                    <i class="fa-solid fa-share-nodes text-lg"></i>
                 </button>
+                
                 <button id="detail-wish-btn" data-id="${product.id}" onclick="window.toggleWishlist(event, '${product.id}')"
-                    class="flex-1 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90 border border-gray-100">
-                    <i class="${(typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || [])).some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-xl"></i>
+                    class="flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-600 hover:text-red-500 hover:bg-red-100 transition-all active:scale-90 border border-gray-200 shadow-sm" style="width: 50px; height: 50px; border-radius: 50%;">
+                    <i class="${(typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || [])).some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-lg"></i>
                 </button>
             </div>
         </div>
