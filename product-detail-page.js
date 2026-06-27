@@ -306,16 +306,17 @@ window.submitProductReview = async (productId, name, rating, text) => {
             rating: parseInt(rating) || 5,
             reviewText: text,
             createdAt: Date.now(),
-            status: 'approved'
+            status: 'pending'
         };
         const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
         await addDoc(revCol, reviewData);
-        window.showToast("Review submitted successfully!");
+        window.showToast("Review submitted!");
         
         // Refresh reviews for the current product
         const updatedReviews = await fetchReviews(productId);
+        const approvedReviews = updatedReviews.filter(r => r.status === 'approved');
         const product = DATA.p.find(x => x.id === productId);
-        renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: updatedReviews });
+        renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
     } catch (e) {
         console.error("Failed to submit review", e);
         window.showToast("Failed to submit review");
@@ -354,8 +355,9 @@ async function renderById(id) {
     
     // Fetch reviews before rendering
     const reviews = await fetchReviews(id);
+    const approvedReviews = reviews.filter(r => r.status === 'approved');
     
-    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews });
+    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
     trackProductView(id).catch(() => { /* no-op */ });
 }
 

@@ -1061,7 +1061,7 @@ export function initAdmin(ctx) {
         if (!adminPanelEl) {
             try {
                 showToast("Loading Admin Panel...");
-                const res = await fetch('./admin-panel.html');
+                const res = await fetch('./admin-panel.html?v=' + Date.now());
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const html = await res.text();
                 const mount = document.getElementById('admin-panel-mount');
@@ -1138,7 +1138,7 @@ export function initAdmin(ctx) {
 
     window.expandSidebarGroupForTab = (tab) => {
         let groupId = 'core';
-        if (['products', 'categories'].includes(tab)) groupId = 'core';
+        if (['products', 'categories', 'reviews'].includes(tab)) groupId = 'core';
         if (['homepage', 'sliders', 'megamenu', 'announcements'].includes(tab)) groupId = 'design';
         if (['insights', 'landing', 'leads'].includes(tab)) groupId = 'marketing';
         if (['migration'].includes(tab)) groupId = 'tools';
@@ -1182,6 +1182,7 @@ export function initAdmin(ctx) {
         const isHomepage = tab === 'homepage';
         const isMigration = tab === 'migration';
         const isOrder = tab === 'orders';
+        const isReviews = tab === 'reviews';
 
         document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
         document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isMigration);
@@ -1193,15 +1194,16 @@ export function initAdmin(ctx) {
         document.getElementById('admin-insights-section').classList.toggle('hidden', !isInsight);
         document.getElementById('admin-announcements-section').classList.toggle('hidden', !isAnnounce);
         document.getElementById('admin-leads-section').classList.toggle('hidden', !isLeads);
+        document.getElementById('admin-reviews-section')?.classList.toggle('hidden', !isReviews);
 
         // Populate homepage admin UI when switching to it
         if (isHomepage) populateHomeAdminUI();
 
         // Center Insights & Orders View Full Width
         const formContainer = document.getElementById('admin-form-container');
-        formContainer.classList.toggle('hidden', isInsight || isOrder);
+        formContainer.classList.toggle('hidden', isInsight || isOrder || isReviews);
         const rightCol = document.getElementById('admin-right-column');
-        if (isInsight || isOrder) {
+        if (isInsight || isOrder || isReviews) {
             rightCol.className = "transition-all duration-500";
             rightCol.style.gridColumn = "1 / -1";
             rightCol.style.maxWidth = "1000px";
@@ -1229,6 +1231,7 @@ export function initAdmin(ctx) {
         document.getElementById('admin-announcements-list').classList.toggle('hidden', !isAnnounce);
         document.getElementById('admin-insights-list').classList.toggle('hidden', !isInsight);
         document.getElementById('admin-leads-list').classList.toggle('hidden', !isLeads);
+        document.getElementById('admin-reviews-list')?.classList.toggle('hidden', !isReviews);
 
         document.getElementById('product-admin-filters').classList.toggle('hidden', !isProd);
         document.getElementById('order-admin-filters')?.classList.toggle('hidden', !isOrder);
@@ -1251,14 +1254,20 @@ export function initAdmin(ctx) {
         if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
         const tabOrders = document.getElementById('tab-orders');
         if (tabOrders) tabOrders.className = isOrder ? activeClass : inactiveClass;
+        const tabR = document.getElementById('tab-r');
+        if (tabR) tabR.className = isReviews ? activeClass : inactiveClass;
         
         if (isOrder) {
             document.getElementById('list-title').innerText = "Recent Orders";
             loadOrders();
         }
+        if (isReviews) {
+            document.getElementById('list-title').innerText = "Product Reviews";
+            window.loadAdminReviews();
+        }
         if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
 
-        document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : (isMigration ? "Migration & Cloud Tools" : ""))))))));
+        document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : (isMigration ? "Migration & Cloud Tools" : (isOrder ? "Recent Orders" : (isReviews ? "Product Reviews" : ""))))))))));
         renderAdminUI();
     };
 
@@ -2988,4 +2997,112 @@ export function initAdmin(ctx) {
             showToast("Failed to delete order");
         }
     };
+
+    window.loadAdminReviews = async () => {
+        const container = document.getElementById('admin-reviews-list');
+        if (!container) return;
+        container.innerHTML = '<div class="text-center py-10"><div class="loader-spinner mx-auto mb-4"></div><p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Loading Reviews...</p></div>';
+
+        try {
+            const { collection, getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
+            let reviews = [];
+            try {
+                const q = query(revCol, orderBy("createdAt", "desc"));
+                const snap = await getDocs(q);
+                reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (err) {
+                const snap = await getDocs(revCol);
+                reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b)=> b.createdAt - a.createdAt);
+            }
+
+            if (reviews.length === 0) {
+                container.innerHTML = '<div class="text-center py-10"><p class="text-[12px] text-gray-400 italic">No reviews found.</p></div>';
+                return;
+            }
+
+            let html = '';
+            reviews.forEach(r => {
+                const isPending = r.status === 'pending';
+                const p = DATA.p.find(x => x.id === r.productId);
+                const pName = p ? p.name : 'Unknown Product';
+                const pImg = p ? getOptimizedUrl(p.img, 100) : 'https://placehold.co/100x100?text=Product';
+
+                html += `
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6 relative group transition-all hover:border-black">
+                    ${isPending ? '<div class="absolute top-4 right-4 bg-yellow-100 text-yellow-700 text-[9px] font-black uppercase px-2 py-1 rounded-md">Pending</div>' : '<div class="absolute top-4 right-4 bg-green-100 text-green-700 text-[9px] font-black uppercase px-2 py-1 rounded-md">Approved</div>'}
+                    <div class="flex-shrink-0 flex flex-col items-center gap-2 w-20">
+                        <img src="${pImg}" class="w-16 h-16 object-cover rounded-xl border border-gray-100">
+                        <span class="text-[8px] font-bold text-gray-400 text-center uppercase leading-tight truncate w-full" title="${pName}">${pName}</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="font-bold text-[14px] text-gray-900">${r.reviewerName}</span>
+                            <span class="text-gray-300">•</span>
+                            <span class="text-[11px] text-gray-400">${new Date(r.createdAt).toLocaleDateString()}</span>
+                            <span class="text-gray-300">•</span>
+                            <div class="flex text-[11px]" style="color: #FBBC04;">
+                                ${[1,2,3,4,5].map(i => `<i class="${i <= r.rating ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
+                            </div>
+                        </div>
+                        <p class="text-[13px] text-gray-600 leading-relaxed mb-4">${r.reviewText}</p>
+                        <div class="flex gap-2">
+                            ${isPending ? `<button onclick="approveReview('${r.id}', '${r.productId}')" class="bg-black text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:scale-105 transition-all shadow-md">Approve</button>` : ''}
+                            <button onclick="deleteReview('${r.id}', '${r.productId}')" class="bg-red-50 text-red-500 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm"><i class="fa-solid fa-trash mr-1"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
+        } catch (err) {
+            console.error("Load reviews failed:", err);
+            container.innerHTML = '<div class="text-center py-10"><p class="text-red-500 text-[12px] font-bold">Failed to load reviews.</p></div>';
+        }
+    };
+
+    window.approveReview = async (id, productId) => {
+        try {
+            const { doc, updateDoc, collection, getDocs, query, where } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reviews', id), { status: 'approved' });
+            showToast("Review approved");
+            if (productId) await window.syncProductReviewStats(productId);
+            window.loadAdminReviews();
+        } catch (err) {
+            console.error("Approve review failed:", err);
+            showToast("Failed to approve review");
+        }
+    };
+
+    window.deleteReview = async (id, productId) => {
+        if (!confirm("Are you sure you want to delete this review?")) return;
+        try {
+            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'reviews', id));
+            showToast("Review deleted");
+            if (productId) await window.syncProductReviewStats(productId);
+            window.loadAdminReviews();
+        } catch (err) {
+            console.error("Delete review failed:", err);
+            showToast("Failed to delete review");
+        }
+    };
+
+    window.syncProductReviewStats = async (productId) => {
+        try {
+            const { collection, getDocs, query, where, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
+            const q = query(revCol, where('productId', '==', productId), where('status', '==', 'approved'));
+            const snap = await getDocs(q);
+            let total = 0;
+            let count = snap.docs.length;
+            snap.forEach(d => total += d.data().rating || 5);
+            let rating = count > 0 ? (total / count).toFixed(1) : 0;
+            const prodRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', productId);
+            await updateDoc(prodRef, { rating: Number(rating), reviewCount: count });
+        } catch (e) {
+            console.error("Failed to sync stats", e);
+        }
+    };
+
 } // end initAdmin

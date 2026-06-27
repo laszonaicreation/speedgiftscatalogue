@@ -61,11 +61,11 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                         const avgRating = count > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / count).toFixed(1) : '0.0';
                         return `
                         <div class="flex items-center gap-2 mt-3 cursor-pointer" onclick="document.getElementById('reviews-section').scrollIntoView({behavior: 'smooth'})">
-                            <div class="flex text-[#FFB800] text-[11px]">
+                            <div class="flex text-[15px]" style="color: #FBBC04;">
                                 ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= Math.round(parseFloat(avgRating)) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
                             </div>
-                            <span class="text-[12px] font-bold text-gray-900">${avgRating}</span>
-                            <span class="text-[11px] text-gray-500 underline decoration-gray-200 underline-offset-2">(${count} reviews)</span>
+                            <span class="text-[14px] font-bold text-gray-900">${avgRating}</span>
+                            <span class="text-[13px] text-gray-500 underline decoration-gray-200 underline-offset-2">(${count} reviews)</span>
                         </div>
                         `;
                     })()}
@@ -184,10 +184,10 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         return `
         <div id="reviews-section" style="margin-top: 5rem; padding-top: 4rem;" class="border-t border-gray-100 w-full max-w-3xl mx-auto">
             <!-- Header -->
-            <div class="flex flex-col items-center text-center mb-10">
+            <div class="flex flex-col items-center text-center" style="margin-bottom: 45px;">
                 <h3 class="text-[24px] font-bold text-gray-900 mb-3">Customer Reviews</h3>
                 <div class="flex items-center justify-center gap-3">
-                    <div class="flex text-[#FFB800] text-[18px]">
+                    <div class="flex text-[18px]" style="color: #FBBC04;">
                         ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= Math.round(parseFloat(avgRating)) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
                     </div>
                     <span class="text-[18px] font-black text-gray-900">${avgRating}</span>
@@ -201,7 +201,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 <form onsubmit="event.preventDefault(); window.submitProductReview('${product.id}', this.name.value, this.rating.value, this.review.value); this.reset();" class="max-w-lg mx-auto flex flex-col gap-6">
                     <div class="flex flex-col items-center">
                         <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">Your Rating</label>
-                        <div class="flex items-center gap-3 text-[#FFB800] text-3xl cursor-pointer" id="star-rating-input">
+                        <div class="flex items-center gap-3 text-3xl cursor-pointer" id="star-rating-input" style="color: #FBBC04;">
                             <label><input type="radio" name="rating" value="1" class="hidden" required> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
                             <label><input type="radio" name="rating" value="2" class="hidden" required> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
                             <label><input type="radio" name="rating" value="3" class="hidden" required> <i class="fa-solid fa-star transition-transform hover:scale-110"></i></label>
@@ -237,7 +237,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                                     <span class="hidden md:block text-gray-300">•</span>
                                     <span class="text-[12px] text-gray-400 font-medium">${new Date(r.createdAt).toLocaleDateString()}</span>
                                 </div>
-                                <div class="flex text-[#FFB800] text-[12px]">
+                                <div class="flex text-[12px]" style="color: #FBBC04;">
                                     ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= r.rating ? 'fa-solid' : 'fa-regular'} fa-star mr-[2px]"></i>`).join('')}
                                 </div>
                             </div>
@@ -372,6 +372,15 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             "itemCondition": "https://schema.org/NewCondition"
         }
     };
+    
+    if (reviews && reviews.length > 0) {
+        const ratingSum = reviews.reduce((acc, r) => acc + r.rating, 0);
+        productSchema.aggregateRating = {
+            "@type": "AggregateRating",
+            "ratingValue": (ratingSum / reviews.length).toFixed(1),
+            "reviewCount": reviews.length
+        };
+    }
     
     schemaScript.textContent = JSON.stringify(productSchema);
     document.head.appendChild(schemaScript);

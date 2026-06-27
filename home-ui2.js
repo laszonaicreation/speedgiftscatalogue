@@ -73,12 +73,20 @@ export function buildHomeProductCardHtml({
         })()
         : `<p class="price-tag mt-2 font-bold">${p.price} AED</p>`;
 
+    const ratingHtml = (p.rating && p.reviewCount) 
+        ? `<div class="absolute z-10 bg-white rounded-full flex items-center justify-center shadow-md" style="bottom: 8px; left: 8px; padding: 5px 12px; gap: 4px;">
+               <i class="fa-solid fa-star text-[11px]" style="color: #FF9800;"></i>
+               <span class="text-[11px] font-black text-black leading-none mt-[1px]">${parseFloat(p.rating).toFixed(1)}</span>
+           </div>`
+        : '';
+
     return `
     <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${isWish ? 'wish-active' : ''}" data-id="${p.id}" 
          onmouseenter="window.preloadProductImage('${p.id}')"
          onclick="viewDetail('${p.id}', false, null)">
         <div class="img-container mb-4 relative">
             ${badgeHtml}
+            ${ratingHtml}
             <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
             <img src="${imageUrl}" 
                  class="${(idx < 4 || isEager) ? 'no-animation' : ''}"
