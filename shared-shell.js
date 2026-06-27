@@ -49,7 +49,7 @@ export function mountSharedShell(page = 'shop') {
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-50" id="shop-header">
         <div class="max-w-[1536px] mx-auto h-16 md:h-20 flex items-center justify-between relative" style="padding-left:clamp(20px,5vw,96px);padding-right:clamp(20px,5vw,96px)">
             <div class="w-1/4 md:w-auto flex items-center gap-2">
-
+                <a href="index.html" class="hidden md:flex relative items-center text-gray-400 hover:text-black transition-all group flex-shrink-0 w-10 h-10 justify-center rounded-full hover:bg-gray-50"><i class="fa-solid fa-house text-[18px] text-gray-400 group-hover:text-black transition-colors"></i></a>
                 <h1 class="brand-logo cursor-pointer select-none hidden md:block" id="desk-logo" style="position:absolute;left:50%;transform:translateX(-50%);margin:0;z-index:1;"><a href="index.html"><img src="img/speed-logo.svg" alt="Speed Gifts" width="120" height="40" class="h-8 md:h-10 w-auto inline-block"></a></h1>
             </div>
             <div class="flex-1 md:hidden text-center flex justify-center items-center">
