@@ -473,8 +473,15 @@ function buildCard(p, index) {
     }
 
     // Badge labels — same as main page
-    const badgeLabels = { new: 'New', best: 'Best Seller', limited: 'Limited', sale: 'Sale', trending: 'Trending' };
+    const badgeLabels = { new: 'New Arrival', best: 'Best Seller', limited: 'Limited Ed.', sale: 'On Sale', trending: 'Trending' };
     const badgeHtml = p.badge ? `<div class="p-badge-card badge-${p.badge}">${badgeLabels[p.badge] || p.badge}</div>` : '';
+
+    const ratingHtml = (p.rating && p.reviewCount) 
+        ? `<div class="absolute z-10 bg-white rounded-full flex items-center justify-center shadow-md" style="bottom: 8px; left: 8px; padding: 5px 12px; gap: 4px;">
+               <i class="fa-solid fa-star text-[11px]" style="color: #FF9800;"></i>
+               <span class="text-[11px] font-black text-black leading-none mt-[1px]">${parseFloat(p.rating).toFixed(1)}</span>
+           </div>`
+        : '';
 
     const card = document.createElement('div');
     card.className = `product-card group cursor-pointer ${isWish ? 'wish-active' : ''} ${state.selected.includes(p.id) ? 'selected' : ''}`;
@@ -485,6 +492,7 @@ function buildCard(p, index) {
     card.innerHTML = `
         <div class="img-container mb-4 relative">
             ${badgeHtml}
+            ${ratingHtml}
             <div class="wish-btn shadow-sm hidden-desktop" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
                 <i class="fa-solid fa-heart text-[10px]"></i>
             </div>
