@@ -92,3 +92,88 @@ exports.renderProduct = onRequest(async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
+exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
+    try {
+        const appId = req.query.appId || 'speed-catalogue';
+        const today = new Date().toISOString().split('T')[0];
+        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+
+        const prodCol = dataRef.collection('products');
+        const catCol = dataRef.collection('categories');
+        const megaCol = dataRef.collection('megamenus');
+        const sliderCol = dataRef.collection('sliders');
+        const popupCol = dataRef.collection('popup_settings');
+        const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
+
+        const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--'];
+        
+        const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
+            prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
+            prodCol.where('isFeatured', '==', true).get(),
+            prodCol.limit(30).get(),
+            catCol.get(),
+            megaCol.get(),
+            sliderCol.get(),
+            popupCol.limit(1).get(),
+            dailyStatsRef.get().catch(() => null)
+        ]);
+
+        const uniqueMap = new Map();
+        [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs].forEach(d => {
+            if (!uniqueMap.has(d.id)) {
+                uniqueMap.set(d.id, { id: d.id, ...d.data() });
+            }
+        });
+
+        const rawProducts = Array.from(uniqueMap.values());
+        const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+        const sliders = sliderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        const announcementsDoc = rawProducts.find(p => p.id === '_announcements_');
+        const announcements = announcementsDoc ? (announcementsDoc.messages || []) : [];
+
+        const popupSettings = (!popupSnap.empty) ? popupSnap.docs[0].data() : null;
+
+        const landingDoc = rawProducts.find(p => p.id === '_landing_settings_');
+        const landingSettings = landingDoc ? { ...landingDoc } : null;
+
+        const homeDoc = rawProducts.find(p => p.id === '_home_settings_');
+        const homeSettings = homeDoc ? { ...homeDoc } : null;
+
+        const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
+        const statsDoc = rawProducts.find(p => p.id === '_ad_stats_');
+        const stats = statsDoc ? { ...defaultStats, ...statsDoc } : { ...defaultStats };
+        
+        if (todaySnap && todaySnap.exists) {
+            const td = todaySnap.data();
+            stats.adVisits += (td.adVisits || 0) + (td.landingAdVisits || 0);
+            stats.normalVisits += (td.normalVisits || 0);
+            stats.adProductClicks = (stats.adProductClicks || 0) + (td.adProductClicks || 0);
+            stats.normalProductClicks = (stats.normalProductClicks || 0) + (td.normalProductClicks || 0);
+            stats.adInquiries += (td.adInquiries || 0);
+            stats.imageLoadFail += (td.imageLoadFail || 0);
+        }
+
+        const products = rawProducts.filter(p => !configDocIds.includes(p.id));
+
+        const responseData = {
+            products,
+            categories,
+            megaMenus,
+            sliders,
+            announcements,
+            popupSettings,
+            landingSettings,
+            homeSettings,
+            stats
+        };
+
+        res.set('Cache-Control', 'public, max-age=60, s-maxage=300');
+        res.status(200).json(responseData);
+    } catch (error) {
+        console.error('Error fetching home data:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});

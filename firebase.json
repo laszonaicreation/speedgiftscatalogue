@@ -58,6 +58,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/getHomeData",
+        "function": "getHomeData"
+      },
+      {
         "source": "/p/**",
         "function": "renderProduct"
       },
