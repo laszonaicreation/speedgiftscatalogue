@@ -16,12 +16,22 @@ export function getProductDetailUrl(id, origin = window.location.origin, pathnam
     return `${origin}${basePath}${PRODUCT_DETAIL_PAGE}?id=${encodeURIComponent(id)}`;
 }
 
+export function getShortShareUrl(id, origin = window.location.origin) {
+    return `${origin}/p/${encodeURIComponent(id)}`;
+}
+
 export function getLegacyDetailUrl(id) {
     const basePath = getBasePath();
     return `${basePath}${HOME_PAGE}?p=${encodeURIComponent(id)}`;
 }
 
-export function getProductIdFromSearch(search = window.location.search) {
+export function getProductIdFromSearch(search = window.location.search, pathname = window.location.pathname) {
     const params = new URLSearchParams(search);
-    return params.get('id') || params.get('p');
+    const queryId = params.get('id') || params.get('p');
+    if (queryId) return queryId;
+    
+    if (pathname.startsWith('/p/')) {
+        return pathname.split('/p/')[1].split('/')[0];
+    }
+    return null;
 }

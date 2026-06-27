@@ -58,9 +58,21 @@
     ],
     "rewrites": [
       {
+        "source": "/p/**",
+        "function": "renderProduct"
+      },
+      {
+        "source": "/product-detail.html",
+        "function": "renderProduct"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
   }
 }

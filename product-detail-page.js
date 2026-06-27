@@ -3,7 +3,7 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
-import { getProductIdFromSearch, getProductDetailUrl } from "./product-detail-utils.js";
+import { getProductIdFromSearch, getProductDetailUrl, getShortShareUrl } from "./product-detail-utils.js";
 import { mountSharedShell } from "./shared-shell.js?v=3";
 import { renderCategoriesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
@@ -285,8 +285,8 @@ window.inquireOnWhatsApp = (id, selectedSize = null, selectedPrice = null, selec
     if (selectedSize) details += `\n   Size: ${selectedSize}`;
     if (selectedColor) details += `\n   Color: ${selectedColor}`;
     if (!selectedSize && !selectedColor && p.size) details += `\n   Size: ${p.size}`;
-    const pUrl = getProductDetailUrl(id);
-    const msg = `Hi Speed Gifts Team,\n\nI would like to inquire about this product:\n\n1. ${p.name}\n   Price: ${price} AED${details}\n   Link: ${pUrl}\n\nPlease let me know the availability.\n\nThank you.`;
+    const pUrl = getShortShareUrl(id);
+    const msg = `Hi Speed Gifts Team,\n\nI would like to inquire about this product:\n\n1. ${p.name}\n   Price: ${price} AED${details}\n\nPlease let me know the availability.\n\nThank you.\n\n${pUrl}`;
     window.trackWhatsAppInquiry(id);
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
