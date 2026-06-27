@@ -3046,6 +3046,7 @@ export function initAdmin(ctx) {
                             </div>
                         </div>
                         <p class="text-[13px] text-gray-600 leading-relaxed mb-4">${r.reviewText}</p>
+                        ${r.imageUrl ? `<div class="mb-4"><img src="${r.imageUrl}" class="h-20 w-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${r.imageUrl}', '_blank')"></div>` : ''}
                         <div class="flex gap-2">
                             ${isPending ? `<button onclick="approveReview('${r.id}', '${r.productId}')" class="bg-black text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:scale-105 transition-all shadow-md">Approve</button>` : ''}
                             <button onclick="deleteReview('${r.id}', '${r.productId}')" class="bg-red-50 text-red-500 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm"><i class="fa-solid fa-trash mr-1"></i> Delete</button>

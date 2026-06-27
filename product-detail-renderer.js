@@ -198,7 +198,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             <!-- Write a Review Form -->
             <div class="bg-gray-50 rounded-[2rem] p-6 md:p-10 mb-12 border border-gray-100">
                 <h4 class="text-[16px] font-bold text-gray-900 mb-6 text-center">Share Your Thoughts</h4>
-                <form onsubmit="event.preventDefault(); window.submitProductReview('${product.id}', this.name.value, this.rating.value, this.review.value); this.reset();" class="max-w-lg mx-auto flex flex-col gap-6">
+                <form onsubmit="event.preventDefault(); window.submitProductReview('${product.id}', this.name.value, this.rating.value, this.review.value, this.reviewImage.files[0], this.querySelector('button[type=submit]'));" class="max-w-lg mx-auto flex flex-col gap-6">
                     <div class="flex flex-col items-center">
                         <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">Your Rating</label>
                         <div class="flex items-center gap-3 text-3xl cursor-pointer" id="star-rating-input" style="color: #FBBC04;">
@@ -219,29 +219,34 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                         <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-4">Your Review</label>
                         <textarea name="review" required rows="4" class="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl text-[14px] outline-none focus:border-black focus:ring-1 focus:ring-black transition-all shadow-sm resize-none" placeholder="What did you love about this product?"></textarea>
                     </div>
+
+                    <div class="w-full">
+                        <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 pl-4">Attach Photo (Optional)</label>
+                        <input type="file" name="reviewImage" accept="image/*" class="w-full px-5 py-3 bg-white border border-gray-200 rounded-2xl text-[14px] outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[11px] file:uppercase file:font-black file:tracking-widest file:bg-gray-100 file:text-black hover:file:bg-gray-200 transition-all shadow-sm">
+                    </div>
                     
-                    <button type="submit" class="w-full bg-black text-white text-[14px] font-bold uppercase tracking-widest py-4 rounded-2xl hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all mt-2">
+                    <button type="submit" class="w-full bg-black text-white text-[14px] font-bold uppercase tracking-widest py-4 rounded-2xl hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         Post Review
                     </button>
                 </form>
             </div>
 
             <!-- Reviews List -->
-            <div class="space-y-5">
-                ${reviews.length === 0 ? '<div class="text-center py-10"><p class="text-[14px] text-gray-400 italic">No reviews yet. Be the first to share your experience!</p></div>' : 
+            <div class="flex gap-4 overflow-x-auto pb-6 snap-x px-2 modern-scrollbar">
+                ${reviews.length === 0 ? '<div class="w-full text-center py-10"><p class="text-[14px] text-gray-400 italic">No reviews yet. Be the first to share your experience!</p></div>' : 
                     reviews.map(r => `
-                        <div class="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
-                                    <span class="font-bold text-gray-900 text-[15px]">${r.reviewerName}</span>
-                                    <span class="hidden md:block text-gray-300">•</span>
-                                    <span class="text-[12px] text-gray-400 font-medium">${new Date(r.createdAt).toLocaleDateString()}</span>
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex-shrink-0 w-[280px] md:w-[320px] snap-center flex flex-col">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-gray-900 text-[15px] truncate">${r.reviewerName}</span>
+                                    <span class="text-[11px] text-gray-400 font-medium">${new Date(r.createdAt).toLocaleDateString()}</span>
                                 </div>
-                                <div class="flex text-[12px]" style="color: #FBBC04;">
-                                    ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= r.rating ? 'fa-solid' : 'fa-regular'} fa-star mr-[2px]"></i>`).join('')}
+                                <div class="flex text-[10px] bg-gray-50 px-2 py-1 rounded-full" style="color: #FBBC04;">
+                                    ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= r.rating ? 'fa-solid' : 'fa-regular'} fa-star mr-[1px]"></i>`).join('')}
                                 </div>
                             </div>
-                            <p class="text-[14px] text-gray-600 leading-relaxed">${r.reviewText}</p>
+                            <p class="text-[13px] text-gray-600 leading-relaxed overflow-y-auto no-scrollbar flex-1">${r.reviewText}</p>
+                            ${r.imageUrl ? `<div class="mt-4 rounded-xl overflow-hidden bg-gray-50 w-24 h-32 flex-shrink-0 cursor-pointer border border-gray-200 shadow-sm" onclick="openFullScreen('${r.imageUrl}')"><img src="${getOptimizedUrl ? getOptimizedUrl(r.imageUrl, 300) : r.imageUrl}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500"></div>` : ''}
                         </div>
                     `).join('')}
             </div>

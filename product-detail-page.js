@@ -298,8 +298,32 @@ window.viewDetail = (id) => {
 };
 
 // ─── Reviews Logic ────────────────────────────────────────────────────────────
-window.submitProductReview = async (productId, name, rating, text) => {
+window.submitProductReview = async (productId, name, rating, text, imageFile, submitBtn) => {
     try {
+        let imageUrl = null;
+        
+        if (imageFile) {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Uploading Photo...";
+            }
+            
+            const formData = new FormData();
+            formData.append('file', imageFile);
+            formData.append('upload_preset', 'speed_preset');
+
+            const res = await fetch(`https://api.cloudinary.com/v1_1/dxkcvm2yh/image/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) throw new Error("Image upload failed");
+            const data = await res.json();
+            imageUrl = data.secure_url;
+        }
+
+        if (submitBtn) submitBtn.innerText = "Saving Review...";
+
         const reviewData = {
             productId: productId,
             reviewerName: name,
@@ -308,6 +332,9 @@ window.submitProductReview = async (productId, name, rating, text) => {
             createdAt: Date.now(),
             status: 'pending'
         };
+        
+        if (imageUrl) reviewData.imageUrl = imageUrl;
+
         const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
         await addDoc(revCol, reviewData);
         window.showToast("Review submitted!");
@@ -320,6 +347,10 @@ window.submitProductReview = async (productId, name, rating, text) => {
     } catch (e) {
         console.error("Failed to submit review", e);
         window.showToast("Failed to submit review");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Post Review";
+        }
     }
 };
 

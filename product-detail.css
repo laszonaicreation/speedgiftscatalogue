@@ -409,3 +409,27 @@ html, body {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+.modern-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+}
+
+.modern-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+
+.modern-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+}
+
+.modern-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 10px;
+}
+
+.modern-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+}
