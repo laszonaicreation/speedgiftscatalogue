@@ -1,6 +1,8 @@
 const { onRequest } = require('firebase-functions/v2/https');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
+const nodemailer = require('nodemailer');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -175,5 +177,106 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
     } catch (error) {
         console.error('Error fetching home data:', error);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ── Order Email Notification ──────────────────────────────────────────────────
+exports.sendOrderEmailNotification = onDocumentCreated('orders/{orderId}', async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+
+    const order = snapshot.data();
+    
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS
+        }
+    });
+
+    const itemsHtml = (order.items || []).map(item => `
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                <strong>${item.name}</strong><br>
+                <small style="color: #666;">Qty: ${item.qty} ${item.size ? '| Size: ' + item.size : ''} ${item.color ? '| Color: ' + item.color : ''}</small>
+            </td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">
+                ${item.price} AED
+            </td>
+        </tr>
+    `).join('');
+
+    const mailOptions = {
+        from: `Speed Gifts <${process.env.MAIL_USER}>`,
+        to: process.env.MAIL_TO || 'speedgiftsuae@gmail.com',
+        subject: `New Order Received! #${order.orderId || event.params.orderId}`,
+        priority: 'high',
+        headers: {
+            'X-Priority': '1 (Highest)',
+            'X-Entity-Ref-ID': order.orderId || event.params.orderId
+        },
+        html: `
+            <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; max-width: 600px;">
+                <p>Hi Team,</p>
+                <p>A new order has just been placed on Speed Gifts.</p>
+                <p><strong>Order ID:</strong> ${order.orderId || event.params.orderId}<br>
+                <strong>Customer:</strong> ${order.customer?.name || 'Guest'} (${order.customer?.phone || 'N/A'})<br>
+                <strong>Email:</strong> ${order.customer?.email || 'N/A'}<br>
+                <strong>Method:</strong> ${order.fulfillmentMethod === 'pickup' ? 'Store Pickup' : 'Delivery'}</p>
+                
+                ${order.fulfillmentMethod !== 'pickup' ? `
+                <p><strong>Shipping Details:</strong><br>
+                Emirate: ${order.shipping?.emirate || 'N/A'}<br>
+                City: ${order.shipping?.city || 'N/A'}<br>
+                Street: ${order.shipping?.street || 'N/A'}<br>
+                Building: ${order.shipping?.building || 'N/A'}<br>
+                Notes: ${order.shipping?.notes || 'None'}</p>
+                ` : ''}
+
+                <p><strong>Order Items:</strong></p>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    ${itemsHtml}
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; text-align: right;">Delivery Fee:</td>
+                        <td style="padding: 8px; font-weight: bold; text-align: right;">${order.deliveryFee || 0} AED</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; text-align: right;">Total:</td>
+                        <td style="padding: 8px; font-weight: bold; text-align: right;">${order.total || 0} AED</td>
+                    </tr>
+                </table>
+                <p>Best regards,<br>Speed Gifts System</p>
+            </div>
+        `
+    };
+
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Order notification email sent for order:', order.orderId);
+    } catch (error) {
+        console.error('Error sending order email:', error);
+    }
+
+    // Securely Deduct Stock using Admin SDK (bypasses security rules)
+    try {
+        const appId = 'speed-catalogue';
+        const batch = db.batch();
+        let hasUpdates = false;
+
+        (order.items || []).forEach(item => {
+            if (!item.id) return;
+            const pRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('products').doc(item.id);
+            batch.update(pRef, { stockCount: admin.firestore.FieldValue.increment(-(item.qty || 1)) });
+            hasUpdates = true;
+        });
+
+        if (hasUpdates) {
+            await batch.commit();
+            console.log('Successfully deducted stock for order:', order.orderId);
+        }
+    } catch (error) {
+        console.error('Error securely deducting stock:', error);
     }
 });

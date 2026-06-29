@@ -57,7 +57,8 @@ service cloud.firestore {
       allow create: if true;
       allow read: if isAdmin() ||
                      (isAuthenticated() && resource.data.customer.uid == request.auth.uid) ||
-                     (isAuthenticated() && resource.data.customer.email == request.auth.token.email);
+                     (isAuthenticated() && resource.data.customer.email == request.auth.token.email) ||
+                     (resource.data.orderId != null); // Allows guests to query their order status
       
       allow update: if isAdmin() || (
                      isAuthenticated() && 

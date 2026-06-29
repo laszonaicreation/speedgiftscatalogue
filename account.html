@@ -15,8 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS (same as main page) -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782577251709">
-    <link rel="stylesheet" href="style.min.css?v=1782577251709">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782654120890">
+    <link rel="stylesheet" href="style.min.css?v=1782654120890">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -240,6 +240,7 @@
             border-radius: 18px;
             overflow: hidden;
             border: 1px solid #f0f0f0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
         }
 
         .sg-menu-item {
@@ -454,22 +455,21 @@
             <div class="sg-profile-info">
                 <div class="sg-profile-name" id="acc-name">Loading...</div>
                 <div class="sg-profile-email" id="acc-email"></div>
-                <div class="sg-profile-badge"><i class="fa-solid fa-check-circle"></i> Verified Member</div>
-            </div>
-        </div>
-
-        <!-- My Orders -->
-        <p class="sg-section-title" id="orders">My Orders</p>
-        <div id="sg-orders-wrap">
-            <!-- Loading state -->
-            <div id="sg-orders-loading" style="padding:2rem;text-align:center;color:#9ca3af;font-size:0.82rem;">
-                <i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Loading orders...
+                <div class="sg-profile-badge" id="acc-badge"><i class="fa-solid fa-check-circle"></i> Verified Member</div>
             </div>
         </div>
 
         <!-- My Items -->
         <p class="sg-section-title">My Items</p>
         <div class="sg-menu">
+            <a href="/orders.html" class="sg-menu-item">
+                <div class="sg-menu-icon" style="background:#fefce8;color:#eab308;"><i class="fa-solid fa-box-open"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">My Orders</div>
+                    <div class="sg-menu-label-sub">Track and manage your purchases</div>
+                </div>
+                <i class="fa-solid fa-chevron-right sg-menu-arrow"></i>
+            </a>
             <a href="/cart.html" class="sg-menu-item" id="cart-link">
                 <div class="sg-menu-icon" style="background:#e0f2fe;color:#0ea5e9;"><i class="fa-solid fa-cart-shopping"></i></div>
                 <div class="sg-menu-label">
@@ -490,8 +490,8 @@
         </div>
 
         <!-- Account Settings -->
-        <p class="sg-section-title">Account Settings</p>
-        <div class="sg-menu">
+        <p class="sg-section-title" id="acc-settings-title">Account Settings</p>
+        <div class="sg-menu" id="acc-settings-menu">
             <button class="sg-menu-item" onclick="openEditModal()">
                 <div class="sg-menu-icon"><i class="fa-solid fa-pen"></i></div>
                 <div class="sg-menu-label">
@@ -524,9 +524,22 @@
             </a>
         </div>
 
+        <!-- Sign In (Guest Only) -->
+        <p class="sg-section-title" id="guest-action-title" style="display:none;">Account</p>
+        <div class="sg-menu" id="guest-action-menu" style="display:none;">
+            <a href="#" onclick="sessionStorage.setItem('sg_login_redirect', '/account.html'); window.location.replace('login.html'); return false;" class="sg-menu-item">
+                <div class="sg-menu-icon" style="background:#f0f9ff; color:#0ea5e9;"><i class="fa-solid fa-user-plus"></i></div>
+                <div class="sg-menu-label">
+                    <div class="sg-menu-label-title">Sign In or Register</div>
+                    <div class="sg-menu-label-sub">Create an account to track permanently</div>
+                </div>
+                <i class="fa-solid fa-chevron-right sg-menu-arrow"></i>
+            </a>
+        </div>
+
         <!-- Sign Out & Delete Account -->
-        <p class="sg-section-title">Session & Danger Zone</p>
-        <div class="sg-menu">
+        <p class="sg-section-title" id="auth-danger-title">Session & Danger Zone</p>
+        <div class="sg-menu" id="auth-danger-menu">
             <button class="sg-menu-item danger" onclick="handleSignOut()">
                 <div class="sg-menu-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
                 <div class="sg-menu-label">
@@ -648,189 +661,6 @@
         let currentUser = null;
         window._sgUserOrders = [];
 
-        window.viewOrder = (orderId) => {
-            const o = window._sgUserOrders.find(x => x.orderId === orderId);
-            if (o) {
-                try { sessionStorage.setItem('sg_last_order', JSON.stringify(o)); } catch(e){}
-            }
-            window.location.href = 'order-success.html?orderId=' + orderId;
-        };
-
-        // ── Status badge styles ────────────────────────────────────────────
-        const ORDER_STATUS = {
-            Pending:    { bg:'#fef9c3', color:'#854d0e', icon:'fa-clock' },
-            Processing: { bg:'#dbeafe', color:'#1e40af', icon:'fa-gear' },
-            Shipped:    { bg:'#ede9fe', color:'#6d28d9', icon:'fa-truck' },
-            Delivered:  { bg:'#dcfce7', color:'#15803d', icon:'fa-circle-check' },
-            Cancelled:  { bg:'#fee2e2', color:'#b91c1c', icon:'fa-circle-xmark' },
-        };
-
-        function fmtDate(ts) {
-            if (!ts) return '';
-            const d = ts.toDate ? ts.toDate() : new Date(ts * 1000);
-            return d.toLocaleDateString('en-AE', { day:'numeric', month:'short', year:'numeric' });
-        }
-        function imgThumb(url) {
-            if (!url) return '';
-            if (url.includes('res.cloudinary.com') && !url.includes('/upload/w_'))
-                return url.replace('/upload/', '/upload/w_56,c_fill,f_auto,q_auto/');
-            return url;
-        }
-
-        // ── Helper: Render Order Card ──────────────────────────────────────
-        function renderOrderCard(o) {
-            const st = ORDER_STATUS[o.status] || ORDER_STATUS.Pending;
-            const previewItems = (o.items || []).slice(0, 3);
-            const extraItems   = (o.items?.length || 0) - 3;
-            const itemsHtml = previewItems.map(item => {
-                const img = imgThumb(item.img);
-                return img
-                    ? `<img src="${img}" alt="${item.name||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #f0f0f0;">`
-                    : `<div style="width:40px;height:40px;border-radius:8px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-gift" style="color:#d1d5db;font-size:0.8rem;"></i></div>`;
-            }).join('');
-
-            return `
-            <div style="background:#fff;border:1px solid #f0f0f0;border-radius:18px;padding:1.25rem;margin-bottom:0.875rem;cursor:pointer;" onclick="window.viewOrder('${o.orderId}')">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
-                    <div>
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#9ca3af;margin-bottom:0.15rem;">Order ID</div>
-                        <div style="font-size:0.95rem;font-weight:900;color:#111;letter-spacing:0.02em;">${o.orderId || '—'}</div>
-                        <div style="font-size:0.68rem;color:#9ca3af;margin-top:0.1rem;">${fmtDate(o.createdAt)}</div>
-                    </div>
-                    <span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;padding:0.35rem 0.75rem;border-radius:100px;background:${st.bg};color:${st.color};">
-                        <i class="fa-solid ${st.icon}" style="margin-right:4px;"></i>${o.status || 'Pending'}
-                    </span>
-                </div>
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.875rem;">
-                    ${itemsHtml}
-                    ${extraItems > 0 ? `<div style="width:40px;height:40px;border-radius:8px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#6b7280;">+${extraItems}</div>` : ''}
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;padding-top:0.75rem;border-top:1px solid #f5f5f5;">
-                    <span style="font-size:0.75rem;color:#6b7280;">${o.items?.length || 0} item${(o.items?.length||0)===1?'':'s'}</span>
-                    <span style="font-size:0.95rem;font-weight:900;color:#111;">${(o.total||0).toFixed(2)} AED</span>
-                </div>
-            </div>`;
-        }
-
-        // ── Background Order Claiming ──────────────────────────────────────
-        async function claimGuestOrders(user) {
-            if (!user || !user.email) return;
-            try {
-                // Find orders with matching email where we can run an update
-                const q = query(collection(db, 'orders'), where('customer.email', '==', user.email));
-                const snap = await getDocs(q);
-                let claimedAny = false;
-                
-                // We use Promise.all to update concurrently
-                const promises = snap.docs.map(async (docSnap) => {
-                    const data = docSnap.data();
-                    if (data.customer && data.customer.uid === null) {
-                        // Import updateDoc and doc dynamically to keep global scope clean if not imported
-                        const { updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
-                        await updateDoc(doc(db, 'orders', docSnap.id), {
-                            'customer.uid': user.uid
-                        });
-                        claimedAny = true;
-                    }
-                });
-                
-                await Promise.all(promises);
-                
-                if (claimedAny) {
-                    // Reload orders silently
-                    loadOrders(user, true); 
-                }
-            } catch (err) {
-                console.log('Background claim silently failed (expected if rules block or index missing):', err);
-            }
-        }
-
-        // ── Load & Render Orders ───────────────────────────────────────────
-        async function loadOrders(user, isSilentReload = false) {
-            const wrap = document.getElementById('sg-orders-wrap');
-            if (!wrap) return;
-
-            if (!user || user.isAnonymous) {
-                // ── Guest Preview Logic ──
-                let guestOrderHtml = '';
-                try {
-                    const cached = JSON.parse(sessionStorage.getItem('sg_last_order'));
-                    if (cached && cached.orderId) {
-                        window._sgUserOrders = [cached];
-                        guestOrderHtml = `
-                        <div style="margin-bottom:1.5rem;">
-                            <span style="display:inline-block;background:#fef3c7;color:#d97706;font-size:0.65rem;font-weight:800;padding:0.3rem 0.6rem;border-radius:6px;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em;">Recent Guest Order</span>
-                            ${renderOrderCard(cached)}
-                        </div>`;
-                    }
-                } catch(e) {}
-
-                wrap.innerHTML = guestOrderHtml + `
-                <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:16px;padding:1.5rem;text-align:center;">
-                    <i class="fa-solid fa-user-circle" style="font-size:2rem;color:#0284c7;margin-bottom:0.75rem;display:block;"></i>
-                    <strong style="display:block;font-size:0.9rem;color:#0c4a6e;margin-bottom:0.35rem;">Track all your orders</strong>
-                    <span style="font-size:0.78rem;color:#0369a1;display:block;margin-bottom:1rem;">Create a free account or sign in using your order email to save your history permanently.</span>
-                    <a href="login.html" style="display:inline-block;background:#0284c7;color:#fff;padding:0.6rem 1.25rem;border-radius:10px;font-size:0.78rem;font-weight:700;text-decoration:none;">Sign In / Register</a>
-                </div>`;
-                return;
-            }
-
-            if (!isSilentReload) {
-                // Trigger background claim
-                claimGuestOrders(user);
-            }
-
-            try {
-                // Fetch user orders by UID
-                const qUid = query(collection(db, 'orders'), where('customer.uid', '==', user.uid));
-                const snapUid = await getDocs(qUid);
-                let docsList = snapUid.docs.map(doc => doc.data());
-
-                // Fetch user orders by Email (for orders that might have just been claimed or linked)
-                try {
-                    const qEmail = query(collection(db, 'orders'), where('customer.email', '==', user.email));
-                    const snapEmail = await getDocs(qEmail);
-                    const emailDocs = snapEmail.docs.map(doc => doc.data());
-                    
-                    // Merge and deduplicate by orderId
-                    const allDocs = [...docsList, ...emailDocs];
-                    const uniqueMap = new Map();
-                    allDocs.forEach(d => uniqueMap.set(d.orderId, d));
-                    docsList = Array.from(uniqueMap.values());
-                } catch (e) {
-                    console.log('Email query failed, falling back to UID only');
-                }
-
-                // Sort in memory
-                docsList.sort((a, b) => {
-                    const ta = a.createdAt?.seconds || a.createdAt || 0;
-                    const tb = b.createdAt?.seconds || b.createdAt || 0;
-                    return tb - ta;
-                });
-                
-                window._sgUserOrders = docsList;
-
-                if (docsList.length === 0) {
-                    wrap.innerHTML = `
-                    <div class="sg-orders-empty">
-                        <div class="sg-orders-empty-icon"><i class="fa-solid fa-box-open"></i></div>
-                        <h3>No orders yet</h3>
-                        <p>Your orders will appear here after you make a purchase.</p>
-                        <a href="shop.html" style="display:inline-block;margin-top:0.75rem;background:#111;color:#fff;padding:0.6rem 1.25rem;border-radius:10px;font-size:0.78rem;font-weight:700;text-decoration:none;">Browse Products</a>
-                    </div>`;
-                    return;
-                }
-
-                wrap.innerHTML = docsList.map(o => renderOrderCard(o)).join('');
-
-            } catch(err) {
-                console.error('loadOrders error:', err);
-                if (!isSilentReload) {
-                    wrap.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#9ca3af;font-size:0.82rem;">Could not load orders. Please try again.</div>`;
-                }
-            }
-        }
-
 
         // Load favourites count from localStorage
         function loadFavouritesCount() {
@@ -938,9 +768,35 @@
             const firstName = uName.split(' ')[0] || 'Account';
             if (mobUserText) mobUserText.textContent = firstName.length > 7 ? 'Account' : firstName;
 
+            const accBadge = document.getElementById('acc-badge');
+            const accSettingsTitle = document.getElementById('acc-settings-title');
+            const accSettingsMenu = document.getElementById('acc-settings-menu');
+            const authDangerTitle = document.getElementById('auth-danger-title');
+            const authDangerMenu = document.getElementById('auth-danger-menu');
+            const guestActionTitle = document.getElementById('guest-action-title');
+            const guestActionMenu = document.getElementById('guest-action-menu');
+
+            if (isGuest) {
+                if (accBadge) accBadge.style.display = 'none';
+                if (accSettingsTitle) accSettingsTitle.style.display = 'none';
+                if (accSettingsMenu) accSettingsMenu.style.display = 'none';
+                if (authDangerTitle) authDangerTitle.style.display = 'none';
+                if (authDangerMenu) authDangerMenu.style.display = 'none';
+                if (guestActionTitle) guestActionTitle.style.display = 'block';
+                if (guestActionMenu) guestActionMenu.style.display = 'block';
+            } else {
+                if (accBadge) accBadge.style.display = 'inline-flex';
+                if (accSettingsTitle) accSettingsTitle.style.display = 'block';
+                if (accSettingsMenu) accSettingsMenu.style.display = 'block';
+                if (authDangerTitle) authDangerTitle.style.display = 'block';
+                if (authDangerMenu) authDangerMenu.style.display = 'block';
+                if (guestActionTitle) guestActionTitle.style.display = 'none';
+                if (guestActionMenu) guestActionMenu.style.display = 'none';
+            }
+
             loadFavouritesCount();
             loadCartCount();
-            loadOrders(user);   // ← load order history
+
             loading.style.opacity = '0';
             setTimeout(() => { loading.style.display = 'none'; page.style.display = 'block'; }, 300);
 
@@ -957,7 +813,7 @@
                 showAccountPage(null);
             } else {
                 sessionStorage.setItem('sg_login_redirect', '/account.html');
-                window.location.href = '/login.html';
+                window.location.replace('/login.html');
             }
         }
 
@@ -1115,6 +971,12 @@
             t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 3000);
         }
+
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
     </script>
 </body>
 

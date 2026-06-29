@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -14,8 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind + Site CSS -->
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782577251709">
-    <link rel="stylesheet" href="style.min.css?v=1782577251709">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782654120890">
+    <link rel="stylesheet" href="style.min.css?v=1782654120890">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
@@ -28,7 +28,7 @@
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
 
     <!-- Cart Page CSS -->
-    <link rel="stylesheet" href="cart.min.css?v=1782577251709">
+    <link rel="stylesheet" href="cart.min.css?v=1782654120890">
 
     <meta name="robots" content="noindex, nofollow">
 </head>
@@ -71,6 +71,29 @@
                 <!-- Items list (rendered by JS) -->
                 <div class="cart-items-body" id="cart-items-body" style="display:none;"></div>
 
+                <!-- Delivery Options Section -->
+                <div class="cart-items-body" id="cart-delivery-options" style="display:none; border-top: 1px solid #f9fafb; padding-top: 24px;">
+                    <div class="cart-section-title" style="margin-bottom: 12px;">Fulfillment Method</div>
+                    <div class="delivery-methods">
+                        <label class="delivery-method-card active" onclick="window.sgSetDeliveryMethod('delivery')" id="card-delivery">
+                            <i class="fa-solid fa-truck"></i>
+                            <div class="method-details">
+                                <div class="method-title">Home Delivery</div>
+                                <div class="method-desc">2-3 Business Days</div>
+                            </div>
+                            <div class="method-price">35 AED</div>
+                        </label>
+                        <label class="delivery-method-card" onclick="window.sgSetDeliveryMethod('pickup')" id="card-pickup">
+                            <i class="fa-solid fa-store"></i>
+                            <div class="method-details">
+                                <div class="method-title">Store Collection</div>
+                                <div class="method-desc">World Trade Center, Abu Dhabi</div>
+                            </div>
+                            <div class="method-price">Free</div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Empty state -->
                 <div class="cart-empty-state" id="cart-empty-state">
                     <div class="empty-icon-wrap">
@@ -98,7 +121,7 @@
                         </div>
                         <div class="summary-row">
                             <span class="summary-label">Delivery</span>
-                            <span class="summary-value" style="color:#111;font-weight:600;">35.00 AED</span>
+                            <span class="summary-value" id="summary-delivery" style="color:#111;font-weight:600;">35.00 AED</span>
                         </div>
                         <div class="summary-row" style="margin-top:-0.5rem;">
                             <span></span>
@@ -115,7 +138,7 @@
                             <i class="fa-solid fa-lock" style="font-size: 14px; margin-right: 8px; opacity: 0.8;"></i>
                             <div>
                                 Guest Checkout
-                                <span class="checkout-btn-sub">No account needed · Cash on Delivery</span>
+                                <span class="checkout-btn-sub">No account needed Â· Cash on Delivery</span>
                             </div>
                         </button>
 
@@ -155,7 +178,7 @@
                 <!-- Promo note -->
                 <div class="promo-note">
                     <i class="fa-solid fa-clock" style="margin-right:6px;"></i>
-                    Order today — delivered within 2 business days across UAE
+                    Order today â€” delivered within 2 business days across UAE
                 </div>
             </div>
         </div>
@@ -163,19 +186,28 @@
 
     <!-- Mobile Sticky Checkout Bar -->
     <div class="mobile-checkout-bar" id="mobile-checkout-bar">
+        <div class="mob-checkout-details">
+            <div class="mob-detail-row">
+                <span>Subtotal:</span>
+                <span id="mob-subtotal" class="mob-detail-val">0.00 AED</span>
+            </div>
+            <div class="mob-detail-row">
+                <span>Delivery:</span>
+                <span id="mob-delivery" class="mob-detail-val">35.00 AED</span>
+            </div>
+        </div>
         <div class="mob-checkout-row">
             <div class="mob-total-wrap">
                 <div class="mob-total-label">Total</div>
                 <div class="mob-total-amount" id="mob-total">0.00 AED</div>
             </div>
             <button class="mob-checkout-btn" id="mob-checkout-btn" onclick="window.cartPageCheckout()">
-                <i class="fa-solid fa-lock" style="font-size: 12px; margin-right: 6px; opacity: 0.8;"></i>
-                Guest Checkout
+                <i class="fa-solid fa-lock"></i> Guest Checkout
             </button>
         </div>
     </div>
 
-    <!-- Footer — identical structure to main site -->
+    <!-- Footer â€” identical structure to main site -->
                                                                                 <footer id="sg-footer">
         <style>
             #sg-footer{background:#0a0a0a;color:#fff;font-family:'Poppins',sans-serif;margin-top:6rem;padding:5rem 3rem 2rem;border-top:1px solid #1a1a1a;}
@@ -246,7 +278,7 @@
                         <li><a href="/about.html">About Us</a></li>
                         <li><a href="/shop.html">Shop</a></li>
                         <li><a href="/">Categories</a></li>
-                        <li><a href="/contact.html">Contact</a></li>
+                        <li><a href="/contact.html">Contact</a></li><li><a href="track-order.html">Track Order</a></li>
                     </ul>
                 </div>
             </div>
@@ -259,6 +291,6 @@
     </footer>
 
     <script>if (document.getElementById('year')) document.getElementById('year').innerText = new Date().getFullYear();</script>
-    <script type="module" src="cart-page.min.js?v=1782577251709"></script>
+    <script type="module" src="cart-page.min.js?v=1782654120890"></script>
 </body>
 </html>

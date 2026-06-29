@@ -42,6 +42,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         })()}
                     <div class="flex items-center gap-3 mb-2 md:mb-3">
                         <h2 class="detail-product-name capitalize !mb-0">${product.name}</h2>
+                        ${product.inStock === false ? '<span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-sm">Out of Stock</span>' : ''}
                     </div>
                     ${(() => {
             const origP = parseFloat(product.originalPrice);
@@ -152,17 +153,17 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             </div>
 
             <div class="flex gap-2 sm:gap-3 md:gap-4 mt-10 lg:mt-auto pt-6 items-center w-full">
-                <button id="main-add-to-cart-btn" onclick="window.addToCart('${product.id}')"
-                    class="flex-1 max-w-[150px] sm:max-w-[170px] bg-black text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0" style="border-radius: 14px;">
+                <button id="main-add-to-cart-btn" ${product.inStock === false ? 'disabled' : `onclick="window.addToCart('${product.id}')"`}
+                    class="flex-1 max-w-[150px] sm:max-w-[170px] bg-black text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="border-radius: 14px;">
                     <i class="fa-solid fa-cart-shopping text-base sm:text-lg md:text-xl flex-shrink-0"></i>
                     <div class="flex flex-col items-start leading-tight truncate">
-                        <span class="text-[7px] md:text-[8px] font-bold opacity-60 uppercase tracking-widest truncate">Add to</span>
-                        <span class="text-[10px] md:text-[13px] font-black uppercase tracking-widest leading-none mt-0.5 truncate">Cart</span>
+                        <span class="text-[7px] md:text-[8px] font-bold opacity-60 uppercase tracking-widest truncate">${product.inStock === false ? 'Out of' : 'Add to'}</span>
+                        <span class="text-[10px] md:text-[13px] font-black uppercase tracking-widest leading-none mt-0.5 truncate">${product.inStock === false ? 'Stock' : 'Cart'}</span>
                     </div>
                 </button>
                 
-                <button id="main-inquiry-btn" onclick="inquireOnWhatsApp('${product.id}'${product.variations && product.variations.length > 0 ? `, '${product.variations[0].size}', '${product.variations[0].price}'` : (product.colorVariations && product.colorVariations.length > 0 ? `, null, '${product.colorVariations[0].price}', '${product.colorVariations[0].color}'` : '')})"
-                    class="flex-1 max-w-[150px] sm:max-w-[170px] text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0" style="background-color: #25D366; border-radius: 14px;">
+                <button id="main-inquiry-btn" ${product.inStock === false ? 'disabled' : `onclick="inquireOnWhatsApp('${product.id}'${product.variations && product.variations.length > 0 ? `, '${product.variations[0].size}', '${product.variations[0].price}'` : (product.colorVariations && product.colorVariations.length > 0 ? `, null, '${product.colorVariations[0].price}', '${product.colorVariations[0].color}'` : '')})"`}
+                    class="flex-1 max-w-[150px] sm:max-w-[170px] text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="background-color: #25D366; border-radius: 14px;">
                     <i class="fa-brands fa-whatsapp text-base sm:text-lg md:text-xl flex-shrink-0"></i>
                     <div class="flex flex-col items-start leading-tight truncate">
                         <span class="text-[7px] md:text-[8px] font-bold opacity-90 uppercase tracking-widest truncate">Order via</span>
@@ -263,7 +264,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
 
     ${(() => {
             const currentCatId = String(product.catId || "");
-            const related = DATA.p.filter(item => String(item.catId) === currentCatId && item.id !== product.id && item.inStock !== false).slice(0, 6);
+            const related = DATA.p.filter(item => String(item.catId) === currentCatId && item.id !== product.id).slice(0, 6);
             if (related.length === 0) return '';
             return `
             <div class="mt-20 pt-12 border-t border-gray-50">

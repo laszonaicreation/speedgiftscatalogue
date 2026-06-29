@@ -340,7 +340,7 @@ function getFilteredSorted() {
         const selectedSet = new Set(state.selected || []);
         list = DATA.products.filter(p => selectedSet.has(p.id));
     } else {
-        list = DATA.products.filter(p => p.inStock !== false);
+        list = [...DATA.products];
     }
 
     // Category filter
@@ -490,13 +490,14 @@ function buildCard(p, index) {
     card.onclick = () => goToProduct(p.id);
 
     card.innerHTML = `
-        <div class="img-container mb-4 relative">
+        <div class="img-container mb-4 relative ${p.inStock === false ? 'opacity-70' : ''}">
             ${badgeHtml}
             ${ratingHtml}
-            <div class="wish-btn shadow-sm hidden-desktop" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
+            ${p.inStock === false ? '<div class="absolute inset-0 bg-white/40 z-10 flex items-center justify-center"><span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-lg">Out of Stock</span></div>' : ''}
+            <div class="wish-btn shadow-sm hidden-desktop ${p.inStock === false ? 'z-20' : ''}" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
                 <i class="fa-solid fa-heart text-[10px]"></i>
             </div>
-            ${canUseSelectionControls() ? `<div class="select-btn shadow-sm" onclick="event.stopPropagation(); toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
+            ${canUseSelectionControls() ? `<div class="select-btn shadow-sm ${p.inStock === false ? 'z-20' : ''}" onclick="event.stopPropagation(); toggleSelect(event, '${p.id}')"><i class="fa-solid fa-check text-[10px]"></i></div>` : ''}
             ${imgUrl
             ? `<img
                     src="${imgUrl}"
@@ -515,7 +516,7 @@ function buildCard(p, index) {
                 <h3 class="capitalize truncate text-gray-900 font-semibold shop-card-title">${p.name || 'Product'}</h3>
                 ${priceHtml}
             </div>
-            <div class="wish-btn desktop-wish-fix hidden-mobile shop-card-heart" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
+            <div class="wish-btn desktop-wish-fix hidden-mobile shop-card-heart ${p.inStock === false ? 'z-20' : ''}" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
                 <i class="fa-solid fa-heart"></i>
             </div>
         </div>

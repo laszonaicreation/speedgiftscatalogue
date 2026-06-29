@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
 import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    collection, addDoc, serverTimestamp
+    collection, addDoc, serverTimestamp, doc, updateDoc, increment
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import {
     getAuth, onAuthStateChanged, signInAnonymously,
@@ -55,7 +55,9 @@ function getOptimizedUrl(url, size = 150) {
 }
 
 // ── Delivery Fee ─────────────────────────────────────────────────────────────
-const DELIVERY_FEE = 35; // Fixed UAE delivery — 35 AED
+const urlParams = new URLSearchParams(window.location.search);
+const deliveryMethod = urlParams.get('method') || 'delivery';
+const DELIVERY_FEE = deliveryMethod === 'pickup' ? 0 : 35; // Fixed UAE delivery — 35 AED or Free Pickup
 
 // ── Render Summary ────────────────────────────────────────────────────────────
 let cartItems = [];
@@ -95,6 +97,35 @@ function renderOrderSummary() {
             <div class="checkout-item-price">${lineTotal} AED</div>
         </div>`;
     });
+
+    const deliveryValEl = document.getElementById('chk-delivery-val');
+    const deliveryEstEl = document.getElementById('chk-delivery-est-text');
+    const deliveryLabel = document.getElementById('chk-delivery-label');
+    const shippingSection = document.getElementById('shipping-section');
+
+    const paymentTitle = document.getElementById('payment-title');
+    const paymentSub = document.getElementById('payment-sub');
+    const paymentIcon = document.getElementById('payment-icon');
+
+    if (deliveryMethod === 'pickup') {
+        if (deliveryValEl) deliveryValEl.innerText = 'Free';
+        if (deliveryEstEl) deliveryEstEl.innerHTML = '<i class="fa-solid fa-store" style="margin-right:3px;"></i>Collect from Store';
+        if (deliveryLabel) deliveryLabel.innerText = 'Store Collection';
+        if (shippingSection) shippingSection.style.display = 'none';
+
+        if (paymentTitle) paymentTitle.innerText = 'Pay at Store';
+        if (paymentSub) paymentSub.innerText = 'Pay with cash or card when you collect your order.';
+        if (paymentIcon) paymentIcon.className = 'fa-solid fa-store';
+    } else {
+        if (deliveryValEl) deliveryValEl.innerText = '35.00 AED';
+        if (deliveryEstEl) deliveryEstEl.innerHTML = '<i class="fa-solid fa-truck" style="margin-right:3px;"></i>Est. 2 business days';
+        if (deliveryLabel) deliveryLabel.innerText = 'Delivery';
+        if (shippingSection) shippingSection.style.display = 'block';
+
+        if (paymentTitle) paymentTitle.innerText = 'Cash on Delivery';
+        if (paymentSub) paymentSub.innerText = 'Pay with cash or card when your order arrives.';
+        if (paymentIcon) paymentIcon.className = 'fa-solid fa-money-bill-wave';
+    }
 
     listEl.innerHTML = html;
     subtotalEl.innerText = `${cartTotal.toFixed(2)} AED`;
@@ -184,14 +215,19 @@ window.submitOrder = async () => {
 
     // 2. Per-field Validation
     let hasError = false;
-    const fields = [
+    let fields = [
         { id:'chk-name',     errId:'err-name',     value: name },
-        { id:'chk-phone',    errId:'err-phone',     value: phone },
-        { id:'chk-emirate',  errId:'err-emirate',   value: emirate },
-        { id:'chk-city',     errId:'err-city',      value: city },
-        { id:'chk-street',   errId:'err-street',    value: street },
-        { id:'chk-building', errId:'err-building',  value: building },
+        { id:'chk-phone',    errId:'err-phone',     value: phone }
     ];
+
+    if (deliveryMethod === 'delivery') {
+        fields.push(
+            { id:'chk-emirate',  errId:'err-emirate',   value: emirate },
+            { id:'chk-city',     errId:'err-city',      value: city },
+            { id:'chk-street',   errId:'err-street',    value: street },
+            { id:'chk-building', errId:'err-building',  value: building }
+        );
+    }
 
     // Always validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -277,6 +313,7 @@ window.submitOrder = async () => {
         // 5. Construct Order Object
         const orderData = {
             orderId,
+            fulfillmentMethod: deliveryMethod,
             customer: { name, phone, email, uid: finalUid },
             shipping: { emirate, city, street, building, notes },
             items: cartItems.map(item => ({
@@ -292,7 +329,7 @@ window.submitOrder = async () => {
             subtotal: cartTotal,
             deliveryFee: DELIVERY_FEE,
             status: 'Pending',
-            paymentMethod: 'COD',
+            paymentMethod: deliveryMethod === 'pickup' ? 'Pay at Store' : 'COD',
             createdAt: serverTimestamp()
         };
 

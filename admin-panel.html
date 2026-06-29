@@ -26,6 +26,10 @@
                             class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium transition-all bg-black text-white shadow-lg"><i
                                 class="fa-solid fa-box opacity-70" style="width: 20px; text-align: center;"></i>
                             <span>Products</span></button>
+                        <button onclick="switchAdminTab('inventory')" id="tab-inv"
+                            class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
+                                class="fa-solid fa-boxes-stacked opacity-70" style="width: 20px; text-align: center;"></i>
+                            <span>Inventory</span></button>
                         <button onclick="switchAdminTab('orders')" id="tab-orders"
                             class="w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all"><i
                                 class="fa-solid fa-cart-shopping opacity-70" style="width: 20px; text-align: center;"></i>
@@ -182,14 +186,10 @@
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <label
-                                        class="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 cursor-pointer">
-                                        <input type="checkbox" id="p-stock" class="w-4 h-4 accent-black" checked>
-                                        <span
-                                            class="text-[11px] font-bold uppercase tracking-widest text-gray-500">Available
-                                            in
-                                            Stock</span>
-                                    </label>
+                                    <div class="flex flex-col justify-center bg-white p-4 rounded-xl border border-gray-100">
+                                        <label class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Stock Quantity</label>
+                                        <input type="number" id="p-stockCount" class="admin-input !mt-0 !bg-gray-50" min="0" placeholder="e.g. 50" value="100">
+                                    </div>
                                     <label
                                         class="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 cursor-pointer">
                                         <input type="checkbox" id="p-pinned" class="w-4 h-4 accent-black">
@@ -229,6 +229,36 @@
                                     <button onclick="saveProduct()" id="p-save-btn"
                                         class="flex-[2] bg-black text-white py-5 rounded-2xl font-bold text-[11px] uppercase tracking-widest shadow-2">Sync
                                         Product</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Inventory Section -->
+                        <div id="admin-inventory-section" class="hidden fade-in">
+                            <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                                <div class="flex items-center justify-between flex-wrap gap-4">
+                                    <h3 class="text-[11px] font-black uppercase tracking-widest">Inventory Management</h3>
+                                    <div class="flex items-center gap-3 w-full md:w-auto">
+                                        <select id="inventory-cat-filter" onchange="window.filterInventory()" class="admin-input !w-48 !py-2 !mt-0 cursor-pointer">
+                                            <option value="all">All Categories</option>
+                                        </select>
+                                        <input type="text" id="inventory-search" oninput="window.filterInventory()" class="admin-input !w-64 !py-2 !mt-0" placeholder="Search products...">
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto pb-4">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr class="border-b border-gray-100">
+                                                <th class="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Product</th>
+                                                <th class="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Category</th>
+                                                <th class="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-gray-400">Price</th>
+                                                <th class="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap" style="min-width: 80px;">Stock Qty</th>
+                                                <th class="py-3 px-4 text-[9px] font-black uppercase tracking-widest text-gray-400 text-right whitespace-nowrap" style="min-width: 70px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inventory-table-body" class="divide-y divide-gray-50">
+                                            <!-- Inventory rows injected here -->
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>

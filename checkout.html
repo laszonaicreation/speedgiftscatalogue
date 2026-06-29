@@ -11,15 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782577251709">
-    <link rel="stylesheet" href="style.min.css?v=1782577251709">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782660000000">
+    <link rel="stylesheet" href="style.min.css?v=1782660000000">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
 
-    <link rel="stylesheet" href="checkout.min.css?v=1782577251709">
+    <link rel="stylesheet" href="checkout.min.css?v=1782660000000">
 
     <meta name="robots" content="noindex, nofollow">
 
@@ -97,7 +97,7 @@
                 </div>
 
                 <!-- Section 2: Shipping -->
-                <div class="chk-section">
+                <div class="chk-section" id="shipping-section">
                     <div class="chk-section-head">
                         <div class="chk-section-num">2</div>
                         <div class="chk-section-title">Shipping Address</div>
@@ -172,12 +172,12 @@
                             <span class="chk-total-value" id="chk-subtotal">0.00 AED</span>
                         </div>
                         <div class="chk-total-row">
-                            <span class="chk-total-label">Delivery</span>
-                            <span class="chk-total-value" style="font-weight:700;">35.00 AED</span>
+                            <span class="chk-total-label" id="chk-delivery-label">Delivery</span>
+                            <span class="chk-total-value" id="chk-delivery-val" style="font-weight:700;">35.00 AED</span>
                         </div>
-                        <div class="chk-total-row" style="padding-top:0;margin-top:-0.3rem;">
+                        <div class="chk-total-row" id="chk-delivery-est" style="padding-top:0;margin-top:-0.3rem;">
                             <span></span>
-                            <span style="font-size:0.65rem;color:#9ca3af;">
+                            <span style="font-size:0.65rem;color:#9ca3af;" id="chk-delivery-est-text">
                                 <i class="fa-solid fa-truck" style="margin-right:3px;"></i>Est. 2 business days
                             </span>
                         </div>
@@ -187,13 +187,13 @@
                         </div>
                     </div>
 
-                    <div class="chk-cod-badge">
+                    <div class="chk-cod-badge" id="payment-badge">
                         <div class="chk-cod-icon">
-                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <i class="fa-solid fa-money-bill-wave" id="payment-icon"></i>
                         </div>
                         <div class="chk-cod-text">
-                            <div class="chk-cod-title">Cash on Delivery</div>
-                            <div class="chk-cod-sub">Pay with cash or card when your order arrives.</div>
+                            <div class="chk-cod-title" id="payment-title">Cash on Delivery</div>
+                            <div class="chk-cod-sub" id="payment-sub">Pay with cash or card when your order arrives.</div>
                         </div>
                     </div>
 
@@ -212,6 +212,6 @@
         </div><!-- /.chk-grid -->
     </div><!-- /.chk-page-wrap -->
 
-    <script type="module" src="checkout.min.js?v=1782577251709"></script>
+    <script type="module" src="checkout.min.js?v=1782660000000"></script>
 </body>
 </html>

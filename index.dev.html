@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <!-- Google Tag Manager: deferred after page load for better performance -->
-    <!-- font-display: swap for FontAwesome — prevents invisible text during font load -->
+    <!-- font-display: swap for FontAwesome â€” prevents invisible text during font load -->
     <style>
         @font-face {
             font-family: 'Font Awesome 6 Free';
@@ -74,7 +74,7 @@
         content="Speed Gifts is Abu Dhabi & Dubai's premier personalized gift shop. Shop custom engraving, photo gifts, caricatures, wooden frames, and unique corporate gifts for every occasion in the UAE. Visit us at WTC Mall.">
     <link rel="canonical" href="https://speedgifts.net/">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Speed Gifts – Premium Personalized Gifts in Abu Dhabi">
+    <meta property="og:title" content="Speed Gifts â€“ Premium Personalized Gifts in Abu Dhabi">
     <meta property="og:description"
         content="Speed Gifts is Abu Dhabi & Dubai's premier personalized gift shop. Shop custom engraving, photo gifts, caricatures, wooden frames, and unique corporate gifts for every occasion in the UAE. Visit us at WTC Mall.">
     <meta property="og:url" content="https://speedgifts.net/">
@@ -82,7 +82,7 @@
         content="https://speedgifts.net/seo-collage.jpg">
     <meta property="og:site_name" content="Speed Gifts">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Speed Gifts – Premium Personalized Gifts in Abu Dhabi">
+    <meta name="twitter:title" content="Speed Gifts â€“ Premium Personalized Gifts in Abu Dhabi">
     <meta name="twitter:description"
         content="Speed Gifts is Abu Dhabi & Dubai's premier personalized gift shop. Shop custom engraving, photo gifts, caricatures, wooden frames, and unique corporate gifts for every occasion in the UAE. Visit us at WTC Mall.">
     <meta name="twitter:image"
@@ -135,10 +135,10 @@
   }
 }
 </script>
-    <!-- LCP PRELOAD HINT — THREE-TIER STRATEGY
-         ① Repeat visitors  → localStorage (instant, ~0ms)
-         ② Cached config    → _hero_config_ Firestore doc (~200ms)
-         ③ First-time visitors → sliders collection REST fetch (works on first ever visit)
+    <!-- LCP PRELOAD HINT â€” THREE-TIER STRATEGY
+         â‘  Repeat visitors  â†’ localStorage (instant, ~0ms)
+         â‘¡ Cached config    â†’ _hero_config_ Firestore doc (~200ms)
+         â‘¢ First-time visitors â†’ sliders collection REST fetch (works on first ever visit)
     -->
     <script>
         (function () {
@@ -178,16 +178,16 @@
                 } catch (e) { }
             }
 
-            // ① Fast path: repeat visitors — instant, zero network cost
+            // â‘  Fast path: repeat visitors â€” instant, zero network cost
             try {
                 var cached = localStorage.getItem('sg_lcp_img_url');
                 if (cached && cached.indexOf('http') === 0) {
                     injectPreload(cached);
-                    return; // done — no network calls needed
+                    return; // done â€” no network calls needed
                 }
             } catch (e) { }
 
-            // ② Try _hero_config_ (written after first slider render — NOT on very first visit)
+            // â‘¡ Try _hero_config_ (written after first slider render â€” NOT on very first visit)
             xhrGet(HERO_DOC, function (text) {
                 try {
                     var fields = JSON.parse(text).fields || {};
@@ -198,11 +198,11 @@
                 } catch (e) { }
             });
 
-            // ③ Sliders collection — works even on the very first visit ever
+            // â‘¢ Sliders collection â€” works even on the very first visit ever
             //    Fetches the raw sliders list, picks the lowest-order slide, preloads its image.
             xhrGet(SLIDERS_COL, function (text) {
                 try {
-                    if (preloaded) return; // ② already handled it
+                    if (preloaded) return; // â‘¡ already handled it
                     var docs = JSON.parse(text).documents || [];
                     if (!docs.length) return;
                     // Sort by 'order' field ascending
@@ -222,7 +222,7 @@
 </head>
 
 <body class="selection:bg-black selection:text-white">
-    <!-- CRITICAL: Sync badge pre-init — runs before any module JS to prevent blink -->
+    <!-- CRITICAL: Sync badge pre-init â€” runs before any module JS to prevent blink -->
     <script>
         (function () {
             try {
@@ -466,7 +466,7 @@
             <div id="slider-dots" class="flex justify-center gap-2 mt-2 md:mt-5 z-10 w-full"></div>
         </div>
 
-        <!-- Trust Badges Section — styles moved to style.css -->
+        <!-- Trust Badges Section â€” styles moved to style.css -->
 
         <section class="trust-badges-section pt-6 pb-4 sm:pt-16 sm:pb-24 mt-4 sm:mt-6">
             <div class="w-full md:w-[90%] lg:w-[80%] xl:w-[75%] max-w-[1440px] mx-auto px-4 md:px-0">
@@ -931,7 +931,7 @@
                         <li><a href="/about.html">About Us</a></li>
                         <li><a href="/shop.html">Shop</a></li>
                         <li><a href="/">Categories</a></li>
-                        <li><a href="/contact.html">Contact</a></li>
+                        <li><a href="/contact.html">Contact</a></li><li><a href="track-order.html">Track Order</a></li>
                     </ul>
                 </div>
             </div>
@@ -1194,7 +1194,7 @@
                         style="font-family: 'Plus Jakarta Sans', sans-serif;">Claim Your Free Gift</h2>
                     <p id="popup-gift-msg"
                         class="text-[9px] text-gray-400 font-black uppercase tracking-[0.25em] mt-3 opacity-60">
-                        Limited Edition • Exclusive Offer</p>
+                        Limited Edition â€¢ Exclusive Offer</p>
                 </div>
 
                 <form id="lead-form" onsubmit="window.submitLead(event)" class="space-y-3 md:space-y-4 text-left">
@@ -1255,7 +1255,7 @@
     </button>
 
     <!-- Intl-Tel-Input JS -->
-    <!-- Preload lazy modules — browser fetches these in parallel during HTML parse,
+    <!-- Preload lazy modules â€” browser fetches these in parallel during HTML parse,
          before any JS runs. Slider & spotlight will be ready by the time data arrives. -->
     <link rel="modulepreload" href="./app-slider.min.js">
     <link rel="modulepreload" href="./app-spotlight.min.js">

@@ -322,6 +322,75 @@
             background: none; border: none;
             color: #9ca3af; cursor: pointer; font-size: 0.85rem; padding: 0;
         }
+
+        /* ── CHOICE CARDS ── */
+        .choice-card {
+            background: #fff;
+            border: 2px solid #f9fafb;
+            border-radius: 20px;
+            padding: 1.75rem 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            position: relative;
+            overflow: hidden;
+        }
+        .choice-card:hover {
+            border-color: #111;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+        .choice-card:active {
+            transform: translateY(0);
+        }
+        .choice-icon {
+            width: 54px;
+            height: 54px;
+            background: #f8f8f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.35rem;
+            color: #111;
+            transition: all 0.25s;
+        }
+        .choice-card:hover .choice-icon {
+            background: #111;
+            color: #fff;
+        }
+        .choice-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.01em;
+        }
+        .choice-sub {
+            font-size: 0.75rem;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+        .auth-back-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+            padding: 0;
+            transition: color 0.2s;
+        }
+        .auth-back-btn:hover {
+            color: #111;
+        }
     </style>
 </head>
 <body>
@@ -338,8 +407,28 @@
 <!-- Form Box -->
 <div class="auth-box">
 
-    <h1 class="auth-title" id="auth-title">Welcome Back</h1>
-    <p class="auth-subtitle" id="auth-subtitle">Sign in to your Speed Gifts account</p>
+    <h1 class="auth-title" id="auth-title">Welcome</h1>
+    <p class="auth-subtitle" id="auth-subtitle">Choose how you want to continue</p>
+
+    <!-- Choice View -->
+    <div id="choice-view">
+        <div class="choice-card" onclick="showLoginView()">
+            <div class="choice-icon"><i class="fa-regular fa-user"></i></div>
+            <div class="choice-title">Sign In / Register</div>
+            <div class="choice-sub">Access your saved orders, favourites, and manage your profile</div>
+        </div>
+        <div class="choice-card" onclick="window.location.href='track-order.html'">
+            <div class="choice-icon"><i class="fa-solid fa-box-open"></i></div>
+            <div class="choice-title">Track Guest Order</div>
+            <div class="choice-sub">Track your order instantly using your Order ID</div>
+        </div>
+    </div>
+
+    <!-- Login Form View -->
+    <div id="login-form-view" class="hidden">
+        <button class="auth-back-btn" onclick="showChoiceView()">
+            <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
 
     <!-- Google -->
     <button class="btn-google" id="btn-google" onclick="signInWithGoogle()">
@@ -384,6 +473,8 @@
     <div class="auth-toggle">
         <span id="toggle-label">Don't have an account?</span>
         <button onclick="toggleMode()" id="toggle-btn">Sign Up</button>
+    </div>
+
     </div>
 
 </div>
@@ -561,15 +652,31 @@
         };
     }
 
-    // â”€â”€ NORMAL AUTH FLOW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── NORMAL AUTH FLOW ───────────────────────────────────────────────
     let mode = 'login'; // 'login' | 'register'
+
+    window.showLoginView = () => {
+        document.getElementById('choice-view').classList.add('hidden');
+        document.getElementById('login-form-view').classList.remove('hidden');
+        document.getElementById('auth-title').textContent = mode === 'login' ? 'Welcome Back' : 'Create Account';
+        document.getElementById('auth-subtitle').textContent = mode === 'login' ? 'Sign in to your Speed Gifts account' : 'Join Speed Gifts today';
+    };
+
+    window.showChoiceView = () => {
+        document.getElementById('choice-view').classList.remove('hidden');
+        document.getElementById('login-form-view').classList.add('hidden');
+        document.getElementById('auth-title').textContent = 'Welcome';
+        document.getElementById('auth-subtitle').textContent = 'Choose how you want to continue';
+    };
 
     window.toggleMode = () => {
         mode = mode === 'login' ? 'register' : 'login';
         const isReg = mode === 'register';
 
-        document.getElementById('auth-title').textContent = isReg ? 'Create Account' : 'Welcome Back';
-        document.getElementById('auth-subtitle').textContent = isReg ? 'Join Speed Gifts today' : 'Sign in to your Speed Gifts account';
+        if (!document.getElementById('login-form-view').classList.contains('hidden')) {
+            document.getElementById('auth-title').textContent = isReg ? 'Create Account' : 'Welcome Back';
+            document.getElementById('auth-subtitle').textContent = isReg ? 'Join Speed Gifts today' : 'Sign in to your Speed Gifts account';
+        }
         document.getElementById('field-name').classList.toggle('hidden', !isReg);
         document.getElementById('auth-forgot').classList.toggle('hidden', isReg);
         document.getElementById('btn-text').textContent = isReg ? 'Create Account' : 'Sign In';

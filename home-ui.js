@@ -77,9 +77,10 @@ export function buildHomeProductCardHtml({
     <div class="product-card group ${idx < 4 ? '' : 'fade-in'} ${isWish ? 'wish-active' : ''}" data-id="${p.id}" 
          onmouseenter="window.preloadProductImage('${p.id}')"
          onclick="viewDetail('${p.id}', false, null)">
-        <div class="img-container mb-4 relative">
+        <div class="img-container mb-4 relative ${p.inStock === false ? 'opacity-70' : ''}">
             ${badgeHtml}
-            <div class="wish-btn shadow-sm hidden-desktop" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
+            ${p.inStock === false ? '<div class="absolute inset-0 bg-white/40 z-10 flex items-center justify-center"><span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-lg">Out of Stock</span></div>' : ''}
+            <div class="wish-btn shadow-sm hidden-desktop ${p.inStock === false ? 'z-20' : ''}" onclick="toggleWishlist(event, '${p.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
             <img src="${imageUrl}" 
                  class="${(idx < 4 || isEager) ? 'no-animation' : ''}"
                  ${isEager ? 'fetchpriority="auto" loading="eager"' : 'fetchpriority="low" loading="lazy"'}
@@ -93,7 +94,7 @@ export function buildHomeProductCardHtml({
                 <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name}</h3>
                 ${priceHtml}
             </div>
-            <div class="wish-btn desktop-wish-fix hidden-mobile" onclick="toggleWishlist(event, '${p.id}')">
+            <div class="wish-btn desktop-wish-fix hidden-mobile ${p.inStock === false ? 'z-20' : ''}" onclick="toggleWishlist(event, '${p.id}')">
                 <i class="fa-solid fa-heart"></i>
             </div>
         </div>
@@ -206,7 +207,7 @@ export function renderHomeCategoryRow({
 }
 
 export function getHomeBestsellerProducts({ products, sort }) {
-    const stockFilter = (items) => items.filter((p) => p.inStock !== false);
+    const stockFilter = (items) => items;
     // Show admin-curated featured products first
     let filtered = stockFilter((products || []).filter((p) => p.isFeatured));
     // Fallback: if no featured products set yet, show latest 20 (not all 202)

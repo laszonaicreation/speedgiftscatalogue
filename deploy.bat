@@ -38,8 +38,11 @@ if %errorlevel% neq 0 (
 echo Done! index.html updated.
 echo.
 
-echo [4/4] Deploying to Firebase Hosting...
-call firebase deploy --only hosting
+echo [4/4] Deploying Website and Cloud Functions to Firebase...
+cd functions
+call npm install
+cd ..
+call firebase deploy
 
 if %errorlevel% neq 0 (
     echo ERROR: Firebase deploy failed!

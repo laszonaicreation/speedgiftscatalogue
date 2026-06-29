@@ -280,8 +280,7 @@ async function loadSection(productIds, sectionId, gridId) {
         
         // Filter requested IDs and ensure order matches selection
         let displayProds = allProds
-            .filter(p => productIds.includes(p.id))
-            .filter(p => p.inStock !== false);
+            .filter(p => productIds.includes(p.id));
             
         displayProds.sort((a,b) => productIds.indexOf(a.id) - productIds.indexOf(b.id));
 

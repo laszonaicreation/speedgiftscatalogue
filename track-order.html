@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Track Order | Speed Gifts</title>
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782654120890">
+    <link rel="stylesheet" href="style.min.css?v=1782654120890">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+    
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: hidden; font-family: 'Poppins', sans-serif; background: #f8f8f6; }
+        .to-wrap { max-width: 440px; margin: 0 auto; padding: 120px 20px 5rem; }
+        
+        .to-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            border: 1px solid #f0f0f0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            text-align: center;
+        }
+        
+        .to-icon {
+            width: 64px; height: 64px;
+            background: #f0f9ff;
+            color: #0284c7;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; margin: 0 auto 1.25rem;
+        }
+        
+        .to-title { font-size: 1.4rem; font-weight: 800; color: #111; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+        .to-sub { font-size: 0.8rem; color: #6b7280; margin-bottom: 2rem; line-height: 1.6; }
+        
+        .to-field { text-align: left; margin-bottom: 1.25rem; }
+        .to-field label { display: block; font-size: 0.72rem; font-weight: 700; color: #374151; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .to-input {
+            width: 100%; padding: 0.875rem 1rem; border: 1.5px solid #e5e7eb; border-radius: 12px;
+            font-family: 'Poppins', sans-serif; font-size: 0.9rem; color: #111; outline: none; transition: all 0.2s;
+        }
+        .to-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+        .to-input::placeholder { color: #9ca3af; }
+        
+        .to-btn {
+            width: 100%; background: #111; color: #fff; border: none; border-radius: 12px;
+            padding: 1rem; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;
+        }
+        .to-btn:hover { background: #222; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .to-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .to-error {
+            display: none; background: #fef2f2; border: 1px solid #fca5a5; color: #ef4444;
+            padding: 0.875rem; border-radius: 12px; font-size: 0.78rem; font-weight: 500;
+            margin-bottom: 1.5rem; text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="shared-shell-root"></div>
+    <div class="to-wrap">
+        <div class="to-card">
+            <div class="to-icon"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+            <h1 class="to-title">Track Your Order</h1>
+            <p class="to-sub">Enter your Order ID and WhatsApp Number to securely view your order status.</p>
+            
+            <div class="to-error" id="to-error-msg"><i class="fa-solid fa-circle-exclamation" style="margin-right:4px;"></i> <span></span></div>
+            
+            <form id="track-form">
+                <div class="to-field">
+                    <label for="to-order-id">Order ID</label>
+                    <input type="text" id="to-order-id" class="to-input" placeholder="e.g. SG-12345" required autocomplete="off">
+                </div>
+                <div class="to-field">
+                    <label for="to-phone">WhatsApp Number / Phone</label>
+                    <input type="tel" id="to-phone" class="to-input" placeholder="e.g. 050 123 4567" required autocomplete="tel">
+                </div>
+                <button type="submit" class="to-btn" id="to-submit-btn">
+                    <span>Find Order</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script type="module" src="track-order.min.js"></script>
+</body>
+</html>

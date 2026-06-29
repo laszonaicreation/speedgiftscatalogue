@@ -30,7 +30,7 @@ export function initSpotlight({ getOptimizedUrl, getBadgeLabel, getProductDetail
             return;
         }
 
-        const stockFilter    = (items) => items.filter(p => p.inStock !== false);
+        const stockFilter    = (items) => items;
         let spotlightProducts = [];
 
         if (selectedIds && selectedIds.length > 0) {
@@ -70,9 +70,10 @@ export function initSpotlight({ getOptimizedUrl, getBadgeLabel, getProductDetail
                 return `
                     <div class="product-card group flex-shrink-0 w-[160px] sm:w-[200px] snap-start" data-id="${p.id}" style="margin-right: 12px;"
                          onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
-                        <div class="img-container mb-4 relative">
+                        <div class="img-container mb-4 relative ${p.inStock === false ? 'opacity-70' : ''}">
                             ${badgeHtml}
                             ${ratingHtml}
+                            ${p.inStock === false ? '<div class="absolute inset-0 bg-white/40 z-10 flex items-center justify-center"><span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-lg">Out of Stock</span></div>' : ''}
                             <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
                         </div>
                         <div class="px-1 text-left flex justify-between items-start mt-4">
@@ -86,9 +87,10 @@ export function initSpotlight({ getOptimizedUrl, getBadgeLabel, getProductDetail
                 return `
                     <div class="product-card group" data-id="${p.id}"
                          onmouseenter="window.preloadProductImage('${p.id}')" onclick="viewDetail('${p.id}')">
-                        <div class="img-container mb-4 relative">
+                        <div class="img-container mb-4 relative ${p.inStock === false ? 'opacity-70' : ''}">
                             ${badgeHtml}
                             ${ratingHtml}
+                            ${p.inStock === false ? '<div class="absolute inset-0 bg-white/40 z-10 flex items-center justify-center"><span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-lg">Out of Stock</span></div>' : ''}
                             <img src="${getOptimizedUrl(pImg, 600)}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this)" alt="${p.name}">
                         </div>
                         <div class="px-1 text-left flex justify-between items-start mt-4">

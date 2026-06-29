@@ -51,19 +51,67 @@ const STATUS = {
 
 // ── Render Order ──────────────────────────────────────────────────────────────
 function renderOrder(order) {
+    if (!isFromCheckout) {
+        const ring = document.querySelector('.os-check-ring');
+        const h1 = document.querySelector('.os-hero h1');
+        const p = document.querySelector('.os-hero p');
+        if (ring) ring.style.display = 'none';
+        if (h1) h1.textContent = 'Order Details';
+        if (p) p.style.display = 'none';
+    }
+
     const st = STATUS[order.status] || STATUS.Pending;
 
     // Header
     document.getElementById('success-order-id').textContent = order.orderId || orderId;
 
-    const statusEl = document.getElementById('order-status');
-    if (statusEl) {
-        statusEl.textContent = st.label;
-        statusEl.style.background = st.bg;
-        statusEl.style.color = st.color;
-    }
     const dateEl = document.getElementById('order-date');
     if (dateEl) dateEl.textContent = fmt(order.createdAt);
+
+    // Timeline Tracker
+    const timelineEl = document.getElementById('order-timeline-container');
+    if (timelineEl) {
+        if (order.status === 'Cancelled') {
+            timelineEl.innerHTML = `
+                <div style="text-align:center; padding: 1rem 0;">
+                    <div style="width:56px;height:56px;border-radius:50%;background:#fef2f2;color:#ef4444;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 0.5rem;">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </div>
+                    <div style="font-size:1rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:0.05em;">Order Cancelled</div>
+                </div>
+            `;
+        } else {
+            const steps = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+            const icons = ['fa-file-invoice', 'fa-box-open', 'fa-truck-fast', 'fa-house-circle-check'];
+            
+            let currentIndex = steps.indexOf(order.status);
+            if (currentIndex === -1) currentIndex = 0; // Default to Pending if unknown
+
+            let progressWidth = '0%';
+            if (currentIndex === 1) progressWidth = '33%';
+            else if (currentIndex === 2) progressWidth = '66%';
+            else if (currentIndex === 3) progressWidth = '100%';
+
+            let stepsHtml = steps.map((step, idx) => {
+                let stateClass = '';
+                if (idx < currentIndex) stateClass = 'completed';
+                else if (idx === currentIndex) stateClass = 'active';
+
+                return `
+                <div class="timeline-step ${stateClass}">
+                    <div class="step-icon"><i class="fa-solid ${icons[idx]}"></i></div>
+                    <div class="step-label">${step}</div>
+                </div>`;
+            }).join('');
+
+            timelineEl.innerHTML = `
+                <div class="timeline-wrap">
+                    <div class="timeline-progress" style="width: ${progressWidth};"></div>
+                    ${stepsHtml}
+                </div>
+            `;
+        }
+    }
 
     // Items
     const listEl = document.getElementById('order-items-list');
@@ -95,14 +143,25 @@ function renderOrder(order) {
 
     // Shipping
     const addrEl = document.getElementById('os-address');
-    if (addrEl && order.shipping) {
-        const s = order.shipping;
-        addrEl.innerHTML = `
-            <strong>${order.customer?.name || ''}</strong><br>
-            ${s.building}, ${s.street}<br>
-            ${s.city}, ${s.emirate}<br>
-            <span style="color:#25D366;"><i class="fa-brands fa-whatsapp"></i></span>
-            ${order.customer?.phone || ''}`;
+    const addrTitle = document.getElementById('os-address-title');
+    if (addrEl) {
+        if (order.fulfillmentMethod === 'pickup') {
+            if (addrTitle) {
+                addrTitle.innerHTML = '<i class="fa-solid fa-store" style="margin-right:6px;opacity:0.5;"></i>Store Collection';
+            }
+            addrEl.innerHTML = `
+                <strong>${order.customer?.name || ''}</strong><br>
+                World Trade Center, B2 Floor<br>
+                Abu Dhabi<br>
+                <span style="color:#25D366;"><i class="fa-brands fa-whatsapp"></i></span> ${order.customer?.phone || ''}`;
+        } else if (order.shipping) {
+            const s = order.shipping;
+            addrEl.innerHTML = `
+                <strong>${order.customer?.name || ''}</strong><br>
+                ${s.building}, ${s.street}<br>
+                ${s.city}, ${s.emirate}<br>
+                <span style="color:#25D366;"><i class="fa-brands fa-whatsapp"></i></span> ${order.customer?.phone || ''}`;
+        }
     }
 
     // Save to sessionStorage for fallback
@@ -138,7 +197,7 @@ function buildWhatsApp(order) {
         .map(i => `• ${i.name} x${i.qty || 1} – ${((i.price || 0) * (i.qty || 1)).toFixed(2)} AED`)
         .join('\n');
     const s = order.shipping || {};
-    const msg = `Hello Speed Gifts! 👋\n\nI just placed Order *#${order.orderId || orderId}* on your website.\n\n📦 *Items:*\n${itemsText}\n\n✅ *Total: ${(order.total || 0).toFixed(2)} AED*\n\nI would like to discuss the customization details for my order. Please let me know what you need from me. Thank you!`;
+    const msg = `Hello Speed Gifts! 👋\n\nI just placed Order *#${order.orderId || orderId}* on your website.\n\n📦 *Items:*\n${itemsText}\n\n✅ *Total: ${(order.total || 0).toFixed(2)} AED*\n\nHere are the photos and text details for my customization:\n\n[Attach your photos/text below]`;
     waBtn.onclick = () => window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`, '_blank');
 }
 

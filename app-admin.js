@@ -138,13 +138,18 @@ export function initAdmin(ctx) {
             };
         }).filter(v => v.color || v.price);
 
+        const pStockCountVal = document.getElementById('p-stockCount')?.value;
+        const parsedStock = parseInt(pStockCountVal, 10);
+        const finalStockCount = isNaN(parsedStock) ? 100 : Math.max(0, parsedStock);
+
         const data = {
             name: document.getElementById('p-name')?.value || "",
             price: document.getElementById('p-price')?.value || "",
             originalPrice: document.getElementById('p-original-price')?.value || "",
             size: "",
             material: "",
-            inStock: document.getElementById('p-stock')?.checked ?? true,
+            stockCount: finalStockCount,
+            inStock: finalStockCount > 0,
             img: primaryImg || "img/",
             images: images || [],
             catId: document.getElementById('p-cat-id')?.value || "",
@@ -304,7 +309,8 @@ export function initAdmin(ctx) {
         if (editId) editId.value = item.id;
         if (pName) pName.value = item.name;
         if (pPrice) pPrice.value = item.price;
-        if (pStock) pStock.checked = item.inStock !== false;
+        const pStockCount = document.getElementById('p-stockCount');
+        if (pStockCount) pStockCount.value = item.stockCount !== undefined ? item.stockCount : (item.inStock !== false ? 100 : 0);
         if (pPinned) pPinned.checked = item.isPinned || false;
         if (pCatId) pCatId.value = item.catId || "";
         if (pBadge) pBadge.value = item.badge || ""; // Added
@@ -1183,8 +1189,10 @@ export function initAdmin(ctx) {
         const isMigration = tab === 'migration';
         const isOrder = tab === 'orders';
         const isReviews = tab === 'reviews';
+        const isInventory = tab === 'inventory';
 
         document.getElementById('admin-product-section').classList.toggle('hidden', !isProd);
+        document.getElementById('admin-inventory-section')?.classList.toggle('hidden', !isInventory);
         document.getElementById('admin-migration-section')?.classList.toggle('hidden', !isMigration);
         document.getElementById('admin-category-section').classList.toggle('hidden', !isCat);
         document.getElementById('admin-megamenu-section')?.classList.toggle('hidden', !isMega);
@@ -1195,6 +1203,10 @@ export function initAdmin(ctx) {
         document.getElementById('admin-announcements-section').classList.toggle('hidden', !isAnnounce);
         document.getElementById('admin-leads-section').classList.toggle('hidden', !isLeads);
         document.getElementById('admin-reviews-section')?.classList.toggle('hidden', !isReviews);
+
+        if (isInventory && window.renderInventoryTable) {
+            window.renderInventoryTable();
+        }
 
         // Populate homepage admin UI when switching to it
         if (isHomepage) populateHomeAdminUI();
@@ -1218,10 +1230,10 @@ export function initAdmin(ctx) {
         }
 
         // Migration opens as a standalone tools view
-        rightCol.classList.toggle('hidden', isMigration);
-        formContainer.style.gridColumn = isMigration ? "1 / -1" : "";
-        formContainer.style.maxWidth = isMigration ? "1000px" : "";
-        formContainer.style.margin = isMigration ? "0 auto" : "";
+        rightCol.classList.toggle('hidden', isMigration || isInventory);
+        formContainer.style.gridColumn = (isMigration || isInventory) ? "1 / -1" : "";
+        formContainer.style.maxWidth = (isMigration || isInventory) ? "1000px" : "";
+        formContainer.style.margin = (isMigration || isInventory) ? "0 auto" : "";
 
         document.getElementById('admin-product-list-container').classList.toggle('hidden', !isProd);
         document.getElementById('admin-category-list').classList.toggle('hidden', !isCat);
@@ -1240,6 +1252,8 @@ export function initAdmin(ctx) {
         const inactiveClass = "w-full flex items-center justify-start gap-4 px-6 py-4 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-black transition-all";
 
         document.getElementById('tab-p').className = isProd ? activeClass : inactiveClass;
+        const tabInv = document.getElementById('tab-inv');
+        if (tabInv) tabInv.className = isInventory ? activeClass : inactiveClass;
         document.getElementById('tab-c').className = isCat ? activeClass : inactiveClass;
         const tabM = document.getElementById('tab-m');
         if (tabM) tabM.className = isMega ? activeClass : inactiveClass;
@@ -1248,14 +1262,14 @@ export function initAdmin(ctx) {
         document.getElementById('tab-i').className = isInsight ? activeClass : inactiveClass;
         document.getElementById('tab-landing').className = isLanding ? activeClass : inactiveClass;
         document.getElementById('tab-l').className = isLeads ? activeClass : inactiveClass;
+        const tabOrders = document.getElementById('tab-orders');
+        if (tabOrders) tabOrders.className = isOrder ? activeClass : inactiveClass;
+        const tabReviews = document.getElementById('tab-r');
+        if (tabReviews) tabReviews.className = isReviews ? activeClass : inactiveClass;
         const tabHp = document.getElementById('tab-hp');
         if (tabHp) tabHp.className = isHomepage ? activeClass : inactiveClass;
         const tabMig = document.getElementById('tab-mig');
         if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
-        const tabOrders = document.getElementById('tab-orders');
-        if (tabOrders) tabOrders.className = isOrder ? activeClass : inactiveClass;
-        const tabR = document.getElementById('tab-r');
-        if (tabR) tabR.className = isReviews ? activeClass : inactiveClass;
         
         if (isOrder) {
             document.getElementById('list-title').innerText = "Recent Orders";
@@ -1265,11 +1279,127 @@ export function initAdmin(ctx) {
             document.getElementById('list-title').innerText = "Product Reviews";
             window.loadAdminReviews();
         }
-        if (tabMig) tabMig.className = isMigration ? activeClass : inactiveClass;
 
-        document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : (isMigration ? "Migration & Cloud Tools" : (isOrder ? "Recent Orders" : (isReviews ? "Product Reviews" : ""))))))))));
+        document.getElementById('list-title').innerText = isProd ? "" : (isCat ? "Existing Categories" : (isMega ? "Desktop Menus" : (isSlider ? "Management Sliders" : (isAnnounce ? "Manage Notices" : (isLeads ? "Gift Claim Leads" : (isLanding ? "Landing Page Settings" : (isHomepage ? "Home Page Settings" : (isMigration ? "Migration & Cloud Tools" : (isOrder ? "Recent Orders" : (isReviews ? "Product Reviews" : (isInventory ? "Inventory Management" : "")))))))))));
         renderAdminUI();
     };
+
+    window.filterInventory = () => {
+        if (window.renderInventoryTable) window.renderInventoryTable();
+    };
+
+    window.renderInventoryTable = () => {
+        const tbody = document.getElementById('inventory-table-body');
+        if (!tbody) return;
+        
+        const searchInput = document.getElementById('inventory-search');
+        const query = searchInput ? searchInput.value.toLowerCase() : "";
+        
+        const catSelect = document.getElementById('inventory-cat-filter');
+        const catFilter = catSelect ? catSelect.value : "all";
+        
+        // Use optimized image for thumbnails
+        const getOpt = window._sgGetOptUrl || (url => url);
+        
+        // Filter by search query and category
+        const filteredProducts = DATA.p.filter(p => {
+            if (catFilter !== "all" && p.catId !== catFilter) return false;
+            if (!query) return true;
+            return p.name?.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
+        });
+        
+        // Sort: out of stock items (0) first, then by name
+        filteredProducts.sort((a, b) => {
+            const aCount = a.stockCount !== undefined ? a.stockCount : (a.inStock !== false ? 100 : 0);
+            const bCount = b.stockCount !== undefined ? b.stockCount : (b.inStock !== false ? 100 : 0);
+            if (aCount === 0 && bCount > 0) return -1;
+            if (bCount === 0 && aCount > 0) return 1;
+            return (a.name || "").localeCompare(b.name || "");
+        });
+
+        tbody.innerHTML = filteredProducts.map(p => {
+            const catName = DATA.c.find(c => c.id === p.catId)?.name || 'Gifts';
+            const sCount = p.stockCount !== undefined ? p.stockCount : (p.inStock !== false ? 100 : 0);
+            const imgSrc = getOpt(p.images?.[0] || p.img || 'img/', 80);
+            
+            return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                <img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/40x40?text=Gift'">
+                            </div>
+                            <div class="flex flex-col w-[160px] md:w-[250px] lg:w-[300px]">
+                                <span class="text-[12px] font-bold text-black whitespace-normal leading-tight">${p.name}</span>
+                                <span class="text-[10px] text-gray-400 mt-1">ID: ${p.id.slice(0, 8)}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-[12px] text-gray-500">${catName}</td>
+                    <td class="py-3 px-4 text-[12px] font-bold text-black">${p.price} AED</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="inv-stock-${p.id}" value="${sCount}" min="0" class="admin-input !w-20 !py-1 !text-center !mt-0 ${sCount === 0 ? '!border-red-400 !text-red-500' : ''}">
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="window.updateStockCount('${p.id}')" id="inv-btn-${p.id}" class="text-[10px] font-bold uppercase tracking-widest px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-all">Save</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
+
+    window.updateStockCount = async (id) => {
+        const input = document.getElementById(`inv-stock-${id}`);
+        const btn = document.getElementById(`inv-btn-${id}`);
+        if (!input || !btn) return;
+        
+        const count = parseInt(input.value, 10);
+        const finalCount = isNaN(count) ? 0 : Math.max(0, count);
+        
+        btn.innerText = "Syncing...";
+        btn.classList.add('opacity-50');
+        
+        try {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id), {
+                stockCount: finalCount,
+                inStock: finalCount > 0,
+                updatedAt: Date.now()
+            });
+            btn.innerText = "Saved!";
+            btn.classList.replace('bg-black', 'bg-green-500');
+            btn.classList.replace('hover:bg-gray-800', 'hover:bg-green-600');
+            input.className = `admin-input !w-20 !py-1 !text-center !mt-0 ${finalCount === 0 ? '!border-red-400 !text-red-500' : ''}`;
+            
+            // update local DATA without full refresh immediately
+            const p = DATA.p.find(x => x.id === id);
+            if (p) {
+                p.stockCount = finalCount;
+                p.inStock = finalCount > 0;
+            }
+            
+            setTimeout(() => {
+                btn.innerText = "Save";
+                btn.classList.replace('bg-green-500', 'bg-black');
+                btn.classList.replace('hover:bg-green-600', 'hover:bg-gray-800');
+                btn.classList.remove('opacity-50');
+            }, 2000);
+            
+            // Background refresh to sync to other clients
+            refreshData();
+        } catch (err) {
+            console.error("Stock update error:", err);
+            btn.innerText = "Error";
+            btn.classList.replace('bg-black', 'bg-red-500');
+            setTimeout(() => {
+                btn.innerText = "Save";
+                btn.classList.replace('bg-red-500', 'bg-black');
+                btn.classList.remove('opacity-50');
+            }, 2000);
+        }
+    };
+
 
     /* CATEGORY PICKER LOGIC */
 
@@ -1285,7 +1415,10 @@ export function initAdmin(ctx) {
 
     function populateAdminCatFilter() {
         const select = document.getElementById('admin-cat-filter');
-        if (select) select.innerHTML = `<option value="all">All Categories</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        const invSelect = document.getElementById('inventory-cat-filter');
+        const optionsHtml = `<option value="all">All Categories</option>` + DATA.c.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        if (select) select.innerHTML = optionsHtml;
+        if (invSelect) invSelect.innerHTML = optionsHtml;
     }
 
     // Expose so admin-page.js can call after pre-loading HTML (showAdminPanel skips these when HTML already in DOM)
@@ -2973,9 +3106,25 @@ export function initAdmin(ctx) {
 
     window.updateOrderStatus = async (docId, newStatus) => {
         try {
-            const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+            const { doc, updateDoc, increment } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
             const orderRef = doc(db, 'orders', docId);
+
+            // Stock Restoration for Cancelled
+            const order = (DATA.orders || []).find(o => o.firebaseId === docId);
+            if (newStatus === 'Cancelled' && order && order.status !== 'Cancelled') {
+                const promises = (order.items || []).map(item => {
+                    if (!item.id) return Promise.resolve();
+                    const pRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', item.id);
+                    return updateDoc(pRef, { stockCount: increment(item.qty || 1) }).catch(() => {});
+                });
+                await Promise.all(promises);
+            }
+
             await updateDoc(orderRef, { status: newStatus });
+            
+            if (order) order.status = newStatus;
+            window.filterOrders();
+            
             showToast("Order status updated!");
         } catch (err) {
             console.error("Status update failed:", err);

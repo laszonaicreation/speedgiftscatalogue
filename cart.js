@@ -80,6 +80,11 @@ function syncCartToCloud() {
 
 // ── Cart Operations ───────────────────────────────────────────────────────────
 export function addToCart({ id, name, price, img, size, color }) {
+    const p = _getProductsRef().find(x => x.id === id);
+    if (p && p.inStock === false) {
+        if (window.showToast) window.showToast('Product is out of stock');
+        return;
+    }
     const key = makeKey(id, size, color);
     const existing = _cartItems.find(x => makeKey(x.id, x.size, x.color) === key);
     if (existing) {

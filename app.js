@@ -915,7 +915,7 @@ async function refreshData(isNavigationOnly = false) {
 
         // Preload in background (non-blocking)
         const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img)).filter(u => u && u !== 'img/').slice(0, 10);
-        const stockFilter = (items) => items.filter(p => p.inStock !== false);
+        const stockFilter = (items) => items;
         let filteredForPreload = [];
         if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
         else filteredForPreload = stockFilter(DATA.p);

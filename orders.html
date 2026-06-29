@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>My Orders – Speed Gifts</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png"
+        href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind + Site CSS (same as main page) -->
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1782654120890">
+    <link rel="stylesheet" href="style.min.css?v=1782654120890">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/regular.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f7f7f7;
+            color: #111;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .sg-page {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 8rem;
+        }
+
+        /* Profile Card */
+        .sg-profile-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 1.5rem 1rem 2.5rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .sg-avatar-wrapper {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .sg-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 3px solid #fff;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.08);
+            position: relative;
+        }
+
+        .sg-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sg-avatar-initial {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.6rem;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            text-transform: uppercase;
+            user-select: none;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+
+        .sg-profile-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sg-profile-name {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 0.2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sg-profile-email {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+        }
+
+        .sg-profile-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 0.35rem 0.85rem;
+            border-radius: 100px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Edit Modal */
+        .sg-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+
+        .sg-modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .sg-modal {
+            background: #fff;
+            border-radius: 28px 28px 0 0;
+            padding: 1.5rem 1.5rem 2.5rem;
+            width: 100%;
+            max-width: 680px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        @media(min-width:640px) {
+            .sg-modal {
+                border-radius: 28px;
+                margin-bottom: 2rem;
+                transform: translateY(40px);
+            }
+        }
+
+        .sg-modal-overlay.open .sg-modal {
+            transform: translateY(0);
+        }
+
+        .sg-modal-handle {
+            width: 36px;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .sg-modal h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+        }
+
+        .sg-modal-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.875rem;
+            color: #111;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        .sg-modal-input:focus {
+            border-color: #111;
+        }
+
+        .sg-modal-save {
+            width: 100%;
+            background: #111;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 700;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sg-modal-save:hover {
+            background: #222;
+        }
+
+        .sg-modal-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Section Title */
+        .sg-section-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #9ca3af;
+            margin: 1.75rem 0 0.75rem;
+        }
+
+        /* Menu */
+        .sg-menu {
+            background: #fff;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+
+        .sg-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            text-decoration: none;
+            color: #111;
+            border-bottom: 1px solid #f7f7f7;
+            transition: background 0.15s;
+            cursor: pointer;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .sg-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .sg-menu-item:hover {
+            background: #fafafa;
+        }
+
+        .sg-menu-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #f4f4f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            color: #555;
+            flex-shrink: 0;
+        }
+
+        .sg-menu-label {
+            flex: 1;
+        }
+
+        .sg-menu-label-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .sg-menu-label-sub {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            margin-top: 0.1rem;
+        }
+
+        .sg-menu-arrow {
+            color: #d1d5db;
+            font-size: 0.7rem;
+        }
+
+        .sg-menu-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            background: #111;
+            color: #fff;
+            padding: 0.15rem 0.5rem;
+            border-radius: 100px;
+            margin-right: 0.25rem;
+        }
+
+        .sg-menu-item.danger .sg-menu-icon {
+            background: #fff0f0;
+            color: #ef4444;
+        }
+
+        .sg-menu-item.danger .sg-menu-label-title {
+            color: #ef4444;
+        }
+
+        /* Orders empty */
+        .sg-orders-empty {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid #f0f0f0;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+        }
+
+        .sg-orders-empty-icon {
+            width: 56px;
+            height: 56px;
+            background: #f4f4f4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.25rem;
+            color: #d1d5db;
+        }
+
+        .sg-orders-empty h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .sg-orders-empty p {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            line-height: 1.6;
+        }
+
+        .sg-orders-coming {
+            display: inline-block;
+            margin-top: 0.875rem;
+            background: #f4f4f4;
+            color: #9ca3af;
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.35rem 0.75rem;
+            border-radius: 100px;
+        }
+
+        /* Toast */
+        #sg-toast {
+            position: fixed;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #111;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 9999;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #sg-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Loading */
+        #sg-loading {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            transition: opacity 0.3s;
+        }
+
+        .sg-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #111;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div id="sg-loading">
+        <div class="sg-spinner"></div>
+    </div>
+
+
+    <!-- Shared Shell (main page navbar + sidebars + mobile bottom nav) -->
+    <div id="shared-shell-root"></div>
+
+    <div class="sg-page" id="sg-page" style="display:none;">
+
+        <div style="margin-bottom:1.5rem;">
+            <h1 style="font-size:1.5rem; font-weight:800; color:#111; letter-spacing:-0.02em; margin:0;">My Orders</h1>
+        </div>
+
+
+        <div id="sg-orders-wrap">
+            <!-- Loading state -->
+            <div id="sg-orders-loading" style="padding:2rem;text-align:center;color:#9ca3af;font-size:0.82rem;">
+                <i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Loading orders...
+            </div>
+        </div>
+
+
+
+    </div>
+
+    <div id="sg-toast"></div>
+
+    <script type="module">
+        import { mountSharedShell } from './shared-shell.min.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+                 collection, query, where, getDocs, orderBy, limit, doc, deleteDoc }
+            from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile, deleteUser }
+            from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+        // Mount shared navbar (same as main page)
+        mountSharedShell('account');
+
+        function getFriendlyAuthError(err) {
+            if (!err) return 'An error occurred';
+            const msg = (err.message || '').toLowerCase();
+            const code = (err.code || '').toLowerCase();
+            if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) return 'This email is already registered. Please sign in.';
+            if (code === 'auth/invalid-email' || msg.includes('invalid-email')) return 'Please enter a valid email address.';
+            if (code === 'auth/weak-password' || msg.includes('weak-password')) return 'Password must be at least 6 characters.';
+            if (code === 'auth/requires-recent-login' || msg.includes('requires-recent-login')) return 'Please log out and log in again to do this.';
+            return err.message?.replace('Firebase:', '').replace(/\(auth\/.*\)\.?/, '').trim() || 'Authentication failed. Please try again.';
+        }
+
+        // ── Stub out sidebar functions that shared-shell HTML references ──
+        window.closeCartSidebar = () => {
+            document.getElementById('cart-sidebar')?.classList.remove('open');
+            document.getElementById('cart-sidebar-overlay')?.classList.remove('open');
+        };
+        window.openCartSidebar = () => { window.location.href = '/cart.html'; };
+        window.closeCategoriesSidebar = () => {
+            document.getElementById('categories-sidebar')?.classList.remove('open');
+            document.getElementById('categories-sidebar-overlay')?.classList.remove('open');
+        };
+        window.openCategoriesSidebar = () => { window.location.href = '/shop.html'; };
+        window.closeAuthModals = () => {};
+        window.toggleAuthMode = () => {};
+        window.handleAuthSubmit = (e) => { e.preventDefault(); };
+        window.signInWithGoogle = () => {};
+        window.handleForgotPassword = () => {};
+        window.updateAuthUserUI = () => {};
+        window.cartCheckoutWhatsApp = () => { window.location.href = '/cart.html'; };
+
+        // Search → redirect to home
+        window.focusSearch = () => { window.location.href = '/'; };
+
+        // Favourites → redirect
+        window.handleFavoritesClick = () => { window.location.href = 'favourites.html'; };
+
+        // ── Account dropdown (desktop user icon) ──
+        window.openAccountDropdown = () => {
+            const dd = document.getElementById('sg-account-dropdown');
+            if (!dd) return;
+            const name = document.getElementById('dd-user-name');
+            const email = document.getElementById('dd-user-email');
+            if (name) name.textContent = currentUser?.displayName ? `Hi, ${currentUser.displayName.split(' ')[0]}!` : 'Hi there!';
+            if (email) email.textContent = currentUser?.email || '';
+            dd.style.display = 'block';
+            setTimeout(() => {
+                document.addEventListener('click', window._sgDdOutsideClick = (ev) => {
+                    if (!dd.contains(ev.target) && ev.target.id !== 'nav-user-btn' && !ev.target.closest('#nav-user-btn')) {
+                        window.closeAccountDropdown?.();
+                    }
+                }, { once: true });
+            }, 0);
+        };
+        window.closeAccountDropdown = () => {
+            const dd = document.getElementById('sg-account-dropdown');
+            if (dd) dd.style.display = 'none';
+            document.removeEventListener('click', window._sgDdOutsideClick);
+        };
+
+        // User icon: desktop → dropdown, mobile → scroll to top (already on account page)
+        window.handleUserAuthClick = () => {
+            if (window.innerWidth < 768) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                const dd = document.getElementById('sg-account-dropdown');
+                if (dd && dd.style.display === 'block') {
+                    window.closeAccountDropdown();
+                } else {
+                    window.openAccountDropdown();
+                }
+            }
+        };
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
+            authDomain: "speedgifts.net",
+            projectId: "speed-catalogue",
+            storageBucket: "speed-catalogue.firebasestorage.app",
+            messagingSenderId: "84589409246",
+            appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db   = initializeFirestore(app, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
+        let currentUser = null;
+        window._sgUserOrders = [];
+
+        window.viewOrder = (orderId) => {
+            const o = window._sgUserOrders.find(x => x.orderId === orderId);
+            if (o) {
+                try { sessionStorage.setItem('sg_last_order', JSON.stringify(o)); } catch(e){}
+            }
+            window.location.href = 'order-success.html?orderId=' + orderId;
+        };
+
+        // ── Status badge styles ────────────────────────────────────────────
+        const ORDER_STATUS = {
+            Pending:    { bg:'#fef9c3', color:'#854d0e', icon:'fa-clock' },
+            Processing: { bg:'#dbeafe', color:'#1e40af', icon:'fa-gear' },
+            Shipped:    { bg:'#ede9fe', color:'#6d28d9', icon:'fa-truck' },
+            Delivered:  { bg:'#dcfce7', color:'#15803d', icon:'fa-circle-check' },
+            Cancelled:  { bg:'#fee2e2', color:'#b91c1c', icon:'fa-circle-xmark' },
+        };
+
+        function fmtDate(ts) {
+            if (!ts) return '';
+            const d = ts.toDate ? ts.toDate() : new Date(ts * 1000);
+            return d.toLocaleDateString('en-AE', { day:'numeric', month:'short', year:'numeric' });
+        }
+        function imgThumb(url) {
+            if (!url) return '';
+            if (url.includes('res.cloudinary.com') && !url.includes('/upload/w_'))
+                return url.replace('/upload/', '/upload/w_56,c_fill,f_auto,q_auto/');
+            return url;
+        }
+
+        // ── Helper: Render Order Card ──────────────────────────────────────
+        function renderOrderCard(o) {
+            const st = ORDER_STATUS[o.status] || ORDER_STATUS.Pending;
+            const previewItems = (o.items || []).slice(0, 3);
+            const extraItems   = (o.items?.length || 0) - 3;
+            const itemsHtml = previewItems.map(item => {
+                const img = imgThumb(item.img);
+                return img
+                    ? `<img src="${img}" alt="${item.name||''}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #f0f0f0;">`
+                    : `<div style="width:40px;height:40px;border-radius:8px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-gift" style="color:#d1d5db;font-size:0.8rem;"></i></div>`;
+            }).join('');
+
+            return `
+            <div style="background:#fff;border:1px solid #f0f0f0;border-radius:18px;padding:1.25rem;margin-bottom:0.875rem;cursor:pointer;" onclick="window.viewOrder('${o.orderId}')">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
+                    <div>
+                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#9ca3af;margin-bottom:0.15rem;">Order ID</div>
+                        <div style="font-size:0.95rem;font-weight:900;color:#111;letter-spacing:0.02em;">${o.orderId || '—'}</div>
+                        <div style="font-size:0.68rem;color:#9ca3af;margin-top:0.1rem;">${fmtDate(o.createdAt)}</div>
+                    </div>
+                    <span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;padding:0.35rem 0.75rem;border-radius:100px;background:${st.bg};color:${st.color};">
+                        <i class="fa-solid ${st.icon}" style="margin-right:4px;"></i>${o.status || 'Pending'}
+                    </span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.875rem;">
+                    ${itemsHtml}
+                    ${extraItems > 0 ? `<div style="width:40px;height:40px;border-radius:8px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#6b7280;">+${extraItems}</div>` : ''}
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding-top:0.75rem;border-top:1px solid #f5f5f5;">
+                    <span style="font-size:0.75rem;color:#6b7280;">${o.items?.length || 0} item${(o.items?.length||0)===1?'':'s'}</span>
+                    <span style="font-size:0.95rem;font-weight:900;color:#111;">${(o.total||0).toFixed(2)} AED</span>
+                </div>
+            </div>`;
+        }
+
+        // ── Background Order Claiming ──────────────────────────────────────
+        async function claimGuestOrders(user) {
+            if (!user || !user.email) return;
+            try {
+                // Find orders with matching email where we can run an update
+                const q = query(collection(db, 'orders'), where('customer.email', '==', user.email));
+                const snap = await getDocs(q);
+                let claimedAny = false;
+                
+                // We use Promise.all to update concurrently
+                const promises = snap.docs.map(async (docSnap) => {
+                    const data = docSnap.data();
+                    if (data.customer && data.customer.uid === null) {
+                        // Import updateDoc and doc dynamically to keep global scope clean if not imported
+                        const { updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js");
+                        await updateDoc(doc(db, 'orders', docSnap.id), {
+                            'customer.uid': user.uid
+                        });
+                        claimedAny = true;
+                    }
+                });
+                
+                await Promise.all(promises);
+                
+                if (claimedAny) {
+                    // Reload orders silently
+                    loadOrders(user, true); 
+                }
+            } catch (err) {
+                console.log('Background claim silently failed (expected if rules block or index missing):', err);
+            }
+        }
+
+        // ── Load & Render Orders ───────────────────────────────────────────
+        async function loadOrders(user, isSilentReload = false) {
+            const wrap = document.getElementById('sg-orders-wrap');
+            if (!wrap) return;
+
+            if (!user || user.isAnonymous) {
+                wrap.innerHTML = `
+                <div style="background:#fff; border:1px solid #e5e7eb; border-radius:24px; padding:2rem 1.5rem; text-align:center; box-shadow: 0 4px 24px rgba(0,0,0,0.03);">
+                    <div style="width:64px; height:64px; border-radius:50%; background:#f8fafc; display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem;">
+                        <i class="fa-solid fa-box-open" style="font-size:1.75rem; color:#111;"></i>
+                    </div>
+                    <h3 style="font-size:1.15rem; font-weight:800; color:#111; margin-bottom:0.5rem; letter-spacing:-0.01em;">Track Your Orders</h3>
+                    <p style="font-size:0.85rem; color:#6b7280; margin-bottom:1.75rem; line-height:1.5;">Sign in to view your complete order history, or use your Order ID if you checked out as a guest.</p>
+                    
+                    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                        <a href="#" onclick="sessionStorage.setItem('sg_login_redirect', '/orders.html'); window.location.replace('login.html'); return false;" style="display:flex; align-items:center; justify-content:center; gap:8px; background:#111; color:#fff; padding:0.9rem 1.5rem; border-radius:14px; font-size:0.85rem; font-weight:700; text-decoration:none; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <i class="fa-regular fa-user"></i> Sign In or Register
+                        </a>
+                        <a href="track-order.html" style="display:flex; align-items:center; justify-content:center; gap:8px; background:#fff; color:#111; padding:0.9rem 1.5rem; border-radius:14px; font-size:0.85rem; font-weight:700; text-decoration:none; border:1.5px solid #e5e7eb;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Track Guest Order
+                        </a>
+                    </div>
+                </div>`;
+                return;
+            }
+
+            if (!isSilentReload) {
+                // Trigger background claim
+                claimGuestOrders(user);
+            }
+
+            try {
+                // Fetch user orders by UID
+                const qUid = query(collection(db, 'orders'), where('customer.uid', '==', user.uid));
+                const snapUid = await getDocs(qUid);
+                let docsList = snapUid.docs.map(doc => doc.data());
+
+                // Fetch user orders by Email (for orders that might have just been claimed or linked)
+                try {
+                    const qEmail = query(collection(db, 'orders'), where('customer.email', '==', user.email));
+                    const snapEmail = await getDocs(qEmail);
+                    const emailDocs = snapEmail.docs.map(doc => doc.data());
+                    
+                    // Merge and deduplicate by orderId
+                    const allDocs = [...docsList, ...emailDocs];
+                    const uniqueMap = new Map();
+                    allDocs.forEach(d => uniqueMap.set(d.orderId, d));
+                    docsList = Array.from(uniqueMap.values());
+                } catch (e) {
+                    console.log('Email query failed, falling back to UID only');
+                }
+
+                // Sort in memory
+                docsList.sort((a, b) => {
+                    const ta = a.createdAt?.seconds || a.createdAt || 0;
+                    const tb = b.createdAt?.seconds || b.createdAt || 0;
+                    return tb - ta;
+                });
+                
+                window._sgUserOrders = docsList;
+
+                if (docsList.length === 0) {
+                    wrap.innerHTML = `
+                    <div class="sg-orders-empty">
+                        <div class="sg-orders-empty-icon"><i class="fa-solid fa-box-open"></i></div>
+                        <h3>No orders yet</h3>
+                        <p>Your orders will appear here after you make a purchase.</p>
+                        <a href="shop.html" style="display:inline-block;margin-top:0.75rem;background:#111;color:#fff;padding:0.6rem 1.25rem;border-radius:10px;font-size:0.78rem;font-weight:700;text-decoration:none;">Browse Products</a>
+                    </div>`;
+                    return;
+                }
+
+                wrap.innerHTML = docsList.map(o => renderOrderCard(o)).join('');
+
+            } catch(err) {
+                console.error('loadOrders error:', err);
+                if (!isSilentReload) {
+                    wrap.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#9ca3af;font-size:0.82rem;">Could not load orders. Please try again.</div>`;
+                }
+            }
+        }
+
+
+        function showOrdersPage(user) {
+            const loading = document.getElementById('sg-loading');
+            const page = document.getElementById('sg-page');
+            currentUser = user;
+            
+            // Update shared navbar user icon to show logged-in state
+            const isGuest = !user;
+            const uName = user?.displayName || 'Guest User';
+            const deskIcon = document.getElementById('desk-user-icon');
+            if (deskIcon) deskIcon.style.color = isGuest ? '#6b7280' : '#111';
+            const mobUserText = document.getElementById('mob-user-text');
+            const firstName = uName.split(' ')[0] || 'Account';
+            if (mobUserText) mobUserText.textContent = firstName.length > 7 ? 'Account' : firstName;
+
+            loadOrders(user);
+            loading.style.opacity = '0';
+            setTimeout(() => { loading.style.display = 'none'; page.style.display = 'block'; }, 300);
+        }
+
+        let _authSettled = false;
+
+        function handleGuestOrRedirect() {
+            const hasGuestOrder = !!sessionStorage.getItem('sg_last_order');
+            if (hasGuestOrder) {
+                showOrdersPage(null);
+            } else {
+                sessionStorage.setItem('sg_login_redirect', '/orders.html');
+                window.location.replace('/login.html');
+            }
+        }
+
+        const _authRedirectTimer = setTimeout(() => {
+            if (!_authSettled) {
+                _authSettled = true;
+                handleGuestOrRedirect();
+            }
+        }, 3000);
+
+        onAuthStateChanged(auth, (user) => {
+            if (_authSettled) return;
+            if (user && !user.isAnonymous) {
+                _authSettled = true;
+                clearTimeout(_authRedirectTimer);
+                showOrdersPage(user);
+            } else {
+                _authSettled = true;
+                clearTimeout(_authRedirectTimer);
+                handleGuestOrRedirect();
+            }
+        });
+
+
+        function showToast(msg) {
+            const t = document.getElementById('sg-toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+</body>
+
+</html>

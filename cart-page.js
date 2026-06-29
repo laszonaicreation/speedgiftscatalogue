@@ -178,16 +178,23 @@ function renderCartPage() {
     const pill = document.getElementById('cart-count-pill');
     if (pill) pill.textContent = count;
 
-    // Summary totals — 35 AED fixed delivery fee
-    const DELIVERY_FEE = 35;
+    // Summary totals
+    const DELIVERY_FEE = window.sgDeliveryMethod === 'pickup' ? 0 : 35;
     const subtotalEl = document.getElementById('summary-subtotal');
     const totalEl = document.getElementById('summary-total');
+    const summaryDelivery = document.getElementById('summary-delivery');
     const mobTotalEl = document.getElementById('mob-total');
     const grandTotal = total + DELIVERY_FEE;
 
     if (subtotalEl) subtotalEl.textContent = total.toFixed(2) + ' AED';
     if (totalEl) totalEl.textContent = grandTotal.toFixed(2) + ' AED';
+    if (summaryDelivery) summaryDelivery.textContent = window.sgDeliveryMethod === 'pickup' ? 'Free' : '35.00 AED';
     if (mobTotalEl) mobTotalEl.textContent = grandTotal.toFixed(2) + ' AED';
+
+    const mobSubtotalEl = document.getElementById('mob-subtotal');
+    if (mobSubtotalEl) mobSubtotalEl.textContent = total.toFixed(2) + ' AED';
+    const mobDeliveryEl = document.getElementById('mob-delivery');
+    if (mobDeliveryEl) mobDeliveryEl.textContent = window.sgDeliveryMethod === 'pickup' ? 'Free' : '35.00 AED';
 
 
     // Checkout buttons
@@ -201,6 +208,7 @@ function renderCartPage() {
 
     const body = document.getElementById('cart-items-body');
     const empty = document.getElementById('cart-empty-state');
+    const deliveryOptions = document.getElementById('cart-delivery-options');
 
     if (items.length === 0) {
         if (body) body.style.display = 'none';
@@ -208,6 +216,7 @@ function renderCartPage() {
         if (checkoutBtn) checkoutBtn.style.display = 'none';
         if (summaryPanel) summaryPanel.style.opacity = '0.5';
         if (mobBar) mobBar.style.display = 'none';
+        if (deliveryOptions) deliveryOptions.style.display = 'none';
         return;
     }
 
@@ -217,6 +226,7 @@ function renderCartPage() {
     if (checkoutBtn) checkoutBtn.style.display = '';
     if (summaryPanel) summaryPanel.style.opacity = '';
     if (mobBar) mobBar.style.display = 'block';
+    if (deliveryOptions) deliveryOptions.style.display = 'block';
 
     if (!body) return;
 
@@ -230,7 +240,7 @@ function renderCartPage() {
 
         return `
         <div class="cart-item-card" id="item-${idx}" data-id="${item.id}" data-size="${item.size || ''}" data-color="${item.color || ''}">
-            <a href="${productUrl}" class="item-img-box" style="display:block;text-decoration:none;">
+            <a href="${productUrl}" class="item-img-box">
                 <img
                     src="${imgUrl || 'https://placehold.co/300x300?text=Gift'}"
                     alt="${safeName}"
@@ -238,24 +248,25 @@ function renderCartPage() {
                     onerror="this.src='https://placehold.co/300x300?text=Gift'">
             </a>
             <div class="item-details">
-                <a href="${productUrl}" class="item-name">${safeName}</a>
-                ${varLabel ? `<div class="item-variant">${varLabel}</div>` : ''}
-                <div class="item-unit-price">${unitPrice.toFixed(2)} AED each</div>
-                <div class="item-controls">
-                    <button class="qty-btn" onclick="window.cpUpdateQty('${item.id}','${item.size || ''}','${item.color || ''}',-1)">
-                        <i class="fa-solid fa-minus" style="font-size:8px;"></i>
-                    </button>
-                    <span class="qty-display">${item.qty || 1}</span>
-                    <button class="qty-btn" onclick="window.cpUpdateQty('${item.id}','${item.size || ''}','${item.color || ''}',1)">
-                        <i class="fa-solid fa-plus" style="font-size:8px;"></i>
+                <div class="item-header">
+                    <a href="${productUrl}" class="item-name">${safeName}</a>
+                    <button class="item-remove-btn" onclick="window.cpRemoveItem('${item.id}','${item.size || ''}','${item.color || ''}', ${idx})" title="Remove">
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-            </div>
-            <div class="item-right">
-                <div class="item-line-total">${lineTotal} AED</div>
-                <button class="item-remove-btn" onclick="window.cpRemoveItem('${item.id}','${item.size || ''}','${item.color || ''}', ${idx})" title="Remove">
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>
+                ${varLabel ? `<div class="item-variant">${varLabel}</div>` : ''}
+                <div class="item-bottom">
+                    <div class="item-line-total">${lineTotal} AED</div>
+                    <div class="item-qty-pill">
+                        <button class="qty-btn" onclick="window.cpUpdateQty('${item.id}','${item.size || ''}','${item.color || ''}',-1)">
+                            <i class="fa-solid fa-minus" style="font-size:8px;"></i>
+                        </button>
+                        <span class="qty-display">${item.qty || 1}</span>
+                        <button class="qty-btn" onclick="window.cpUpdateQty('${item.id}','${item.size || ''}','${item.color || ''}',1)">
+                            <i class="fa-solid fa-plus" style="font-size:8px;"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>`;
     }).join('');
@@ -267,6 +278,17 @@ function renderCartPage() {
 }
 
 // ── Global interactions (called from inline HTML) ─────────────────────────────
+window.sgDeliveryMethod = 'delivery';
+
+window.sgSetDeliveryMethod = (method) => {
+    window.sgDeliveryMethod = method;
+    const cardDelivery = document.getElementById('card-delivery');
+    const cardPickup = document.getElementById('card-pickup');
+    if (cardDelivery) cardDelivery.classList.toggle('active', method === 'delivery');
+    if (cardPickup) cardPickup.classList.toggle('active', method === 'pickup');
+    renderCartPage();
+};
+
 window.cpUpdateQty = (id, size, color, delta) => {
     updateQty(id, size || null, color || null, Number(delta));
     renderCartPage();
@@ -298,7 +320,7 @@ window.cartPageCheckout = () => {
         setTimeout(() => b.style.transform = '', 150);
     });
 
-    window.location.href = 'checkout.html';
+    window.location.href = `checkout.html?method=${window.sgDeliveryMethod}`;
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────────
