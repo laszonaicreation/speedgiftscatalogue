@@ -103,7 +103,7 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
 
         const prodCol = dataRef.collection('products');
         const catCol = dataRef.collection('categories');
-        const megaCol = dataRef.collection('megamenus');
+        const megaCol = dataRef.collection('mega_menus');
         const sliderCol = dataRef.collection('sliders');
         const popupCol = dataRef.collection('popup_settings');
         const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
