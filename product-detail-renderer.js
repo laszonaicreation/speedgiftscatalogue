@@ -8,7 +8,18 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     });
 
     appMain.innerHTML = `
-<div class="max-w-5xl mx-auto pt-0 pb-20 md:py-16 px-4 detail-view-container text-left">
+<div class="max-w-5xl mx-auto pt-4 pb-20 md:pt-10 md:pb-16 px-4 detail-view-container text-left">
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center text-[10px] font-bold text-gray-400 mb-6 w-full overflow-x-auto no-scrollbar whitespace-nowrap uppercase tracking-widest" style="gap: 8px;">
+        <a href="index.html" class="hover:text-black transition-colors flex items-center" style="gap: 6px;">
+            <i class="fa-solid fa-house text-[10px]"></i> Home
+        </a>
+        <span class="text-gray-300">/</span>
+        <a href="shop.html" class="hover:text-black transition-colors">Shop</a>
+        <span class="text-gray-300">/</span>
+        <span class="text-gray-800 font-black truncate max-w-[150px] sm:max-w-xs">${product.name}</span>
+    </nav>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         <div class="detail-media-pane">
             <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
