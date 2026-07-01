@@ -129,9 +129,44 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         const overlay = document.getElementById('img-full-preview');
         const fullImg = document.getElementById('full-preview-img');
         if (overlay && fullImg) {
-            fullImg.src = src;
+            fullImg.src = getDetailMainImageUrl ? getDetailMainImageUrl(src) : src;
             overlay.style.display = 'flex';
             document.body.style.overflow = 'hidden';
+
+            if (overlay.dataset.swipeBound !== '1') {
+                overlay.dataset.swipeBound = '1';
+                overlay.addEventListener('touchstart', (e) => {
+                    const t = e.changedTouches?.[0];
+                    if (!t) return;
+                    swipeStartX = t.clientX;
+                    swipeStartY = t.clientY;
+                }, { passive: true });
+
+                overlay.addEventListener('touchend', (e) => {
+                    const t = e.changedTouches?.[0];
+                    if (!t) return;
+                    const dx = t.clientX - swipeStartX;
+                    const dy = t.clientY - swipeStartY;
+                    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return;
+
+                    const dots = Array.from(document.querySelectorAll('#detail-image-dots .detail-image-dot'));
+                    if (!dots.length) return;
+                    const currentIndex = Math.max(0, dots.findIndex((d) => d.classList.contains('active')));
+                    const nextIndex = dx < 0
+                        ? Math.min(dots.length - 1, currentIndex + 1)
+                        : Math.max(0, currentIndex - 1);
+                    if (nextIndex === currentIndex) return;
+
+                    const nextSrc = dots[nextIndex]?.dataset?.src;
+                    if (!nextSrc) return;
+
+                    overlay.dataset.justSwiped = '1';
+                    setTimeout(() => overlay.dataset.justSwiped = '0', 100);
+
+                    fullImg.src = getDetailMainImageUrl ? getDetailMainImageUrl(nextSrc) : nextSrc;
+                    window.switchImg(nextSrc, null);
+                }, { passive: true });
+            }
         }
     };
 
@@ -154,6 +189,7 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
     window.closeFullScreen = () => {
         const overlay = document.getElementById('img-full-preview');
         if (overlay) {
+            if (overlay.dataset.justSwiped === '1') return;
             overlay.style.display = 'none';
             document.body.style.overflow = 'auto';
         }

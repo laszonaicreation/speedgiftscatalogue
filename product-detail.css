@@ -269,16 +269,15 @@ body {
 
 @media (max-width: 767px) {
     .detail-view-container {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
+        /* Keep original padding for modern app framing */
     }
 
     .detail-media-pane .zoom-img-container {
-        margin-left: calc(50% - 50vw);
-        margin-right: calc(50% - 50vw);
-        border: none;
-        border-radius: 0;
-        box-shadow: none;
+        margin-left: -8px;
+        margin-right: -8px;
+        border: 1px solid rgba(0,0,0,0.04);
+        border-radius: 1.25rem;
+        box-shadow: 0 8px 30px -10px rgba(0,0,0,0.08);
     }
 
     .detail-media-pane .thumb-grid {
