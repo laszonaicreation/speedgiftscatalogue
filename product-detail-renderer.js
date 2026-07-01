@@ -72,39 +72,6 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     })()}
                 </div>
 
-                ${((product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0)) ? `
-                <div class="space-y-6 pt-4 border-t border-gray-50">
-                    ${product.colorVariations && product.colorVariations.length > 0 ? `
-                    <div class="variation-section">
-                        <span class="detail-label mb-2">Available Colors</span>
-                        <div class="flex flex-wrap gap-4">
-                            ${product.colorVariations.map((v, i) => `
-                                <div class="flex flex-col items-center gap-2 group cursor-pointer" onclick='window.selectColor("${v.price}", "${v.color}", ${JSON.stringify(v.images || v.img)}, this)'>
-                                    <div class="color-swatch w-9 h-9 rounded-full border-2 ${i === 0 && (!product.variations || product.variations.length === 0) ? 'border-black scale-110' : 'border-white'} transition-all hover:scale-110" style="background-color: ${v.hex || '#000'}"></div>
-                                    <span class="text-[7.5px] font-black uppercase tracking-tighter text-gray-400 group-hover:text-black transition-colors">${v.color}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-
-                    ${product.variations && product.variations.length > 0 ? `
-                    <div class="variation-section">
-                        <span class="detail-label mb-2">Available Sizes</span>
-                        <div class="flex flex-wrap gap-2">
-                            ${product.variations.map((v, i) => `
-                                <button onclick='window.selectSize("${v.price}", "${v.size}", ${JSON.stringify(v.images || v.img)}, this)'
-                                    class="size-badge px-4 py-3 rounded-xl border ${i === 0 ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-100'} font-bold text-[9px] uppercase tracking-widest transition-all">
-                                    ${v.size}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-
-                </div>
-                ` : ''}
-
                 <div class="mt-4 mb-6">
                     <h3 class="text-[13px] font-bold text-gray-900 mb-2 uppercase tracking-wider">Item Details</h3>
                     <div class="detail-description-text text-[13px] leading-[1.6] text-gray-600">
@@ -141,38 +108,42 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     </div>
                 </div>
 
-                <div class="${(product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0) ? 'pt-6 border-t border-gray-50' : 'pt-2 border-t border-gray-50'}">
-                    <div class="detail-accordion">
-                        <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
-                            <span class="detail-accordion-title">Product Description</span>
-                            <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
-                        </button>
-                        <div class="detail-accordion-content hidden">
-                            <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600 space-y-4 overflow-hidden relative" id="desc-container">
-                                ${(() => {
-            const desc = product.desc || 'Premium handcrafted selection curated specifically for our collection.';
-            const paragraphs = desc.split('\n').filter(line => line.trim());
-            return paragraphs.map(p => `<p>${p}</p>`).join('') || `<p>${desc}</p>`;
-        })()}
-                            </div>
+                ${((product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0)) ? `
+                <div class="space-y-6 pt-4 border-t border-gray-50">
+                    ${product.colorVariations && product.colorVariations.length > 0 ? `
+                    <div class="variation-section">
+                        <span class="detail-label mb-2">Available Colors</span>
+                        <div class="flex flex-wrap gap-4">
+                            ${product.colorVariations.map((v, i) => `
+                                <div class="flex flex-col items-center gap-2 group cursor-pointer" onclick='window.selectColor("${v.price}", "${v.color}", ${JSON.stringify(v.images || v.img)}, this)'>
+                                    <div class="color-swatch w-9 h-9 rounded-full border-2 ${i === 0 && (!product.variations || product.variations.length === 0) ? 'border-black scale-110' : 'border-white'} transition-all hover:scale-110" style="background-color: ${v.hex || '#000'}"></div>
+                                    <span class="text-[7.5px] font-black uppercase tracking-tighter text-gray-400 group-hover:text-black transition-colors">${v.color}</span>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
-                    <div class="detail-accordion">
-                        <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
-                            <span class="detail-accordion-title">Shipping Details</span>
-                            <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
-                        </button>
-                        <div class="detail-accordion-content hidden">
-                            <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600">
-                                <p>Standard delivery across UAE within 1-3 business days. Custom or bulk orders may take additional processing time.</p>
-                                <p>For urgent requirements, please contact us on WhatsApp and our team will assist with the fastest available delivery option.</p>
-                            </div>
+                    ` : ''}
+
+                    ${product.variations && product.variations.length > 0 ? `
+                    <div class="variation-section">
+                        <span class="detail-label mb-2">Available Sizes</span>
+                        <div class="flex flex-wrap gap-2">
+                            ${product.variations.map((v, i) => `
+                                <button onclick='window.selectSize("${v.price}", "${v.size}", ${JSON.stringify(v.images || v.img)}, this)'
+                                    class="size-badge px-4 py-3 rounded-xl border ${i === 0 ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-100'} font-bold text-[9px] uppercase tracking-widest transition-all">
+                                    ${v.size}
+                                </button>
+                            `).join('')}
                         </div>
                     </div>
+                    ` : ''}
+
                 </div>
+                ` : ''}
+
             </div>
 
-            <div class="flex flex-col gap-2 mt-10 lg:mt-auto pt-6">
+            <div class="flex flex-col gap-2 pt-6">
                 <span class="detail-label !mb-0 font-bold" style="color: #111;">Quantity</span>
                 <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm" style="width: 120px; height: 44px;">
                     <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
@@ -185,7 +156,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
             </div>
 
-            <div class="flex gap-2 sm:gap-3 md:gap-4 mt-4 items-center w-full">
+            <div class="flex gap-2 sm:gap-3 md:gap-4 mt-4 mb-8 items-center w-full">
                 <button id="main-add-to-cart-btn" ${product.inStock === false ? 'disabled' : `onclick="window.addToCart('${product.id}')"`}
                     class="flex-1 max-w-[150px] sm:max-w-[170px] bg-black text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="border-radius: 14px;">
                     <i class="fa-solid fa-cart-shopping text-base sm:text-lg md:text-xl flex-shrink-0"></i>
@@ -213,6 +184,63 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     class="flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-600 hover:text-red-500 hover:bg-red-100 transition-all active:scale-90 border border-gray-200 shadow-sm" style="width: 50px; height: 50px; border-radius: 14px;">
                     <i class="${(typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || [])).some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-lg"></i>
                 </button>
+            </div>
+
+            <div class="flex items-start justify-between py-6 w-full mt-2">
+                <div class="flex flex-col items-center text-center flex-1">
+                    <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-truck-fast text-sm"></i>
+                    </div>
+                    <span class="text-[8px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.6] mt-2">Fast<br>Delivery</span>
+                </div>
+                <div class="flex flex-col items-center text-center flex-1">
+                    <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-shield-halved text-sm"></i>
+                    </div>
+                    <span class="text-[8px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.6] mt-2">Secure<br>Checkout</span>
+                </div>
+                <div class="flex flex-col items-center text-center flex-1">
+                    <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-award text-sm"></i>
+                    </div>
+                    <span class="text-[8px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.6] mt-2">Top<br>Quality</span>
+                </div>
+                <div class="flex flex-col items-center text-center flex-1">
+                    <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-headset text-sm"></i>
+                    </div>
+                    <span class="text-[8px] font-bold text-gray-500 uppercase tracking-[0.15em] leading-[1.6] mt-2">24/7<br>Support</span>
+                </div>
+            </div>
+
+            <div class="pt-6">
+                <div class="detail-accordion">
+                    <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
+                        <span class="detail-accordion-title">Product Description</span>
+                        <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
+                    </button>
+                    <div class="detail-accordion-content hidden">
+                        <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600 space-y-4 overflow-hidden relative" id="desc-container">
+                            ${(() => {
+            const desc = product.desc || 'Premium handcrafted selection curated specifically for our collection.';
+            const paragraphs = desc.split('\n').filter(line => line.trim());
+            return paragraphs.map(p => `<p>${p}</p>`).join('') || `<p>${desc}</p>`;
+        })()}
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-accordion">
+                    <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
+                        <span class="detail-accordion-title">Shipping Details</span>
+                        <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
+                    </button>
+                    <div class="detail-accordion-content hidden">
+                        <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600">
+                            <p>Standard delivery across UAE within 1-3 business days. Custom or bulk orders may take additional processing time.</p>
+                            <p>For urgent requirements, please contact us on WhatsApp and our team will assist with the fastest available delivery option.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
