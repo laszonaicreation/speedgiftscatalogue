@@ -72,12 +72,35 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                         const count = reviews ? reviews.length : 0;
                         const avgRating = count > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / count).toFixed(1) : '0.0';
                         return `
-                        <div class="flex items-center gap-2 mt-3 cursor-pointer" onclick="document.getElementById('reviews-section').scrollIntoView({behavior: 'smooth'})">
-                            <div class="flex text-[15px]" style="color: #FBBC04;">
-                                ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= Math.round(parseFloat(avgRating)) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
+                        <div class="flex flex-col gap-3 mt-3">
+                            <div class="flex items-center gap-2 cursor-pointer w-fit" onclick="document.getElementById('reviews-section').scrollIntoView({behavior: 'smooth'})">
+                                <div class="flex text-[15px]" style="color: #FBBC04;">
+                                    ${[1, 2, 3, 4, 5].map(i => `<i class="${i <= Math.round(parseFloat(avgRating)) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`).join('')}
+                                </div>
+                                <span class="text-[14px] font-bold text-gray-900">${avgRating}</span>
+                                <span class="text-[13px] text-gray-500 underline decoration-gray-200 underline-offset-2">(${count} reviews)</span>
                             </div>
-                            <span class="text-[14px] font-bold text-gray-900">${avgRating}</span>
-                            <span class="text-[13px] text-gray-500 underline decoration-gray-200 underline-offset-2">(${count} reviews)</span>
+                            
+                            <div class="flex items-center gap-2 mt-2">
+                                <a href="https://share.google/H0bZvXJaDp5tyfEBC" target="_blank" class="flex items-center bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm rounded-lg px-3 py-2 w-fit cursor-pointer no-underline" style="gap: 10px;">
+                                    <div class="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                                        <i class="fa-solid fa-store text-[10px]"></i>
+                                    </div>
+                                    <div class="flex flex-col" style="gap: 1px;">
+                                        <div class="flex items-center" style="gap: 5px;">
+                                            <span class="text-[9px] font-bold text-gray-800 uppercase" style="letter-spacing: 1px;">Store Rating</span>
+                                            <div class="flex text-[9px]" style="color: #FBBC04; gap: 1px;">
+                                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                                            </div>
+                                            <span class="text-[9px] font-black text-gray-900">4.9/5</span>
+                                        </div>
+                                        <div class="flex items-center" style="gap: 4px;">
+                                            <i class="fa-solid fa-location-dot text-gray-400 text-[8px]"></i>
+                                            <span class="text-[8px] text-gray-500 font-medium" style="letter-spacing: 0.5px;">WTC Mall, Abu Dhabi</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
                         </div>
                         `;
                     })()}
