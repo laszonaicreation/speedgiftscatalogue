@@ -43,8 +43,8 @@ state.user = null;
 Object.defineProperty(window, '_sgState', { get: () => state, configurable: true });
 
 // ── Cart bridge: called by product-detail-interactions.js window.addToCart ──
-window.cartAddItem = ({ id, name, price, img, size, color }) => {
-    addToCart({ id, name, price, img, size, color });
+window.cartAddItem = ({ id, name, price, img, size, color, qty = 1 }) => {
+    addToCart({ id, name, price, img, size, color, qty });
     updateCartBadges();
 };
 const DETAIL_CACHE_KEY = 'speedgifts_detail_cache';
@@ -301,13 +301,13 @@ window.viewDetail = (id) => {
 window.submitProductReview = async (productId, name, rating, text, imageFile, submitBtn) => {
     try {
         let imageUrl = null;
-        
+
         if (imageFile) {
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerText = "Uploading Photo...";
             }
-            
+
             const formData = new FormData();
             formData.append('file', imageFile);
             formData.append('upload_preset', 'speed_preset');
@@ -332,13 +332,13 @@ window.submitProductReview = async (productId, name, rating, text, imageFile, su
             createdAt: Date.now(),
             status: 'pending'
         };
-        
+
         if (imageUrl) reviewData.imageUrl = imageUrl;
 
         const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
         await addDoc(revCol, reviewData);
         window.showToast("Review submitted!");
-        
+
         // Refresh reviews for the current product
         const updatedReviews = await fetchReviews(productId);
         const approvedReviews = updatedReviews.filter(r => r.status === 'approved');
@@ -369,7 +369,7 @@ async function fetchReviews(productId) {
             const snap = await getDocs(q);
             const reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             return reviews.sort((a, b) => b.createdAt - a.createdAt);
-        } catch(e2) {
+        } catch (e2) {
             console.error("Double failure fetching reviews", e2);
             return [];
         }
@@ -383,11 +383,11 @@ async function renderById(id) {
         return;
     }
     document.title = `${product.name} | Speed Gifts`;
-    
+
     // Fetch reviews before rendering
     const reviews = await fetchReviews(id);
     const approvedReviews = reviews.filter(r => r.status === 'approved');
-    
+
     renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
     trackProductView(id).catch(() => { /* no-op */ });
 }

@@ -79,18 +79,28 @@ function syncCartToCloud() {
 }
 
 // ── Cart Operations ───────────────────────────────────────────────────────────
-export function addToCart({ id, name, price, img, size, color }) {
+export function addToCart({ id, name, price, img, size, color, qty = 1 }) {
     const p = _getProductsRef().find(x => x.id === id);
     if (p && p.inStock === false) {
         if (window.showToast) window.showToast('Product is out of stock');
         return;
     }
+    
+    const stockLimit = p ? (p.stockCount !== undefined ? p.stockCount : (p.inStock !== false ? 100 : 0)) : 100;
+    
     const key = makeKey(id, size, color);
     const existing = _cartItems.find(x => makeKey(x.id, x.size, x.color) === key);
     if (existing) {
-        existing.qty = (existing.qty || 1) + 1;
+        if (existing.qty + qty > stockLimit) {
+            existing.qty = stockLimit;
+            if (window.showToast) window.showToast(`Only ${stockLimit} in stock`);
+        } else {
+            existing.qty = (existing.qty || 1) + qty;
+        }
     } else {
-        _cartItems.push({ id, name, price, img: img || '', qty: 1, size: size || null, color: color || null });
+        const finalQty = qty > stockLimit ? stockLimit : qty;
+        if (qty > stockLimit && window.showToast) window.showToast(`Only ${stockLimit} in stock`);
+        _cartItems.push({ id, name, price, img: img || '', qty: finalQty, size: size || null, color: color || null });
     }
     saveCart();
 }
@@ -106,7 +116,17 @@ export function updateQty(id, size, color, delta) {
     const key = makeKey(id, size, color);
     const item = _cartItems.find(x => makeKey(x.id, x.size, x.color) === key);
     if (!item) return;
-    item.qty = Math.max(1, (item.qty || 1) + delta);
+    
+    const p = _getProductsRef().find(x => x.id === id);
+    const stockLimit = p ? (p.stockCount !== undefined ? p.stockCount : (p.inStock !== false ? 100 : 0)) : 100;
+    
+    let newQty = (item.qty || 1) + delta;
+    if (newQty > stockLimit) {
+        newQty = stockLimit;
+        if (window.showToast && delta > 0) window.showToast(`Only ${stockLimit} in stock`);
+    }
+    
+    item.qty = Math.max(1, newQty);
     saveCart();
 }
 
@@ -145,10 +165,10 @@ export function updateCartBadges() {
 
 export function clearCart(localOnly = false) {
     // Snapshot current user BEFORE clearing (sign-out may already be in progress)
-    const auth  = window._sgAuth;
-    const db    = window._sgDb;
+    const auth = window._sgAuth;
+    const db = window._sgDb;
     const appId = window._sgAppId;
-    const user  = auth?.currentUser;
+    const user = auth?.currentUser;
     // Only clear cloud if explicitly requested (NOT during sign-out).
     // During sign-out (localOnly=true) the cloud cart must be preserved so that
     // mergeCartOnLogin() can restore all items when the user signs back in.
@@ -263,7 +283,7 @@ export function checkoutViaWhatsApp() {
 
     const total = getCartTotal().toFixed(2);
     const msg = `Hi Speed Gifts Team,\n\nI would like to place an order for the following items:\n\n${lines.join('\n\n')}\n\nTotal Order Value: ${total} AED\n\nPlease let me know the availability and delivery process.\n\nThank you.`;
-    
+
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 }
 

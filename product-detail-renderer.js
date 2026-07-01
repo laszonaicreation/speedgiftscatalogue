@@ -105,10 +105,46 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
                 ` : ''}
 
-                <div class="${(product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0) ? 'pt-6' : '-mt-2 pt-0'}">
+                <div class="mt-4 mb-6">
+                    <h3 class="text-[13px] font-bold text-gray-900 mb-2 uppercase tracking-wider">Item Details</h3>
+                    <div class="detail-description-text text-[13px] leading-[1.6] text-gray-600">
+                        ${(() => {
+                            const detailsRaw = product.details || '';
+                            if (!detailsRaw.trim()) return '<p class="text-gray-400 italic">Item details will be updated soon.</p>';
+                            const lines = detailsRaw.split('\n').filter(line => line.trim());
+                            
+                            let html = '<ul class="space-y-3 mt-3">';
+                            lines.forEach(line => {
+                                let key = line;
+                                let value = '';
+                                if (line.includes(':')) {
+                                    const parts = line.split(':');
+                                    key = parts[0].trim();
+                                    value = parts.slice(1).join(':').trim();
+                                }
+                                
+                                html += `<li class="flex items-start gap-3">
+                                    <i class="fa-regular fa-circle text-gray-400" style="font-size: 7px; margin-top: 6px;"></i>
+                                    <div class="text-[13px] leading-[1.5] text-gray-700 flex-1">`;
+                                    
+                                if (value) {
+                                    html += `<span class="font-bold text-gray-900">${key}:</span> <span class="opacity-90">${value}</span>`;
+                                } else {
+                                    html += `<span>${line.trim()}</span>`;
+                                }
+                                
+                                html += `</div></li>`;
+                            });
+                            html += '</ul>';
+                            return html;
+                        })()}
+                    </div>
+                </div>
+
+                <div class="${(product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0) ? 'pt-6 border-t border-gray-50' : 'pt-2 border-t border-gray-50'}">
                     <div class="detail-accordion">
                         <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
-                            <span class="detail-accordion-title">Product Discription</span>
+                            <span class="detail-accordion-title">Product Description</span>
                             <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
                         </button>
                         <div class="detail-accordion-content hidden">
@@ -117,22 +153,6 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             const desc = product.desc || 'Premium handcrafted selection curated specifically for our collection.';
             const paragraphs = desc.split('\n').filter(line => line.trim());
             return paragraphs.map(p => `<p>${p}</p>`).join('') || `<p>${desc}</p>`;
-        })()}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="detail-accordion">
-                        <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
-                            <span class="detail-accordion-title">Product Details</span>
-                            <i class="fa-solid fa-chevron-down detail-accordion-arrow"></i>
-                        </button>
-                        <div class="detail-accordion-content hidden">
-                            <div class="detail-description-text text-[13px] md:text-[14px] leading-[1.8] text-gray-600">
-                                ${(() => {
-            const detailsRaw = product.details || '';
-            if (!detailsRaw.trim()) return '<p>Details will be updated soon.</p>';
-            const lines = detailsRaw.split('\n').filter(line => line.trim());
-            return lines.map(line => `<p>${line}</p>`).join('');
         })()}
                             </div>
                         </div>
@@ -152,7 +172,20 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
             </div>
 
-            <div class="flex gap-2 sm:gap-3 md:gap-4 mt-10 lg:mt-auto pt-6 items-center w-full">
+            <div class="flex flex-col gap-2 mt-10 lg:mt-auto pt-6">
+                <span class="detail-label !mb-0 font-bold" style="color: #111;">Quantity</span>
+                <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm" style="width: 120px; height: 44px;">
+                    <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
+                        <i class="fa-solid fa-minus text-xs"></i>
+                    </button>
+                    <input type="number" class="w-10 h-full text-center font-bold text-gray-900 text-sm outline-none bg-transparent border-none p-0 no-spinners" id="detail-qty-val" value="1" min="1" max="${product.stockCount !== undefined ? product.stockCount : (product.inStock !== false ? 100 : 0)}" onchange="window.validateDetailQty(this)">
+                    <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(1)">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-2 sm:gap-3 md:gap-4 mt-4 items-center w-full">
                 <button id="main-add-to-cart-btn" ${product.inStock === false ? 'disabled' : `onclick="window.addToCart('${product.id}')"`}
                     class="flex-1 max-w-[150px] sm:max-w-[170px] bg-black text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="border-radius: 14px;">
                     <i class="fa-solid fa-cart-shopping text-base sm:text-lg md:text-xl flex-shrink-0"></i>

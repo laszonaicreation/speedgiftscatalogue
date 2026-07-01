@@ -159,6 +159,35 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         }
     };
 
+    window.updateDetailQty = (change) => {
+        const qtyEl = document.getElementById('detail-qty-val');
+        if (!qtyEl) return;
+        let currentQty = parseInt(qtyEl.value) || 1;
+        let maxQty = qtyEl.hasAttribute('max') ? parseInt(qtyEl.getAttribute('max')) : 100;
+        if (isNaN(maxQty)) maxQty = 100;
+        
+        currentQty += change;
+        if (currentQty < 1) currentQty = 1;
+        if (currentQty > maxQty) {
+            currentQty = maxQty;
+            if (window.showToast && change > 0) window.showToast(`Only ${maxQty} in stock`);
+        }
+        qtyEl.value = currentQty;
+    };
+
+    window.validateDetailQty = (el) => {
+        let val = parseInt(el.value);
+        let maxQty = el.hasAttribute('max') ? parseInt(el.getAttribute('max')) : 100;
+        if (isNaN(maxQty)) maxQty = 100;
+        
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > maxQty) {
+            val = maxQty;
+            if (window.showToast) window.showToast(`Only ${maxQty} in stock`);
+        }
+        el.value = val;
+    };
+
     function updateInquiryButton(selectedSize, selectedPrice, selectedColor) {
         const inquiryBtn = document.getElementById('main-inquiry-btn');
         if (!inquiryBtn) return;
@@ -174,6 +203,8 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         if (currentSize) args += `, '${currentSize}'`; else args += ', null';
         if (currentPrice) args += `, '${currentPrice}'`; else args += ', null';
         if (currentColor) args += `, '${currentColor}'`;
+
+        // WhatsApp button doesn't directly take qty in args, it reads from DOM inside inquireOnWhatsApp.
         inquiryBtn.setAttribute('onclick', `inquireOnWhatsApp(${args})`);
     }
 
@@ -250,6 +281,10 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         const color = currentVar.color || null;
         const img = currentVar.img || null;
 
+        let qty = 1;
+        const qtyEl = document.getElementById('detail-qty-val');
+        if (qtyEl) qty = parseInt(qtyEl.value) || 1;
+
         // Read name and base price from DOM
         const nameEl = document.querySelector('.detail-product-name');
         const priceEl = document.querySelector('.detail-price-text');
@@ -260,7 +295,7 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         const displayImg = img || imgEl?.src || '';
 
         if (typeof window.cartAddItem === 'function') {
-            window.cartAddItem({ id: productId, name, price: displayPrice, img: displayImg, size, color });
+            window.cartAddItem({ id: productId, name, price: displayPrice, img: displayImg, size, color, qty });
         }
 
         // Visual feedback: pulse the button → green "Added!"

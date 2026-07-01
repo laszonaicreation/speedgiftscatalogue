@@ -319,7 +319,7 @@ export function initAdmin(ctx) {
         if (pOriginalPrice) pOriginalPrice.value = item.originalPrice || "";
 
         if (pDesc) pDesc.value = item.desc;
-        if (pDetails) pDetails.value = item.details || "";
+        if (pDetails) pDetails.value = item.details || "Material: \nDimensions / Size: \nPrint Quality: \nWhat's Included: \nBest For: ";
         if (pKeywords) pKeywords.value = item.keywords || "";
         if (pFormTitle) pFormTitle.innerText = "Editing: " + item.name;
 
@@ -1427,11 +1427,13 @@ export function initAdmin(ctx) {
 
     window.resetForm = () => {
         // Basic fields
-        const fields = ['edit-id', 'edit-cat-id', 'p-name', 'p-price', 'p-original-price', 'p-desc', 'p-details', 'p-keywords', 'c-name', 'c-img', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Added 'p-badge', 'm-name', 'c-img', 'edit-cat-id', 'p-original-price'
+        const fields = ['edit-id', 'edit-cat-id', 'p-name', 'p-price', 'p-original-price', 'p-desc', 'p-keywords', 'c-name', 'c-img', 'p-badge', 'edit-slider-id', 's-img', 's-mobileImg', 's-title', 's-link', 's-order', 'm-name']; // Removed 'p-details'
         fields.forEach(f => {
             const el = document.getElementById(f);
             if (el) el.value = "";
         });
+        const pDetails = document.getElementById('p-details');
+        if (pDetails) pDetails.value = "Material: \nDimensions / Size: \nPrint Quality: \nWhat's Included: \nBest For: ";
 
         // Reset featured/home dropdown to default
         const pFeatured = document.getElementById('p-featured');
