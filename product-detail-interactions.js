@@ -196,19 +196,19 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
     };
 
     window.updateDetailQty = (change) => {
-        const qtyEl = document.getElementById('detail-qty-val');
-        if (!qtyEl) return;
-        let currentQty = parseInt(qtyEl.value) || 1;
-        let maxQty = qtyEl.hasAttribute('max') ? parseInt(qtyEl.getAttribute('max')) : 100;
+        const inputs = document.querySelectorAll('.detail-qty-input');
+        if (inputs.length === 0) return;
+        let maxQty = inputs[0].hasAttribute('max') ? parseInt(inputs[0].getAttribute('max')) : 100;
         if (isNaN(maxQty)) maxQty = 100;
         
+        let currentQty = parseInt(inputs[0].value) || 1;
         currentQty += change;
         if (currentQty < 1) currentQty = 1;
         if (currentQty > maxQty) {
             currentQty = maxQty;
             if (window.showToast && change > 0) window.showToast(`Only ${maxQty} in stock`);
         }
-        qtyEl.value = currentQty;
+        inputs.forEach(input => input.value = currentQty);
     };
 
     window.validateDetailQty = (el) => {
@@ -221,7 +221,7 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
             val = maxQty;
             if (window.showToast) window.showToast(`Only ${maxQty} in stock`);
         }
-        el.value = val;
+        document.querySelectorAll('.detail-qty-input').forEach(input => input.value = val);
     };
 
     function updateInquiryButton(selectedSize, selectedPrice, selectedColor) {
@@ -318,7 +318,7 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         const img = currentVar.img || null;
 
         let qty = 1;
-        const qtyEl = document.getElementById('detail-qty-val');
+        const qtyEl = document.querySelector('.detail-qty-input');
         if (qtyEl) qty = parseInt(qtyEl.value) || 1;
 
         // Read name and base price from DOM
@@ -365,4 +365,26 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
             });
         }
     });
+
+    // Hide mobile action bar on scroll, show on stop
+    let scrollTimeout;
+    let lastScrollPos = window.pageYOffset || document.documentElement.scrollTop;
+    window.addEventListener('scroll', () => {
+        if (window.innerWidth >= 768) return;
+        const bar = document.getElementById('mobile-action-bar');
+        if (bar) {
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            if (currentScroll > lastScrollPos && currentScroll > 60) {
+                bar.classList.add('hidden-on-scroll');
+            } else {
+                bar.classList.remove('hidden-on-scroll');
+            }
+            lastScrollPos = currentScroll;
+            
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                bar.classList.remove('hidden-on-scroll');
+            }, 1000);
+        }
+    }, { passive: true });
 }

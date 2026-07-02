@@ -8,7 +8,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     });
 
     appMain.innerHTML = `
-<div class="max-w-5xl mx-auto pt-4 pb-20 md:pt-10 md:pb-16 px-4 detail-view-container text-left">
+<div class="max-w-5xl mx-auto pt-4 pb-36 md:pt-10 md:pb-16 px-0 md:px-4 detail-view-container text-left">
     <!-- Breadcrumbs -->
     <nav class="flex items-center text-[10px] font-bold text-gray-400 mb-6 w-full overflow-x-auto no-scrollbar whitespace-nowrap uppercase tracking-widest" style="gap: 8px;">
         <a href="index.html" class="hover:text-black transition-colors flex items-center" style="gap: 6px;">
@@ -22,7 +22,18 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         <div class="detail-media-pane">
-            <div class="zoom-img-container aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
+            <div class="zoom-img-container relative aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
+                <div class="absolute top-3 left-3 z-20 flex flex-col gap-2">
+                    <button id="detail-share-btn" onclick="event.stopPropagation(); window.shareProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}')"
+                        class="flex items-center justify-center bg-white text-gray-600 hover:text-black hover:bg-gray-50 transition-all active:scale-95 border border-gray-200 shadow-sm rounded-full" style="width: 34px; height: 34px;">
+                        <i class="fa-solid fa-share-nodes text-[13px]"></i>
+                    </button>
+                    
+                    <button id="detail-wish-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist(event, '${product.id}')"
+                        class="flex items-center justify-center bg-white text-gray-600 hover:text-red-500 hover:bg-gray-50 transition-all active:scale-95 border border-gray-200 shadow-sm rounded-full" style="width: 34px; height: 34px;">
+                        <i class="${(typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || [])).some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-[13px]"></i>
+                    </button>
+                </div>
                 <img src="${getOptimizedUrl(allImages[0] || product.img, 600)}" 
                      id="main-detail-img" 
                      class="w-full h-full object-cover no-animation" 
@@ -106,8 +117,23 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     })()}
                 </div>
 
-                <div class="mt-4 mb-6">
-                    <h3 class="text-[13px] font-bold text-gray-900 mb-2 uppercase tracking-wider">Item Details</h3>
+                <hr class="border-gray-100 md:hidden" style="margin: 24px 0;">
+                <div class="flex flex-col gap-3 md:hidden">
+                    <span class="text-[13px] font-bold text-gray-900 uppercase tracking-wider">Quantity</span>
+                    <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm" style="width: 120px; height: 44px;">
+                        <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
+                            <i class="fa-solid fa-minus text-xs"></i>
+                        </button>
+                        <input type="number" class="detail-qty-input w-10 h-full text-center font-bold text-gray-900 text-sm outline-none bg-transparent border-none p-0 no-spinners" value="1" min="1" max="${product.stockCount !== undefined ? product.stockCount : (product.inStock !== false ? 100 : 0)}" onchange="window.validateDetailQty(this)">
+                        <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(1)">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-gray-100" style="margin: 24px 0;">
+                <div>
+                    <h3 class="text-[13px] font-bold text-gray-900 mb-3 uppercase tracking-wider">Item Details</h3>
                     <div class="detail-description-text text-[13px] leading-[1.6] text-gray-600">
                         ${(() => {
                             const detailsRaw = product.details || '';
@@ -143,7 +169,8 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
 
                 ${((product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0)) ? `
-                <div class="space-y-6 pt-4 border-t border-gray-50">
+                <hr class="border-gray-100" style="margin: 24px 0;">
+                <div class="space-y-6">
                     ${product.colorVariations && product.colorVariations.length > 0 ? `
                     <div class="variation-section">
                         <span class="detail-label mb-2">Available Colors</span>
@@ -177,50 +204,45 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
 
             </div>
 
-            <div class="flex flex-col gap-2 pt-6">
-                <span class="detail-label !mb-0 font-bold" style="color: #111;">Quantity</span>
+            <hr class="border-gray-100 hidden md:block" style="margin: 24px 0;">
+            <div class="hidden md:flex flex-col gap-3">
+                <span class="text-[13px] font-bold text-gray-900 uppercase tracking-wider">Quantity</span>
                 <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm" style="width: 120px; height: 44px;">
                     <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
                         <i class="fa-solid fa-minus text-xs"></i>
                     </button>
-                    <input type="number" class="w-10 h-full text-center font-bold text-gray-900 text-sm outline-none bg-transparent border-none p-0 no-spinners" id="detail-qty-val" value="1" min="1" max="${product.stockCount !== undefined ? product.stockCount : (product.inStock !== false ? 100 : 0)}" onchange="window.validateDetailQty(this)">
+                    <input type="number" class="detail-qty-input w-10 h-full text-center font-bold text-gray-900 text-sm outline-none bg-transparent border-none p-0 no-spinners" value="1" min="1" max="${product.stockCount !== undefined ? product.stockCount : (product.inStock !== false ? 100 : 0)}" onchange="window.validateDetailQty(this)">
                     <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(1)">
                         <i class="fa-solid fa-plus text-xs"></i>
                     </button>
                 </div>
             </div>
 
-            <div class="flex gap-2 sm:gap-3 md:gap-4 mt-4 mb-8 items-center w-full">
+            <div id="mobile-action-bar" class="w-full">
                 <button id="main-add-to-cart-btn" ${product.inStock === false ? 'disabled' : `onclick="window.addToCart('${product.id}')"`}
-                    class="flex-1 max-w-[150px] sm:max-w-[170px] bg-black text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="border-radius: 14px;">
-                    <i class="fa-solid fa-cart-shopping text-base sm:text-lg md:text-xl flex-shrink-0"></i>
-                    <div class="flex flex-col items-start leading-tight truncate">
-                        <span class="text-[7px] md:text-[8px] font-bold opacity-60 uppercase tracking-widest truncate">${product.inStock === false ? 'Out of' : 'Add to'}</span>
-                        <span class="text-[10px] md:text-[13px] font-black uppercase tracking-widest leading-none mt-0.5 truncate">${product.inStock === false ? 'Stock' : 'Cart'}</span>
+                    class="flex-1 bg-black text-white px-2 md:px-4 py-3 md:py-4 shadow-lg flex items-center justify-center gap-2 md:gap-3 hover:bg-gray-800 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="border-radius: 12px;">
+                    <i class="fa-solid fa-cart-shopping text-lg md:text-xl"></i>
+                    <div class="flex flex-col items-start leading-none text-left mt-[2px]">
+                        ${product.inStock === false ? 
+                            `<span class="text-[12px] md:text-[14px] font-black tracking-wider uppercase text-gray-400">Out of Stock</span>` : 
+                            `<span class="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-[2px]">Add to</span>
+                             <span class="text-[12px] md:text-[14px] font-black tracking-wider uppercase">Cart</span>`
+                        }
                     </div>
                 </button>
                 
                 <button id="main-inquiry-btn" ${product.inStock === false ? 'disabled' : `onclick="inquireOnWhatsApp('${product.id}'${product.variations && product.variations.length > 0 ? `, '${product.variations[0].size}', '${product.variations[0].price}'` : (product.colorVariations && product.colorVariations.length > 0 ? `, null, '${product.colorVariations[0].price}', '${product.colorVariations[0].color}'` : '')})"`}
-                    class="flex-1 max-w-[150px] sm:max-w-[170px] text-white py-3 md:py-4 px-3 sm:px-4 shadow-xl flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="background-color: #25D366; border-radius: 14px;">
-                    <i class="fa-brands fa-whatsapp text-base sm:text-lg md:text-xl flex-shrink-0"></i>
-                    <div class="flex flex-col items-start leading-tight truncate">
-                        <span class="text-[7px] md:text-[8px] font-bold opacity-90 uppercase tracking-widest truncate">Order via</span>
-                        <span class="text-[10px] md:text-[13px] font-black uppercase tracking-widest leading-none mt-0.5 truncate">WhatsApp</span>
+                    class="flex-1 text-white px-2 md:px-4 py-3 md:py-4 shadow-lg flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="background-color: #25D366; border-radius: 12px;">
+                    <i class="fa-brands fa-whatsapp text-xl md:text-2xl"></i>
+                    <div class="flex flex-col items-start leading-none text-left mt-[2px]">
+                        <span class="text-[8px] md:text-[9px] font-bold text-green-100 uppercase tracking-[0.2em] mb-[2px]">Order via</span>
+                        <span class="text-[12px] md:text-[14px] font-black tracking-wider uppercase">WhatsApp</span>
                     </div>
-                </button>
-                
-                <button id="detail-share-btn" onclick="window.shareProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}')"
-                    class="flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-600 hover:text-black hover:bg-gray-200 transition-all active:scale-90 border border-gray-200 shadow-sm" style="width: 50px; height: 50px; border-radius: 14px;">
-                    <i class="fa-solid fa-share-nodes text-lg"></i>
-                </button>
-                
-                <button id="detail-wish-btn" data-id="${product.id}" onclick="window.toggleWishlist(event, '${product.id}')"
-                    class="flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-600 hover:text-red-500 hover:bg-red-100 transition-all active:scale-90 border border-gray-200 shadow-sm" style="width: 50px; height: 50px; border-radius: 14px;">
-                    <i class="${(typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || [])).some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-lg"></i>
                 </button>
             </div>
 
-            <div class="flex items-start justify-between py-6 w-full mt-2">
+            <hr class="border-gray-100" style="margin: 24px 0;">
+            <div class="flex items-start justify-between w-full">
                 <div class="flex flex-col items-center text-center flex-1">
                     <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 border border-gray-100 shadow-sm">
                         <i class="fa-solid fa-truck-fast text-sm"></i>
@@ -247,7 +269,8 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
             </div>
 
-            <div class="pt-6">
+            <hr class="border-gray-100" style="margin: 24px 0;">
+            <div>
                 <div class="detail-accordion">
                     <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
                         <span class="detail-accordion-title">Product Description</span>

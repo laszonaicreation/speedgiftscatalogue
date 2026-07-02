@@ -443,3 +443,45 @@ body {
 .no-spinners {
     -moz-appearance: textfield;
 }
+
+/* Mobile Action Bar */
+#mobile-action-bar {
+    position: fixed;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    background-color: #ffffff;
+    box-shadow: 0 -15px 30px rgba(0,0,0,0.06);
+    border-top: 1px solid #f0f0f0;
+    z-index: 40;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease;
+}
+
+#mobile-action-bar.hidden-on-scroll {
+    transform: translateY(140%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    #mobile-action-bar {
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        box-shadow: none !important;
+        z-index: auto !important;
+        background: transparent !important;
+        padding: 0 !important;
+        border: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        margin-top: 2rem !important;
+        margin-bottom: 2.5rem !important;
+    }
+}
