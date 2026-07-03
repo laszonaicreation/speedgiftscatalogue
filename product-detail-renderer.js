@@ -8,7 +8,12 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     });
 
     appMain.innerHTML = `
-<div class="max-w-5xl mx-auto pt-4 pb-36 md:pt-10 md:pb-16 px-0 md:px-4 detail-view-container text-left">
+<style>
+@media (min-width: 1024px) {
+    .custom-desktop-grid { grid-template-columns: 1.25fr 1fr !important; }
+}
+</style>
+<div class="max-w-6xl mx-auto pt-4 pb-36 md:pt-10 md:pb-16 px-0 md:px-4 detail-view-container text-left">
     <!-- Breadcrumbs -->
     <nav class="flex items-center text-[10px] font-bold text-gray-400 mb-6 w-full overflow-x-auto no-scrollbar whitespace-nowrap uppercase tracking-widest" style="gap: 8px;">
         <a href="index.html" class="hover:text-black transition-colors flex items-center" style="gap: 6px;">
@@ -20,7 +25,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         <span class="text-gray-800 font-black truncate max-w-[150px] sm:max-w-xs">${product.name}</span>
     </nav>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-2 custom-desktop-grid gap-8 lg:gap-16 items-start">
         <div class="detail-media-pane">
             <div class="zoom-img-container relative aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
                 <div class="absolute top-3 left-3 z-20 flex flex-col gap-2">
@@ -117,8 +122,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     })()}
                 </div>
 
-                <hr class="border-gray-100 md:hidden" style="margin: 24px 0;">
-                <div class="flex flex-col gap-3 md:hidden">
+                <div class="flex flex-col gap-3 md:hidden mt-6">
                     <span class="text-[13px] font-bold text-gray-900 uppercase tracking-wider">Quantity</span>
                     <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm" style="width: 120px; height: 44px;">
                         <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
@@ -131,8 +135,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     </div>
                 </div>
 
-                <hr class="border-gray-100" style="margin: 24px 0;">
-                <div>
+                <div class="mt-6 md:mt-8">
                     <h3 class="text-[13px] font-bold text-gray-900 mb-3 uppercase tracking-wider">Item Details</h3>
                     <div class="detail-description-text text-[13px] leading-[1.6] text-gray-600">
                         ${(() => {
@@ -140,7 +143,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                             if (!detailsRaw.trim()) return '<p class="text-gray-400 italic">Item details will be updated soon.</p>';
                             const lines = detailsRaw.split('\n').filter(line => line.trim());
                             
-                            let html = '<ul class="space-y-3 mt-3">';
+                            let html = '<ul class="space-y-2 mt-2">';
                             lines.forEach(line => {
                                 let key = line;
                                 let value = '';
@@ -169,8 +172,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
 
                 ${((product.variations && product.variations.length > 0) || (product.colorVariations && product.colorVariations.length > 0)) ? `
-                <hr class="border-gray-100" style="margin: 24px 0;">
-                <div class="space-y-6">
+                <div class="space-y-6 mt-6 md:mt-8">
                     ${product.colorVariations && product.colorVariations.length > 0 ? `
                     <div class="variation-section">
                         <span class="detail-label mb-2">Available Colors</span>
@@ -204,8 +206,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
 
             </div>
 
-            <hr class="border-gray-100 hidden md:block" style="margin: 24px 0;">
-            <div class="hidden md:flex flex-col gap-3">
+            <div class="hidden md:flex flex-col gap-3 md:mt-8">
                 <span class="text-[13px] font-bold text-gray-900 uppercase tracking-wider">Quantity</span>
                 <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm" style="width: 120px; height: 44px;">
                     <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
@@ -241,8 +242,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </button>
             </div>
 
-            <hr class="border-gray-100" style="margin: 24px 0;">
-            <div class="flex items-start justify-between w-full">
+            <div class="flex items-start justify-between w-full mt-6 md:mt-8 mb-8 md:mb-10">
                 <div class="flex flex-col items-center text-center flex-1">
                     <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 border border-gray-100 shadow-sm">
                         <i class="fa-solid fa-truck-fast text-sm"></i>
@@ -269,7 +269,6 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
             </div>
 
-            <hr class="border-gray-100" style="margin: 24px 0;">
             <div>
                 <div class="detail-accordion">
                     <button type="button" class="detail-accordion-toggle" onclick="window.toggleDetailSection(this)">
