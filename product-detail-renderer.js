@@ -68,7 +68,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             return `<span class="detail-badge badge-${badgeKey}" style="display:inline-flex;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:400;letter-spacing:0.04em;margin-bottom:8px;color:#111111;">${badgeText}</span>`;
         })()}
                     <div class="flex items-center gap-3 mb-2 md:mb-3">
-                        <h2 class="detail-product-name capitalize !mb-0">${product.name}</h2>
+                        <h1 class="detail-product-name capitalize !mb-0">${product.name}</h1>
                         ${product.inStock === false ? '<span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-sm">Out of Stock</span>' : ''}
                     </div>
                     ${(() => {

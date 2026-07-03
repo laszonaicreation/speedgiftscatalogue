@@ -376,18 +376,89 @@ async function fetchReviews(productId) {
     }
 }
 
+function injectSEO(product, reviews) {
+    const url = getProductDetailUrl(product.id);
+    const title = `${product.name} | Speed Gifts`;
+    const desc = (product.desc || product.details || `Buy ${product.name} at Speed Gifts. Best personalized gifts in UAE.`).replace(/\n/g, ' ').substring(0, 160);
+    const image = getOptimizedUrl(product.images?.[0] || product.img, 1000) || 'https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png';
+
+    const setMeta = (nameAttr, propertyAttr, content) => {
+        let el = document.querySelector(`meta[${nameAttr ? `name="${nameAttr}"` : `property="${propertyAttr}"`}]`);
+        if (!el) {
+            el = document.createElement('meta');
+            if (nameAttr) el.setAttribute('name', nameAttr);
+            if (propertyAttr) el.setAttribute('property', propertyAttr);
+            document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+    };
+
+    document.title = title;
+    setMeta('description', null, desc);
+    setMeta(null, 'og:title', title);
+    setMeta(null, 'og:description', desc);
+    setMeta(null, 'og:image', image);
+    setMeta(null, 'og:url', url);
+    setMeta(null, 'og:type', 'product');
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', url);
+
+    const schemaId = 'seo-schema-script';
+    let script = document.getElementById(schemaId);
+    if (!script) {
+        script = document.createElement('script');
+        script.id = schemaId;
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
+    }
+
+    const schema = {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": product.name,
+        "image": image,
+        "description": desc,
+        "sku": product.id,
+        "offers": {
+            "@type": "Offer",
+            "url": url,
+            "priceCurrency": "AED",
+            "price": product.price,
+            "availability": product.inStock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            "itemCondition": "https://schema.org/NewCondition"
+        }
+    };
+
+    if (reviews && reviews.length > 0) {
+        const ratingSum = reviews.reduce((acc, r) => acc + r.rating, 0);
+        const avgRating = (ratingSum / reviews.length).toFixed(1);
+        schema.aggregateRating = {
+            "@type": "AggregateRating",
+            "ratingValue": avgRating,
+            "reviewCount": reviews.length
+        };
+    }
+
+    script.textContent = JSON.stringify(schema);
+}
+
 async function renderById(id) {
     const product = DATA.p.find(x => x.id === id);
     if (!product) {
         document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 mt-20">Product not found.</p>';
         return;
     }
-    document.title = `${product.name} | Speed Gifts`;
-
     // Fetch reviews before rendering
     const reviews = await fetchReviews(id);
     const approvedReviews = reviews.filter(r => r.status === 'approved');
 
+    injectSEO(product, approvedReviews);
     renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
     trackProductView(id).catch(() => { /* no-op */ });
 }
