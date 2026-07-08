@@ -429,13 +429,13 @@ export function initAdmin(ctx) {
             // Google product category for gift items (Official taxonomy)
             const GOOGLE_CATEGORY = 'Arts & Entertainment > Party & Celebration > Gift Giving';
 
-            // TSV headers — exact Google Merchant Center column names
             const headers = [
                 'id',
                 'title',
                 'description',
                 'link',
                 'image_link',
+                'additional_image_link',
                 'price',
                 'availability',
                 'condition',
@@ -460,6 +460,10 @@ export function initAdmin(ctx) {
                         ? p.images[0]
                         : (p.img && p.img !== 'img/' ? p.img : '');
 
+                    const additionalImages = (Array.isArray(p.images) && p.images.length > 1)
+                        ? p.images.slice(1).join(',')
+                        : '';
+
                     // Clean description — strip extra whitespace, limit to 5000 chars
                     const desc = (p.desc || p.name || '')
                         .replace(/\s+/g, ' ')
@@ -475,6 +479,7 @@ export function initAdmin(ctx) {
                         desc || p.name,
                         link,
                         imageUrl,
+                        additionalImages,
                         price,
                         availability,
                         CONDITION,
