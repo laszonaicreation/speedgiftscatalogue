@@ -244,9 +244,25 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         inquiryBtn.setAttribute('onclick', `inquireOnWhatsApp(${args})`);
     }
 
-    window.selectSize = (price, size, imgs, el) => {
-        const priceDisplay = document.querySelector('.detail-price-text');
-        if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+    window.selectSize = (price, size, imgs, el, originalPrice = "") => {
+        const container = document.getElementById('detail-price-container');
+        if (container) {
+            const origP = parseFloat(originalPrice);
+            const saleP = parseFloat(price);
+            if (originalPrice && origP > saleP) {
+                const disc = Math.round((1 - saleP / origP) * 100);
+                container.innerHTML = `<div class="flex items-baseline gap-3 flex-wrap mt-1">
+                                <span class="detail-price-text text-xl md:text-2xl">${price} AED</span>
+                                <span class="text-base line-through text-gray-400 font-normal">${originalPrice} AED</span>
+                                <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
+                            </div>`;
+            } else {
+                container.innerHTML = `<p class="detail-price-text text-xl md:text-2xl">${price} AED</p>`;
+            }
+        } else {
+            const priceDisplay = document.querySelector('.detail-price-text');
+            if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+        }
 
         const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
         preloadDetailImages(images);
@@ -275,9 +291,25 @@ export function registerProductDetailInteractions({ getOptimizedUrl, state }) {
         }
     };
 
-    window.selectColor = (price, color, imgs, el) => {
-        const priceDisplay = document.querySelector('.detail-price-text');
-        if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+    window.selectColor = (price, color, imgs, el, originalPrice = "") => {
+        const container = document.getElementById('detail-price-container');
+        if (container) {
+            const origP = parseFloat(originalPrice);
+            const saleP = parseFloat(price);
+            if (originalPrice && origP > saleP) {
+                const disc = Math.round((1 - saleP / origP) * 100);
+                container.innerHTML = `<div class="flex items-baseline gap-3 flex-wrap mt-1">
+                                <span class="detail-price-text text-xl md:text-2xl">${price} AED</span>
+                                <span class="text-base line-through text-gray-400 font-normal">${originalPrice} AED</span>
+                                <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
+                            </div>`;
+            } else {
+                container.innerHTML = `<p class="detail-price-text text-xl md:text-2xl">${price} AED</p>`;
+            }
+        } else {
+            const priceDisplay = document.querySelector('.detail-price-text');
+            if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+        }
 
         const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
         preloadDetailImages(images);

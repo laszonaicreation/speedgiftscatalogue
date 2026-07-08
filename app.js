@@ -236,7 +236,7 @@ function updateCanonicalURL(queryString) {
         canonical.rel = "canonical";
         document.head.appendChild(canonical);
     }
-    const baseUrl = 'https://speedgifts.ae/';
+    const baseUrl = 'https://speedgifts.net/';
     canonical.setAttribute('href', baseUrl + queryString);
 }
 

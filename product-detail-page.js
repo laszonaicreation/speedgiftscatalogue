@@ -425,6 +425,10 @@ function injectSEO(product, reviews) {
         "image": image,
         "description": desc,
         "sku": product.id,
+        "brand": {
+            "@type": "Brand",
+            "name": "Speed Gifts"
+        },
         "offers": {
             "@type": "Offer",
             "url": url,

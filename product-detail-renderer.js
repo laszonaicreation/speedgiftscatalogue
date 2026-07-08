@@ -71,6 +71,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                         <h1 class="detail-product-name capitalize !mb-0">${product.name}</h1>
                         ${product.inStock === false ? '<span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-sm">Out of Stock</span>' : ''}
                     </div>
+                    <div id="detail-price-container">
                     ${(() => {
             const origP = parseFloat(product.originalPrice);
             const saleP = parseFloat(product.price);
@@ -84,6 +85,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             }
             return `<p class="detail-price-text text-xl md:text-2xl">${product.price} AED</p>`;
         })()}
+                    </div>
                     ${(() => {
                         const count = reviews ? reviews.length : 0;
                         const avgRating = count > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / count).toFixed(1) : '0.0';
@@ -178,7 +180,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                         <span class="detail-label mb-2">Available Colors</span>
                         <div class="flex flex-wrap gap-4">
                             ${product.colorVariations.map((v, i) => `
-                                <div class="flex flex-col items-center gap-2 group cursor-pointer" onclick='window.selectColor("${v.price}", "${v.color}", ${JSON.stringify(v.images || v.img)}, this)'>
+                                <div class="flex flex-col items-center gap-2 group cursor-pointer" onclick='window.selectColor("${v.price}", "${v.color}", ${JSON.stringify(v.images || v.img)}, this, "${v.originalPrice || ""}")'>
                                     <div class="color-swatch w-9 h-9 rounded-full border-2 ${i === 0 && (!product.variations || product.variations.length === 0) ? 'border-black scale-110' : 'border-white'} transition-all hover:scale-110" style="background-color: ${v.hex || '#000'}"></div>
                                     <span class="text-[7.5px] font-black uppercase tracking-tighter text-gray-400 group-hover:text-black transition-colors">${v.color}</span>
                                 </div>
@@ -192,7 +194,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                         <span class="detail-label mb-2">Available Sizes</span>
                         <div class="flex flex-wrap gap-2">
                             ${product.variations.map((v, i) => `
-                                <button onclick='window.selectSize("${v.price}", "${v.size}", ${JSON.stringify(v.images || v.img)}, this)'
+                                <button onclick='window.selectSize("${v.price}", "${v.size}", ${JSON.stringify(v.images || v.img)}, this, "${v.originalPrice || ""}")'
                                     class="size-badge px-4 py-3 rounded-xl border ${i === 0 ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-100'} font-bold text-[9px] uppercase tracking-widest transition-all">
                                     ${v.size}
                                 </button>

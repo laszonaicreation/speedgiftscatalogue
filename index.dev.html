@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -19,13 +19,20 @@
     <!-- UI UPDATE: 2026-01-03 17:45 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Speed Gifts - Premium Gift Collection</title>
+    <meta name="description" content="Speed Gifts is Abu Dhabi & Dubai's premier personalized gift shop. Shop custom gifts, photo frames, mug printing, wood engraving, bottle printing, t-shirt & hoodie printing, keychains, and unique corporate office gifts for every occasion in the UAE. Visit us at WTC Mall.">
 
-    <meta name="keywords" content="personalized gifts UAE, personalized gifts Dubai, personalized gifts Abu Dhabi, custom gifts UAE, custom gift shop Dubai, unique gifts UAE, customized gifts near me, photo gifts Dubai, photo printing gifts UAE, personalized photo gifts, custom photo frame Dubai, family photo gifts, caricature gift Dubai, personalized caricature UAE, wooden engraved gifts, laser engraved wood gifts, laser engraving Dubai, photo mug Dubai, custom mug printing UAE, personalized rock photo, office gifts UAE, corporate gifts Dubai, birthday gifts Dubai, anniversary gifts Dubai, couple gifts Dubai, desk name plate UAE, Speed Gifts">
-    <link rel="icon" type="image/png"
-        href="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+    <meta name="keywords" content="personalized gifts UAE, customized gifts Dubai, custom gift delivery Abu Dhabi, personalized gifts Sharjah, custom gifts Ajman, photo frames UAE, mug printing UAE, wood engraving frames, bottles printing Dubai, t-shirt printing Abu Dhabi, hoodie printing UAE, keychains printing UAE, office colleagues gift items, customized gifts near me UAE, unique gifts UAE, corporate gifts UAE, birthday gifts UAE, anniversary gifts delivery UAE, custom gifts all over UAE, personalized gifts Ras Al Khaimah, custom gifts Fujairah, Speed Gifts">
+    <link rel="icon" type="image/png" href="favicon.png">
 
     <link rel="preconnect" href="https://res.cloudinary.com">
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
+
+    <!-- Firebase LCP / FCP Optimizations -->
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js">
 
     <link rel="stylesheet" href="tailwind-compiled.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -919,7 +926,8 @@
                     <p class="sg-col-title">Customer Care</p>
                     <ul class="sg-ql">
                         <li><a href="/faq.html">Help &amp; FAQ</a></li>
-                        <li><a href="/shipping.html">Shipping &amp; Returns</a></li>
+                        <li><a href="/shipping.html">Shipping Policy</a></li>
+                        <li><a href="/refund.html">Return & Refund Policy</a></li>
                         <li><a href="/privacy.html">Privacy Policy</a></li>
                         <li><a href="/terms.html">Terms of Service</a></li>
                     </ul>
@@ -937,6 +945,12 @@
             </div>
             <div class="sg-bottom">
                 <span>&copy; <span class="sg-year"></span> Speed Gifts. All Rights Reserved.</span>
+                <div style="display:flex;gap:10px;align-items:center;color:#6b7280;margin:1rem 0;">
+                    <i class="fa-brands fa-cc-visa text-2xl hover:text-white transition-colors"></i>
+                    <i class="fa-brands fa-cc-mastercard text-2xl hover:text-white transition-colors"></i>
+                    <i class="fa-brands fa-apple-pay text-3xl hover:text-white transition-colors"></i>
+                    <span style="font-size:0.7rem;font-weight:bold;padding:2px 6px;border:1px solid #374151;border-radius:4px;letter-spacing:1px;cursor:default;" title="Cash on Delivery Accepted">COD</span>
+                </div>
                 <span style="color:#1f2937;font-size:0.6rem;">speedgifts.net</span>
             </div>
         </div>

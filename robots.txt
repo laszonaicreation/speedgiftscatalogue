@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://speedgifts.ae/sitemap.xml
+Sitemap: https://speedgifts.net/sitemap.xml

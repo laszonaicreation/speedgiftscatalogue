@@ -32,7 +32,7 @@ export function initAdmin(ctx) {
     if (!Array.isArray(state.selected)) state.selected = [];
     if (typeof state.selectionId === 'undefined') state.selectionId = null;
     let megaMenuEditSelection = null;
-    window.addColorVariationRow = (colorName = '', price = '', images = [], hex = '#000000') => {
+    window.addColorVariationRow = (colorName = '', price = '', images = [], hex = '#000000', originalPrice = '') => {
         const container = document.getElementById('color-variation-rows');
         if (!container) return;
         const rowId = 'v-color-' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -42,9 +42,10 @@ export function initAdmin(ctx) {
         <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
             <i class="fa-solid fa-xmark text-[10px]"></i>
         </button>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-3 gap-2">
             <input type="text" class="vc-color admin-input !bg-gray-50" placeholder="Color Name" value="${colorName}">
                 <input type="text" class="vc-price admin-input !bg-gray-50" placeholder="Price" value="${price}">
+                <input type="text" class="vc-original-price admin-input !bg-gray-50" placeholder="Orig. Price" value="${originalPrice}">
                 </div>
                 <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
                     <span class="text-[9px] font-black uppercase text-gray-400 ml-2">Visual Color:</span>
@@ -73,7 +74,7 @@ export function initAdmin(ctx) {
         }
     };
 
-    window.addVariationRow = (size = '', price = '', images = []) => {
+    window.addVariationRow = (size = '', price = '', images = [], originalPrice = '') => {
         const container = document.getElementById('variation-rows');
         if (!container) return;
         const rowId = 'v-size-' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -83,9 +84,10 @@ export function initAdmin(ctx) {
                 <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
                     <i class="fa-solid fa-xmark text-[10px]"></i>
                 </button>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-3 gap-2">
                     <input type="text" class="v-size admin-input !bg-gray-50" placeholder="Size" value="${size}">
                         <input type="text" class="v-price admin-input !bg-gray-50" placeholder="Price" value="${price}">
+                        <input type="text" class="v-original-price admin-input !bg-gray-50" placeholder="Orig. Price" value="${originalPrice}">
                         </div>
                         <div class="space-y-2">
                             <div id="${rowId}-grid" class="grid grid-cols-4 gap-2 v-image-grid"></div>
@@ -119,6 +121,7 @@ export function initAdmin(ctx) {
             return {
                 size: row.querySelector('.v-size').value,
                 price: row.querySelector('.v-price').value,
+                originalPrice: row.querySelector('.v-original-price')?.value || "",
                 images: varImages,
                 img: varImages[0] || 'img/' // fallback for existing logic
             };
@@ -132,6 +135,7 @@ export function initAdmin(ctx) {
             return {
                 color: row.querySelector('.vc-color').value,
                 price: row.querySelector('.vc-price').value,
+                originalPrice: row.querySelector('.vc-original-price')?.value || "",
                 images: varImages,
                 img: varImages[0] || 'img/', // fallback
                 hex: row.querySelector('.vc-hex').value
@@ -345,7 +349,7 @@ export function initAdmin(ctx) {
         if (varRows) {
             varRows.innerHTML = '';
             if (item.variations && item.variations.length > 0) {
-                item.variations.forEach(v => window.addVariationRow(v.size, v.price, v.images || v.img));
+                item.variations.forEach(v => window.addVariationRow(v.size, v.price, v.images || v.img, v.originalPrice || ""));
             }
         }
 
@@ -354,7 +358,7 @@ export function initAdmin(ctx) {
         if (colorRows) {
             colorRows.innerHTML = '';
             if (item.colorVariations && item.colorVariations.length > 0) {
-                item.colorVariations.forEach(v => window.addColorVariationRow(v.color, v.price, v.images || v.img, v.hex || '#000000'));
+                item.colorVariations.forEach(v => window.addColorVariationRow(v.color, v.price, v.images || v.img, v.hex || '#000000', v.originalPrice || ""));
             }
         }
 
@@ -516,15 +520,23 @@ export function initAdmin(ctx) {
             let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>\n`;
             xmlContent += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
             
+            const today = new Date().toISOString().split('T')[0];
+
             // Add static pages
             const staticPages = ['index.html', 'shop.html', 'about.html', 'contact.html'];
             staticPages.forEach(page => {
-                xmlContent += `  <url>\n    <loc>${STORE_URL}/${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+                xmlContent += `  <url>\n    <loc>${STORE_URL}/${page}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
             });
             
             // Add all products
             DATA.p.filter(p => p.id && p.name).forEach(p => {
-                xmlContent += `  <url>\n    <loc>${STORE_URL}/product-detail.html?id=${p.id}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+                let lastmod = today;
+                if (p.updatedAt) {
+                    try {
+                        lastmod = new Date(p.updatedAt).toISOString().split('T')[0];
+                    } catch (e) {}
+                }
+                xmlContent += `  <url>\n    <loc>${STORE_URL}/product-detail.html?id=${p.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
             });
             
             xmlContent += `</urlset>`;
@@ -1654,10 +1666,26 @@ export function initAdmin(ctx) {
         window.cloudinaryUpload(btn.parentElement.querySelector('.v-img, .vc-img'));
     };
 
-    window.selectSize = (price, size, imgs, el) => {
+    window.selectSize = (price, size, imgs, el, originalPrice = "") => {
         // Update price
-        const priceDisplay = document.querySelector('.detail-price-text');
-        if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+        const container = document.getElementById('detail-price-container');
+        if (container) {
+            const origP = parseFloat(originalPrice);
+            const saleP = parseFloat(price);
+            if (originalPrice && origP > saleP) {
+                const disc = Math.round((1 - saleP / origP) * 100);
+                container.innerHTML = `<div class="flex items-baseline gap-3 flex-wrap mt-1">
+                                <span class="detail-price-text text-xl md:text-2xl">${price} AED</span>
+                                <span class="text-base line-through text-gray-400 font-normal">${originalPrice} AED</span>
+                                <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
+                            </div>`;
+            } else {
+                container.innerHTML = `<p class="detail-price-text text-xl md:text-2xl">${price} AED</p>`;
+            }
+        } else {
+            const priceDisplay = document.querySelector('.detail-price-text');
+            if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+        }
 
         // Handle images
         const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
@@ -1700,10 +1728,26 @@ export function initAdmin(ctx) {
         }
     };
 
-    window.selectColor = (price, color, imgs, el) => {
+    window.selectColor = (price, color, imgs, el, originalPrice = "") => {
         // Update price
-        const priceDisplay = document.querySelector('.detail-price-text');
-        if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+        const container = document.getElementById('detail-price-container');
+        if (container) {
+            const origP = parseFloat(originalPrice);
+            const saleP = parseFloat(price);
+            if (originalPrice && origP > saleP) {
+                const disc = Math.round((1 - saleP / origP) * 100);
+                container.innerHTML = `<div class="flex items-baseline gap-3 flex-wrap mt-1">
+                                <span class="detail-price-text text-xl md:text-2xl">${price} AED</span>
+                                <span class="text-base line-through text-gray-400 font-normal">${originalPrice} AED</span>
+                                <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
+                            </div>`;
+            } else {
+                container.innerHTML = `<p class="detail-price-text text-xl md:text-2xl">${price} AED</p>`;
+            }
+        } else {
+            const priceDisplay = document.querySelector('.detail-price-text');
+            if (priceDisplay) priceDisplay.innerText = `${price} AED`;
+        }
 
         // Handle images
         const images = Array.isArray(imgs) ? imgs : (imgs && imgs !== 'img/' ? [imgs] : []);
