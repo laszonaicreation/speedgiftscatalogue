@@ -395,6 +395,9 @@ function injectSEO(product, reviews) {
 
     document.title = title;
     setMeta('description', null, desc);
+    if (product.keywords) {
+        setMeta('keywords', null, product.keywords);
+    }
     setMeta(null, 'og:title', title);
     setMeta(null, 'og:description', desc);
     setMeta(null, 'og:image', image);

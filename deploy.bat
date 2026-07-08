@@ -16,6 +16,11 @@ if %errorlevel% neq 0 (
 echo Done! All JS files updated.
 echo.
 
+echo [1.5/4] Updating Sitemap...
+call node gen_sitemap.js
+echo Done! Sitemap updated.
+echo.
+
 echo [2/4] Minifying style.css...
 call npx clean-css-cli -o style.min.css style.css
 
@@ -38,7 +43,14 @@ if %errorlevel% neq 0 (
 echo Done! index.html updated.
 echo.
 
-echo [4/4] Deploying Website and Cloud Functions to Firebase...
+echo [4/5] Backing up code to GitHub...
+git add .
+git commit -m "Auto-backup before deployment"
+git push
+echo Done! Code saved to GitHub.
+echo.
+
+echo [5/5] Deploying Website and Cloud Functions to Firebase...
 cd functions
 call npm install
 cd ..

@@ -17,19 +17,7 @@ export async function fetchHomeDataBundle({
     const today = getTodayStr();
     const todayRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
 
-    if (!isAdmin) {
-        try {
-            const response = await fetch(`/api/getHomeData?appId=${appId}`);
-            if (response.ok) {
-                const data = await response.json();
-                return data;
-            } else {
-                console.warn('API fetch failed, falling back to SDK', response.status);
-            }
-        } catch (e) {
-            console.error('API fetch error, falling back to SDK', e);
-        }
-    }
+
 
     // Queries for massive payload reduction on initial load
     const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--'];

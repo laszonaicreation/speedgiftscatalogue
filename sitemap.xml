@@ -2,25 +2,25 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://speedgifts.net/index.html</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://speedgifts.net/shop.html</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://speedgifts.net/about.html</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://speedgifts.net/contact.html</loc>
-    <lastmod>2026-07-07</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -38,7 +38,7 @@
   </url>
   <url>
     <loc>https://speedgifts.net/product-detail.html?p=0AN9zpdm8FmaIGWF7DV4</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -824,13 +824,13 @@
   </url>
   <url>
     <loc>https://speedgifts.net/product-detail.html?p=d9yThPWvCFCjI3oAxWGi</loc>
-    <lastmod>2026-07-05</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://speedgifts.net/product-detail.html?p=dCcuMSrnUqE9fZbVfHYI</loc>
-    <lastmod>2026-07-05</lastmod>
+    <lastmod>2026-07-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -919,6 +919,12 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://speedgifts.net/product-detail.html?p=hK3miDfFA5AU9CSYtkds</loc>
+    <lastmod>2026-07-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://speedgifts.net/product-detail.html?p=iPa7b9l9fpYMVWUbNLxJ</loc>
     <lastmod>2026-01-04</lastmod>
     <changefreq>weekly</changefreq>
@@ -938,7 +944,7 @@
   </url>
   <url>
     <loc>https://speedgifts.net/product-detail.html?p=iya3pJ7Va67FnmL5V4GR</loc>
-    <lastmod>2026-01-04</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -1064,7 +1070,7 @@
   </url>
   <url>
     <loc>https://speedgifts.net/product-detail.html?p=o3XIabCPJhXbFatdB70P</loc>
-    <lastmod>2026-07-05</lastmod>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -1203,6 +1209,12 @@
   <url>
     <loc>https://speedgifts.net/product-detail.html?p=t2DEc8jluyrgwQ22zDgO</loc>
     <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://speedgifts.net/product-detail.html?p=t3kwqmPCFwgpupH9yw6k</loc>
+    <lastmod>2026-07-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
