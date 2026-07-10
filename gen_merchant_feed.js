@@ -9,7 +9,18 @@ async function run() {
         console.error("No products found");
         return;
     }
-    
+    console.log("Fetching categories for product mapping...");
+    const catRes = await fetch("https://firestore.googleapis.com/v1/projects/speed-catalogue/databases/(default)/documents/artifacts/speed-catalogue/public/data/categories?pageSize=100");
+    const catData = await catRes.json();
+    const catMap = {};
+    if (catData.documents) {
+        catData.documents.forEach(doc => {
+            const id = doc.name.split('/').pop();
+            const fields = doc.fields || {};
+            catMap[id] = fields.name?.stringValue || 'Gifts';
+        });
+    }
+
     const products = data.documents.map(doc => {
         const id = doc.name.split('/').pop();
         const fields = doc.fields || {};
@@ -19,7 +30,8 @@ async function run() {
             desc: fields.desc?.stringValue || fields.name?.stringValue || '',
             price: fields.price?.stringValue || '0',
             img: fields.img?.stringValue || '',
-            inStock: fields.inStock?.booleanValue !== false
+            inStock: fields.inStock?.booleanValue !== false,
+            catId: fields.catId?.stringValue || ''
         };
     });
     
@@ -42,6 +54,7 @@ async function run() {
         const safeName = p.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
         const safeDesc = p.desc.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
         const safeImg = p.img.replace(/&/g, '&amp;');
+        const safeProductType = (catMap[p.catId] || 'Gifts').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
         xml += `    <item>
       <g:id>${p.id}</g:id>
@@ -53,6 +66,7 @@ async function run() {
       <g:availability>${availability}</g:availability>
       <g:price>${price} AED</g:price>
       <g:brand>Speed Gifts</g:brand>
+      <g:product_type>${safeProductType}</g:product_type>
       <g:identifier_exists>no</g:identifier_exists>
     </item>
 `;
