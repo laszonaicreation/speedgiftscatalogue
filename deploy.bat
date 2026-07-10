@@ -16,9 +16,10 @@ if %errorlevel% neq 0 (
 echo Done! All JS files updated.
 echo.
 
-echo [1.5/4] Updating Sitemap...
+echo [1.5/4] Updating Sitemap & Merchant Feed...
 call node gen_sitemap.js
-echo Done! Sitemap updated.
+call node gen_merchant_feed.js
+echo Done! Sitemap and Feed updated.
 echo.
 
 echo [2/4] Minifying style.css...
