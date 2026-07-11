@@ -238,7 +238,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                     class="flex-1 text-white px-2 md:px-4 py-3 md:py-4 shadow-lg flex items-center justify-center gap-2 md:gap-3 hover:opacity-90 active:scale-95 transition-all min-w-0 ${product.inStock === false ? 'opacity-50 cursor-not-allowed' : ''}" style="background-color: #25D366; border-radius: 12px;">
                     <i class="fa-brands fa-whatsapp text-xl md:text-2xl"></i>
                     <div class="flex flex-col items-start leading-none text-left mt-[2px]">
-                        <span class="text-[8px] md:text-[9px] font-bold text-green-100 uppercase tracking-[0.2em] mb-[2px]">Order via</span>
+                        <span class="text-[8px] md:text-[9px] font-bold text-green-100 uppercase tracking-[0.2em] mb-[2px]">Inquire on</span>
                         <span class="text-[12px] md:text-[14px] font-black tracking-wider uppercase">WhatsApp</span>
                     </div>
                 </button>
