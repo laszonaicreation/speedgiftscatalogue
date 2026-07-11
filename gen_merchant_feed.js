@@ -37,7 +37,7 @@ async function run() {
     
     console.log(`Fetched ${products.length} products`);
     
-    const STORE_URL = 'https://speedgifts.net';
+    const STORE_URL = "https://speedgifts.net";
     
     let xml = `<?xml version="1.0"?>
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
