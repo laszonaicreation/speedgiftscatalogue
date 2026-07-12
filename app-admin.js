@@ -878,6 +878,9 @@ export function initAdmin(ctx) {
         const catFilter = filterEl ? filterEl.value : "all";
 
         let products = DATA.p.filter(p => {
+            // Filter out ghosts/internal configs that slipped past INTERNAL_IDS
+            if (!p.name || String(p.name).trim() === '' || String(p.name).toLowerCase() === 'undefined') return false;
+            
             const matchesCat = catFilter === 'all' || p.catId === catFilter;
             return matchesCat;
         });
@@ -1320,6 +1323,9 @@ export function initAdmin(ctx) {
         
         // Filter by search query and category
         const filteredProducts = DATA.p.filter(p => {
+            // Filter out ghosts/internal configs that slipped past INTERNAL_IDS
+            if (!p.name || String(p.name).trim() === '' || String(p.name).toLowerCase() === 'undefined') return false;
+
             if (catFilter !== "all" && p.catId !== catFilter) return false;
             if (!query) return true;
             return p.name?.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);

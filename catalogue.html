@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Digital Catalogue | Speed Gifts - Premium Gift Collection</title>
+    
+    <meta name="keywords" content="personalized gifts UAE, customized gifts Dubai, custom gift delivery Abu Dhabi, personalized gifts Sharjah, custom gifts Ajman, photo frames UAE, mug printing UAE, wood engraving frames, bottles printing Dubai, t-shirt printing Abu Dhabi, hoodie printing UAE, keychains printing UAE, office colleagues gift items, customized gifts near me UAE, unique gifts UAE, corporate gifts UAE, birthday gifts UAE, anniversary gifts delivery UAE, custom gifts all over UAE, personalized gifts Ras Al Khaimah, custom gifts Fujairah, Speed Gifts">
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Shared Tailwind & Fonts -->
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1783863995581">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/brands.min.css">
+
+    <!-- Catalogue Specific Styles -->
+    <link rel="stylesheet" href="catalogue.min.css?v=1783863995581">
+
+    <!-- StPageFlip CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+    <!-- HTML2PDF CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* Pure Minimalist App Layout */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #e5e7eb !important; /* gray-200 */
+            overflow: hidden; /* Prevent page scrolling, only flipbook */
+            font-family: 'Inter', sans-serif;
+        }
+
+        #catalogue-main {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #e5e7eb !important; /* gray-200 */
+            position: relative;
+        }
+
+        /* Go Back to Website Button */
+        .back-to-site {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            background: #f5f5f5;
+            color: #333;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-to-site:hover {
+            background: #111;
+            color: #fff;
+            transform: scale(1.02);
+        }
+
+        /* PDF Download Button */
+        .pdf-download-btn {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: #111;
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .pdf-download-btn:hover {
+            background: #333;
+            transform: scale(1.02);
+        }
+        .pdf-download-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        @media (max-width: 480px) {
+            .back-to-site { top: 1rem; left: 1rem; padding: 0.5rem 0.9rem; font-size: 0.65rem; }
+            .pdf-download-btn { top: 1rem; right: 1rem; padding: 0.5rem 0.9rem; font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Full Screen Image Preview -->
+    <div id="img-full-preview" onclick="closeFullScreen()" style="z-index: 9999;">
+        <div class="close-preview-btn"><i class="fa-solid fa-xmark"></i></div>
+        <img id="full-preview-img" src="" alt="Product Preview">
+    </div>
+    
+    <main class="catalogue-main" id="catalogue-main">
+
+
+
+        <div class="container relative flex justify-center items-center w-full h-[80vh] max-w-5xl mx-auto px-4" id="flipbook-wrapper">
+            <!-- Loading Skeleton -->
+            <div id="skeleton-grid" class="flex flex-col items-center justify-center w-full h-[600px] absolute inset-0 z-50 bg-white">
+                <div class="sg-dot-loader">
+                    <div class="sg-dot"></div>
+                    <div class="sg-dot"></div>
+                    <div class="sg-dot"></div>
+                </div>
+                <p class="text-[9px] uppercase tracking-[0.4em] text-gray-300 font-bold" style="font-family: 'Poppins', sans-serif;">Curating Collection</p>
+            </div>
+
+            <!-- StPageFlip Book Container -->
+            <div id="flipbook" class="flip-book shadow-2xl w-full h-full max-w-[800px] max-h-[600px]">
+                <!-- Pages injected by JS -->
+            </div>
+        </div>
+
+        <!-- Flipbook Controls & Actions -->
+        <div id="flipbook-controls" class="hidden opacity-0 flex-col items-center gap-5 mt-8 transition-opacity duration-700">
+            <!-- Page controls -->
+            <div class="flex items-center justify-center gap-6">
+                <button id="btn-prev" class="w-12 h-12 rounded-full bg-white shadow-sm hover:shadow-md border border-gray-100 flex items-center justify-center transition-all hover:bg-gray-50 active:scale-95">
+                    <i class="fa-solid fa-chevron-left text-gray-600"></i>
+                </button>
+                <span id="page-counter" class="text-xs font-bold text-gray-400 uppercase tracking-widest">Page 1 of -</span>
+                <button id="btn-next" class="w-12 h-12 rounded-full bg-white shadow-sm hover:shadow-md border border-gray-100 flex items-center justify-center transition-all hover:bg-gray-50 active:scale-95">
+                    <i class="fa-solid fa-chevron-right text-gray-600"></i>
+                </button>
+            </div>
+            
+            <!-- Download PDF Button -->
+            <button onclick="openPdfView()" id="pdf-btn" class="flex items-center gap-2 px-5 py-2 rounded-full border border-gray-200 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] hover:bg-black hover:text-white hover:border-black transition-all">
+                <i class="fa-solid fa-file-pdf"></i> Download PDF
+            </button>
+        </div>
+
+    </main>
+
+    <script type="module" src="catalogue.min.js?v=1783863995581"></script>
+
+    <script>
+        // Provide the global function for image preview since app.js is removed
+        function closeFullScreen() {
+            var el = document.getElementById('img-full-preview');
+            if(el) {
+                el.style.opacity = '0';
+                setTimeout(function(){
+                    el.style.display = 'none';
+                }, 300);
+            }
+        }
+        window.closeFullScreen = closeFullScreen;
+    </script>
+</body>
+</html>

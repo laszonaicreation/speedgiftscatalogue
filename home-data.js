@@ -102,7 +102,11 @@ export async function fetchHomeDataBundle({
     }
 
     const products = rawProducts.filter(
-        p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id)
+        p => {
+            if (['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id)) return false;
+            if (!p.name || String(p.name).trim() === '' || String(p.name).toLowerCase() === 'undefined') return false;
+            return true;
+        }
     );
 
     return {
