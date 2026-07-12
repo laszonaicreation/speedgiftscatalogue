@@ -1620,11 +1620,6 @@ setInterval(() => {
     document.querySelectorAll('.img-container img:not(.loaded)').forEach(img => {
         if (img.complete && img.naturalHeight > 0) {
             img.classList.add('loaded');
-        } else if (img.complete && img.naturalHeight === 0 && img.src) {
-            // Force reload if broken
-            const src = img.src;
-            img.src = '';
-            img.src = src;
         }
     });
 }, 400);
