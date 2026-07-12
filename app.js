@@ -914,7 +914,7 @@ async function refreshData(isNavigationOnly = false) {
 
 
         // Preload in background (non-blocking)
-        const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img)).filter(u => u && u !== 'img/').slice(0, 10);
+        const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img, 200)).filter(u => u && u !== 'img/').slice(0, 10);
         const stockFilter = (items) => items;
         let filteredForPreload = [];
         if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
@@ -927,7 +927,7 @@ async function refreshData(isNavigationOnly = false) {
             return (b.updatedAt || 0) - (a.updatedAt || 0);
         });
 
-        const prodsToLoad = filteredForPreload.slice(0, 8).map(p => getOptimizedUrl(p.img)).filter(u => u && u !== 'img/');
+        const prodsToLoad = filteredForPreload.slice(0, 8).map(p => getOptimizedUrl(p.img, 600)).filter(u => u && u !== 'img/');
         const allToPreload = [...new Set([...prodsToLoad, ...iconsToLoad])];
 
         // Fire and forget (don't await)
