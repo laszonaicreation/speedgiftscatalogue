@@ -510,7 +510,7 @@ function setupAdminOrderNotification(user) {
     _orderUnsubscribe = onSnapshot(ordersCol, (snapshot) => {
         if (_isFirstLoadForOrders) {
             _isFirstLoadForOrders = false;
-            return; 
+            return;
         }
 
         snapshot.docChanges().forEach((change) => {
@@ -518,13 +518,13 @@ function setupAdminOrderNotification(user) {
                 const order = change.doc.data();
                 // Only alert for new pending orders
                 if (order.status && order.status !== 'Pending') return;
-                
+
                 // Play Sound
                 try {
                     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                     audio.play().catch(e => console.error('Audio play blocked:', e));
-                } catch(e) {}
-                
+                } catch (e) { }
+
                 // Show notification
                 if (typeof window.showToast === 'function') {
                     window.showToast(`🔔 New Order Received: ${order.orderId || ''}`);
@@ -1298,7 +1298,7 @@ window.handleFloatingWhatsAppClick = () => {
     window.open(`https://wa.me/971561010387?text=${encodeURIComponent(msg)}`);
 };
 
-window.renderAdminUI = () => {}; // no-op: admin moved to admin.html
+window.renderAdminUI = () => { }; // no-op: admin moved to admin.html
 
 
 window.handleCategoryRowScroll = (el) => {
@@ -1395,10 +1395,10 @@ window.toggleHomeBestView = (expand) => {
 
 // Admin panel redirect — admin.html is the standalone admin entry point
 window.showAdminPanel = () => window.location.href = 'admin.html';
-window.hideAdminPanel = () => {};
-window.toggleSidebarGroup = () => {};
-window.expandSidebarGroupForTab = () => {};
-window.switchAdminTab = () => {};
+window.hideAdminPanel = () => { };
+window.toggleSidebarGroup = () => { };
+window.expandSidebarGroupForTab = () => { };
+window.switchAdminTab = () => { };
 
 
 /* CATEGORY PICKER LOGIC */

@@ -43,7 +43,7 @@ const megaCol = collection(db, 'artifacts', appId, 'public', 'data', 'mega_menus
 const shareCol = collection(db, 'artifacts', appId, 'public', 'data', 'selections');
 
 // ─── State ───────────────────────────────────────────────────────
-const INTERNAL_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'];
+const INTERNAL_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'];
 const SHOP_WISHLIST_KEY = 'speedgifts_wishlist';
 const PAGE_SIZE = 20;
 const WISHLIST_SYNC_CHANNEL = 'speedgifts_wishlist_sync';

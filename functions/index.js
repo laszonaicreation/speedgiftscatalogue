@@ -108,7 +108,7 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
         const popupCol = dataRef.collection('popup_settings');
         const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
 
-        const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--'];
+        const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
         
         const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
             prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),

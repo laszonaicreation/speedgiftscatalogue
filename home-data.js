@@ -20,7 +20,7 @@ export async function fetchHomeDataBundle({
 
 
     // Queries for massive payload reduction on initial load
-    const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--'];
+    const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
     const qConfig = query(prodCol, where(documentId(), 'in', configDocIds));
     const qFeatured = query(prodCol, where('isFeatured', '==', true));
     const qFallback = query(prodCol, limit(30)); // Provides a fallback if no items are featured
@@ -103,7 +103,7 @@ export async function fetchHomeDataBundle({
 
     const products = rawProducts.filter(
         p => {
-            if (['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id)) return false;
+            if (['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(p.id)) return false;
             if (!p.name || String(p.name).trim() === '' || String(p.name).toLowerCase() === 'undefined') return false;
             return true;
         }

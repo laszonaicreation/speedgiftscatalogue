@@ -12,20 +12,20 @@ export function initSlider({ db, appId, doc, setDoc }) {
     let announcementInterval;
     let currentAnnouncement = 0;
 
-    const getData    = () => window._sgDATA;
-    const getState   = () => window._sgState;
-    const getOptUrl  = (url, w) => window._sgGetOptUrl ? window._sgGetOptUrl(url, w) : url;
+    const getData = () => window._sgDATA;
+    const getState = () => window._sgState;
+    const getOptUrl = (url, w) => window._sgGetOptUrl ? window._sgGetOptUrl(url, w) : url;
 
     // ─── SLIDER ──────────────────────────────────────────────────────────────
 
     function renderSlider() {
-        const DATA  = getData();
+        const DATA = getData();
         const state = getState();
 
-        const wrapper   = document.getElementById('home-top-elements');
+        const wrapper = document.getElementById('home-top-elements');
         const container = document.getElementById('home-slider-container');
-        const slider    = document.getElementById('home-slider');
-        const dots      = document.getElementById('slider-dots');
+        const slider = document.getElementById('home-slider');
+        const dots = document.getElementById('slider-dots');
 
         // Safety: always hide slider when a product detail is open (?p= in URL)
         const isProductDetail = new URLSearchParams(window.location.search).has('p');
@@ -69,7 +69,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
         const isUrl = (val) => val && typeof val === 'string' && val.trim() !== '' && val !== 'img/';
 
         const visibleSliders = sortedSliders.filter(s => {
-            const hasMobile  = isUrl(s.mobileImg);
+            const hasMobile = isUrl(s.mobileImg);
             const hasDesktop = isUrl(s.img);
             return isMobile ? hasMobile : hasDesktop;
         });
@@ -82,10 +82,10 @@ export function initSlider({ db, appId, doc, setDoc }) {
 
         // ── LCP PRELOAD CACHE ─────────────────────────────────────────────────
         try {
-            const _lcpRawImg  = isMobile ? visibleSliders[0].mobileImg : visibleSliders[0].img;
-            const _lcpUrl     = getOptUrl(_lcpRawImg, isMobile ? 1200 : 1920);
+            const _lcpRawImg = isMobile ? visibleSliders[0].mobileImg : visibleSliders[0].img;
+            const _lcpUrl = getOptUrl(_lcpRawImg, isMobile ? 1200 : 1920);
             const _lcpUrlDesk = getOptUrl(visibleSliders[0].img, 1920);
-            const _lcpUrlMob  = getOptUrl(visibleSliders[0].mobileImg || visibleSliders[0].img, 1200);
+            const _lcpUrlMob = getOptUrl(visibleSliders[0].mobileImg || visibleSliders[0].img, 1200);
             if (_lcpUrl && _lcpUrl !== 'img/') {
                 localStorage.setItem('sg_lcp_img_url', _lcpUrl);
                 localStorage.setItem('sg_lcp_img_mobile', isMobile ? '1' : '0');
@@ -93,8 +93,8 @@ export function initSlider({ db, appId, doc, setDoc }) {
                     const _heroRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', '_hero_config_');
                     setDoc(_heroRef, {
                         desktopUrl: _lcpUrlDesk || _lcpUrl,
-                        mobileUrl:  _lcpUrlMob  || _lcpUrl,
-                        updatedAt:  Date.now()
+                        mobileUrl: _lcpUrlMob || _lcpUrl,
+                        updatedAt: Date.now()
                     }, { merge: true }).catch(() => { });
                 } catch (_fe) { /* Firestore write unavailable — not critical */ }
             }

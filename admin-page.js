@@ -142,7 +142,7 @@ async function fetchAdminData() {
     ]);
 
     // Config docs stored inside products collection (same as home-data.js)
-    const CONFIG_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'];
+    const CONFIG_IDS = ['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'];
     const allProductDocs = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     // Extract config docs from products collection

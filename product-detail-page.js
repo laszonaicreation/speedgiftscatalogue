@@ -565,7 +565,7 @@ async function bootstrap() {
     // This runs after the user has seen the main product.
     const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
     DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_'].includes(p.id));
+        .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(p.id));
     DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     renderCategoriesSidebar();
