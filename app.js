@@ -1565,7 +1565,7 @@ function primeHomeCriticalAssets() {
 
 
 function getOptimizedUrl(url, width) {
-    if (!url || typeof url !== 'string') return '';
+    if (!url || typeof url !== 'string' || url === 'img/' || url === 'img') return '';
     
     // Serve Firebase Thumbnails for small elements
     if (url.includes('firebasestorage.googleapis.com')) {

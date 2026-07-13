@@ -78,7 +78,7 @@ const getTodayStr = () => {
 window._sgGetTodayStr = () => getTodayStr();
 
 function getOptimizedUrl(url, width) {
-    if (!url || typeof url !== 'string') return '';
+    if (!url || typeof url !== 'string' || url === 'img/' || url === 'img') return '';
     if (!url.includes('cloudinary.com')) return url;
     const baseTransform = 'f_auto,q_auto';
     const widthTransform = width ? `,w_${width},c_limit` : '';
