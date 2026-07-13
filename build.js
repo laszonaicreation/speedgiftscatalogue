@@ -125,12 +125,14 @@ if (successCount > 0) {
         if (fs.existsSync(devHtml)) {
             let content = fs.readFileSync(devHtml, 'utf8');
             let newContent = content.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
-                if (pathStr.includes('http') || pathStr.endsWith('.min.css')) return match;
-                return match.replace(pathStr, pathStr.replace(/\.css$/, '.min.css'));
+                if (pathStr.includes('http')) return match;
+                if (pathStr.endsWith('.min.css')) return `href="${pathStr}?v=${BUILD_VERSION}"`;
+                return `href="${pathStr.replace(/\.css$/, '.min.css')}?v=${BUILD_VERSION}"`;
             });
             newContent = newContent.replace(/(src|href)=['"]([^'"]+\.js)(\?[^'"]*)?['"]/gi, (match, attr, pathStr) => {
-                if (pathStr.includes('http') || pathStr.endsWith('.min.js')) return match;
-                return match.replace(pathStr, pathStr.replace(/\.js$/, '.min.js'));
+                if (pathStr.includes('http')) return match;
+                if (pathStr.endsWith('.min.js')) return `${attr}="${pathStr}?v=${BUILD_VERSION}"`;
+                return `${attr}="${pathStr.replace(/\.js$/, '.min.js')}?v=${BUILD_VERSION}"`;
             });
             if (content !== newContent) fs.writeFileSync(devHtml, newContent, 'utf8');
         }
