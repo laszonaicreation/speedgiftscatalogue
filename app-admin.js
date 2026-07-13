@@ -1611,8 +1611,8 @@ export function initAdmin(ctx) {
     async function directFirebaseUpload(file, customMaxWidth = 1200) {
         if (!window._sgStorage) throw new Error("Storage not initialized");
         
-        // Resize image to max width and convert to webp using Canvas
-        const blob = await new Promise((resolve) => {
+        // 1. Generate Main Blob
+        const mainBlob = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
@@ -1637,12 +1637,45 @@ export function initAdmin(ctx) {
             reader.readAsDataURL(file);
         });
 
+        // 2. Generate Thumb Blob
+        const thumbBlob = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > 400) {
+                        height = Math.round((height * 400) / width);
+                        width = 400;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(resolve, 'image/webp', 0.70);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
         const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js");
-        const fileName = `uploads/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.webp`;
-        const storageRef = ref(window._sgStorage, fileName);
+        const baseName = `uploads/${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         
-        await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
-        return await getDownloadURL(storageRef);
+        const mainRef = ref(window._sgStorage, `${baseName}.webp`);
+        const thumbRef = ref(window._sgStorage, `${baseName}_thumb.webp`);
+        
+        // Upload both concurrently
+        await Promise.all([
+            uploadBytes(mainRef, mainBlob, { contentType: 'image/webp' }),
+            uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' })
+        ]);
+        
+        return await getDownloadURL(mainRef);
     }
 
     let cloudinaryTarget = null; // Can be ID string or input element
