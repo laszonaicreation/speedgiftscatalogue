@@ -103,10 +103,10 @@ if (successCount > 0) {
                 return `href="${pathStr.replace(/\.css$/, '.min.css')}?v=${ts}"`;
             });
 
-            newContent = newContent.replace(/src=['"]([^'"]+\.js)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
+            newContent = newContent.replace(/(src|href)=['"]([^'"]+\.js)(\?[^'"]*)?['"]/gi, (match, attr, pathStr) => {
                 if (pathStr.includes('http')) return match;
-                if (pathStr.endsWith('.min.js')) return `src="${pathStr}?v=${ts}"`;
-                return `src="${pathStr.replace(/\.js$/, '.min.js')}?v=${ts}"`;
+                if (pathStr.endsWith('.min.js')) return `${attr}="${pathStr}?v=${ts}"`;
+                return `${attr}="${pathStr.replace(/\.js$/, '.min.js')}?v=${ts}"`;
             });
 
             if (content !== newContent) {
@@ -126,6 +126,10 @@ if (successCount > 0) {
             let newContent = content.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
                 if (pathStr.includes('http') || pathStr.endsWith('.min.css')) return match;
                 return match.replace(pathStr, pathStr.replace(/\.css$/, '.min.css'));
+            });
+            newContent = newContent.replace(/(src|href)=['"]([^'"]+\.js)(\?[^'"]*)?['"]/gi, (match, attr, pathStr) => {
+                if (pathStr.includes('http') || pathStr.endsWith('.min.js')) return match;
+                return match.replace(pathStr, pathStr.replace(/\.js$/, '.min.js'));
             });
             if (content !== newContent) fs.writeFileSync(devHtml, newContent, 'utf8');
         }
