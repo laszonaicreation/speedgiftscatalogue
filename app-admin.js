@@ -6,17 +6,6 @@ import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js"
 // Shared context (db, auth, state, DATA, helpers) passed via initAdmin()
 // ============================================================================
 
-// Preload Cloudinary widget script in the background as soon as admin module loads.
-// By the time admin clicks an upload button, the script will be ready.
-// This keeps cloudinaryUpload() synchronous (no popup-blocker issues).
-(function () {
-    if (window.cloudinary) return;
-    const s = document.createElement('script');
-    s.src = 'https://upload-widget.cloudinary.com/global/all.js';
-    s.async = true;
-    document.head.appendChild(s);
-})();
-
 export function initAdmin(ctx) {
     const {
         db, auth, state, DATA, appId,
@@ -1534,7 +1523,7 @@ export function initAdmin(ctx) {
         showToast(`Uploading ${files.length} images...`);
         for (const file of files) {
             try {
-                const url = await directCloudinaryUpload(file);
+                const url = await directFirebaseUpload(file);
                 addImageToGrid(containerId, url);
             } catch (err) {
                 showToast("One or more uploads failed.");
@@ -1555,7 +1544,7 @@ export function initAdmin(ctx) {
             showToast(`Uploading ${files.length} images...`);
             for (const file of files) {
                 try {
-                    const url = await directCloudinaryUpload(file);
+                    const url = await directFirebaseUpload(file);
                     addImageToGrid(containerId, url);
                 } catch (err) {
                     showToast("One or more uploads failed.");
@@ -1590,7 +1579,7 @@ export function initAdmin(ctx) {
 
         zone.classList.add('uploading');
         try {
-            const url = await directCloudinaryUpload(file);
+            const url = await directFirebaseUpload(file);
             document.getElementById(fieldId).value = url;
             showToast("Image Uploaded!");
         } catch (err) {
@@ -1608,7 +1597,7 @@ export function initAdmin(ctx) {
 
         zone.classList.add('uploading');
         try {
-            const url = await directCloudinaryUpload(file);
+            const url = await directFirebaseUpload(file);
             const input = zone.querySelector('.v-img, .vc-img');
             if (input) input.value = url;
             showToast("Image Uploaded!");
@@ -1619,58 +1608,74 @@ export function initAdmin(ctx) {
         }
     };
 
-    async function directCloudinaryUpload(file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', 'speed_preset');
-        formData.append('cloud_name', 'dxkcvm2yh');
-
-        const res = await fetch(`https://api.cloudinary.com/v1_1/dxkcvm2yh/image/upload`, {
-            method: 'POST',
-            body: formData
+    async function directFirebaseUpload(file, customMaxWidth = 1200) {
+        if (!window._sgStorage) throw new Error("Storage not initialized");
+        
+        // Resize image to max width and convert to webp using Canvas
+        const blob = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > customMaxWidth) {
+                        height = Math.round((height * customMaxWidth) / width);
+                        width = customMaxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(resolve, 'image/webp', 0.85);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         });
-        const data = await res.json();
-        if (data.secure_url) return data.secure_url;
-        throw new Error("Upload failed");
+
+        const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js");
+        const fileName = `uploads/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.webp`;
+        const storageRef = ref(window._sgStorage, fileName);
+        
+        await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
+        return await getDownloadURL(storageRef);
     }
 
-    let cloudinaryWidget = null;
     let cloudinaryTarget = null; // Can be ID string or input element
 
     window.cloudinaryUpload = (target) => {
         cloudinaryTarget = target;
-
-        // If script is still loading, show a brief message and retry
-        if (!window.cloudinary) {
-            showToast('Upload widget loading... please try again in a moment.');
-            return;
-        }
-
-        if (cloudinaryWidget) {
-            cloudinaryWidget.open();
-            return;
-        }
-        cloudinaryWidget = cloudinary.createUploadWidget({
-            cloudName: 'dxkcvm2yh',
-            apiKey: '749457642941763',
-            uploadPreset: 'speed_preset',
-            sources: ['local', 'url', 'camera'],
-            multiple: false,
-            styles: {
-                palette: { window: '#FFFFFF', windowBorder: '#90A0B3', tabIcon: '#000000', menuIcons: '#5A616A', textDark: '#000000', textLight: '#FFFFFF', link: '#000000', action: '#111111', inactiveTabIcon: '#0E2F5A', error: '#F44235', inProgress: '#0078FF', complete: '#20B832', sourceBg: '#E4EBF1' }
-            }
-        }, (error, result) => {
-            if (!error && result && result.event === "success") {
+        
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            showToast("Uploading Image...");
+            try {
+                let maxWidth = 1200;
+                if (cloudinaryTarget === 's-img') maxWidth = 1920;
+                else if (cloudinaryTarget === 's-mobileImg') maxWidth = 1000;
+                
+                const url = await directFirebaseUpload(file, maxWidth);
                 if (typeof cloudinaryTarget === 'string') {
                     const el = document.getElementById(cloudinaryTarget);
-                    if (el) el.value = result.info.secure_url;
+                    if (el) el.value = url;
                 } else if (cloudinaryTarget instanceof HTMLElement) {
-                    cloudinaryTarget.value = result.info.secure_url;
+                    cloudinaryTarget.value = url;
                 }
                 showToast("Image Uploaded!");
+            } catch (err) {
+                console.error("Upload error:", err);
+                showToast("Upload Failed.");
             }
-        });
-        cloudinaryWidget.open();
+        };
+        input.click();
     };
 
     window.cloudinaryUploadForVariation = (btn) => {
@@ -2336,43 +2341,51 @@ export function initAdmin(ctx) {
     };
 
     window.cloudinaryBulkSliderUpload = (type) => {
-        cloudinary.openUploadWidget({
-            cloudName: 'dxkcvm2yh',
-            uploadPreset: 'speed_preset',
-            multiple: true,
-            maxFiles: 20,
-            sources: ['local', 'url', 'camera']
-        }, async (error, result) => {
-            if (!error && result && result.event === "success") {
-                const url = result.info.secure_url;
-                showToast(`Saving ${type} image...`);
-
-                const sliderData = {
-                    title: "",
-                    link: "",
-                    order: DATA.s.length + 1,
-                    updatedAt: Date.now()
-                };
-
-                if (type === 'desktop') {
-                    sliderData.img = url;
-                    sliderData.mobileImg = "img/";
-                } else {
-                    sliderData.img = "img/";
-                    sliderData.mobileImg = url;
-                }
-
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*';
+        input.onchange = async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            
+            showToast(`Uploading ${files.length} ${type} images...`);
+            let successCount = 0;
+            
+            for (const file of files) {
                 try {
+                    const maxWidth = type === 'desktop' ? 1920 : 1000;
+                    const url = await directFirebaseUpload(file, maxWidth);
+                    const sliderData = {
+                        title: "",
+                        link: "",
+                        order: DATA.s.length + 1,
+                        updatedAt: Date.now()
+                    };
+
+                    if (type === 'desktop') {
+                        sliderData.img = url;
+                        sliderData.mobileImg = "img/";
+                    } else {
+                        sliderData.img = "img/";
+                        sliderData.mobileImg = url;
+                    }
                     await addDoc(sliderCol, sliderData);
-                    DATA.s = []; // Trigger full refresh
-                    refreshData();
-                    showToast(`New ${type} slider added!`);
+                    successCount++;
                 } catch (err) {
-                    console.error("Bulk Upload Save Error:", err);
-                    showToast("Save failed");
+                    console.error("Bulk Upload Error:", err);
                 }
             }
-        });
+            
+            if (successCount > 0) {
+                DATA.s = []; // Trigger full refresh
+                refreshData();
+                showToast(`Added ${successCount} ${type} sliders!`);
+            } else {
+                showToast("All uploads failed");
+            }
+        };
+        input.click();
     };
 
     window.handleSliderBulkDrop = async (e, type) => {
@@ -2387,7 +2400,8 @@ export function initAdmin(ctx) {
 
         for (const file of files) {
             try {
-                const url = await directCloudinaryUpload(file);
+                const maxWidth = type === 'desktop' ? 1920 : 1000;
+                const url = await directFirebaseUpload(file, maxWidth);
                 const sliderData = {
                     title: "",
                     link: "",
@@ -2424,10 +2438,22 @@ export function initAdmin(ctx) {
     window.deleteSlider = async (id) => {
         if (!confirm("Are you sure?")) return;
         try {
+            const s = DATA.s.find(x => x.id === id);
+            if (s) {
+                const { ref: storageRef, deleteObject } = await import("https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js");
+                if (s.img && s.img.includes('firebasestorage')) {
+                    await deleteObject(storageRef(window._sgStorage, s.img)).catch(e => console.warn(e));
+                }
+                if (s.mobileImg && s.mobileImg.includes('firebasestorage')) {
+                    await deleteObject(storageRef(window._sgStorage, s.mobileImg)).catch(e => console.warn(e));
+                }
+            }
+
             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sliders', id));
             showToast("Slider Deleted");
             refreshData();
         } catch (e) {
+            console.error(e);
             showToast("Error deleting slider");
         }
     };

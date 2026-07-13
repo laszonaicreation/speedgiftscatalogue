@@ -14,6 +14,7 @@ import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword,
     GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 
 // ─── Firebase Init ────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -30,11 +31,13 @@ const db = initializeFirestore(_app, {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
 });
 const auth = getAuth(_app);
+const storage = getStorage(_app);
 const appId = firebaseConfig.projectId;
 
 // Expose for app-insights.js and other lazy modules that read these globals
 window._sgDb = db;
 window._sgAuth = auth;
+window._sgStorage = storage;
 window._sgAppId = appId;
 window._isMinBuild = import.meta.url?.includes('.min.js');
 
