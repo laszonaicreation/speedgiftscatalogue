@@ -125,9 +125,12 @@ export function initSlider({ db, appId, doc, setDoc }) {
                    </div>`
             ) : '';
 
+            const imgUrl = getOptUrl(isMobile ? s.mobileImg : s.img, isMobile ? 1200 : null);
+            const validSrc = imgUrl ? imgUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
             return `
                 <div class="slider-slide relative" data-index="${i}">
-                    <img src="${getOptUrl(isMobile ? s.mobileImg : s.img, isMobile ? 1200 : null)}" 
+                    <img src="${validSrc}" 
                          class="${index === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                          alt="${s.title || ''}" 
                          ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="eager"'}
