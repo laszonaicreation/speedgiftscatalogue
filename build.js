@@ -10,6 +10,7 @@ const files = fs.readdirSync(dir);
 //   node build.js          → incremental (only changed files)
 //   node build.js --force  → rebuild everything
 const FORCE = process.argv.includes('--force') || process.argv.includes('-f');
+const BUILD_VERSION = Date.now();
 
 const jsFiles   = files.filter(f => f.endsWith('.js')  && !f.endsWith('.min.js')  && f !== 'build.js');
 const cssFiles  = files.filter(f => f.endsWith('.css')  && !f.endsWith('.min.css'));
@@ -54,7 +55,7 @@ for (const file of jsFiles) {
             let content = fs.readFileSync(minPath, 'utf8');
             const newContent = content.replace(/(['"])(\.\/[^'"]+)\.js(\?[^'"]*)?['"]/g, (match, quote, pathBase, qs) => {
                 if (pathBase.endsWith('.min')) return match;
-                return `${quote}${pathBase}.min.js?v=${Date.now()}${quote}`;
+                return `${quote}${pathBase}.min.js?v=${BUILD_VERSION}${quote}`;
             });
             if (content !== newContent) {
                 fs.writeFileSync(minPath, newContent, 'utf8');
@@ -90,7 +91,7 @@ for (const file of cssFiles) {
 // ── HTML Cache-buster Update (only if something was rebuilt) ─────────────────
 if (successCount > 0) {
     console.log(`\nUpdating HTML files to use .min.css and .min.js with cache-busters...`);
-    const ts = Date.now();
+    const ts = BUILD_VERSION;
     for (const file of htmlFiles) {
         try {
             const filePath = path.join(dir, file);
