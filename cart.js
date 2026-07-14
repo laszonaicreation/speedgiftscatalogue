@@ -48,7 +48,11 @@ window.addEventListener('pageshow', (e) => {
 });
 
 function saveCart() {
-    localStorage.setItem(CART_KEY, JSON.stringify(_cartItems));
+    try {
+        localStorage.setItem(CART_KEY, JSON.stringify(_cartItems));
+    } catch (e) {
+        console.warn("[Cart] Storage access denied:", e);
+    }
     updateCartBadges();
     // Re-render sidebar if open
     if (document.getElementById('cart-sidebar')?.classList.contains('open')) {
@@ -175,7 +179,11 @@ export function clearCart(localOnly = false) {
     const shouldClearCloud = !localOnly && user && !user.isAnonymous && db && appId;
 
     _cartItems = [];
-    localStorage.removeItem(CART_KEY);
+    try {
+        localStorage.removeItem(CART_KEY);
+    } catch (e) {
+        console.warn("[Cart] Storage access denied:", e);
+    }
     updateCartBadges();
     // Re-render sidebar if open (now shows empty)
     if (document.getElementById('cart-sidebar')?.classList.contains('open')) {

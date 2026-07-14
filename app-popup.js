@@ -92,7 +92,7 @@ function closeGiftPopup() {
     if (overlay) {
         overlay.classList.remove('open');
         document.body.style.overflow = 'auto';
-        localStorage.setItem('popup_dismissed', 'true');
+        try { localStorage.setItem('popup_dismissed', 'true'); } catch (e) {}
     }
 }
 
@@ -162,7 +162,7 @@ async function submitLead(e) {
         if (successState) successState.classList.remove('hidden');
 
         window.showToast("Success! Lead captured.");
-        localStorage.setItem('popup_submitted', 'true');
+        try { localStorage.setItem('popup_submitted', 'true'); } catch (e) {}
 
         // Auto-close after 8s if still open
         setTimeout(() => {

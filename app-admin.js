@@ -2075,14 +2075,17 @@ export function initAdmin(ctx) {
         const sessionKey = `product_view_tracked_${today}_${id}`;
 
         // Strict Synchronous Guard to prevent double/triple counting
-        if (sessionStorage.getItem(sessionKey)) return;
-        sessionStorage.setItem(sessionKey, 'true');
+        try {
+            if (sessionStorage.getItem(sessionKey)) return;
+            sessionStorage.setItem(sessionKey, 'true');
+        } catch (e) {}
 
         console.log(`[Traffic] Product interaction tracking triggered: ${id}. waiting for auth...`);
         await waitForAuth();
 
         try {
-            const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
+            let isAd = false;
+            try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
 
             // 1. Update Global Stats (Product Journey Pillar)
             const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);

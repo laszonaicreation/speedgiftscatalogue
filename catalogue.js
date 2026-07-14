@@ -723,8 +723,10 @@ window.clearSelection = () => {};
 window.shareSelection = async () => {};
 
 window.goToProduct = (id) => {
-    sessionStorage.setItem('speedgifts_shop_scroll', window.scrollY);
-    sessionStorage.setItem('speedgifts_shop_url', window.location.href);
+    try {
+        sessionStorage.setItem('speedgifts_shop_scroll', window.scrollY);
+        sessionStorage.setItem('speedgifts_shop_url', window.location.href);
+    } catch (e) {}
     window.location.href = getProductDetailUrl(id);
 };
 
@@ -1342,9 +1344,12 @@ window.addEventListener('popstate', () => {
 
 // ─── Restore exact product position when returning from PDP ───────
 function restoreShopReturnPosition() {
-    const returnPid = sessionStorage.getItem('speedgifts_shop_return_product');
-    const savedY = sessionStorage.getItem('speedgifts_shop_scroll');
-    const returnPage = parseInt(sessionStorage.getItem('speedgifts_shop_return_page') || '1', 10);
+    let returnPid = null, savedY = null, returnPage = 1;
+    try {
+        returnPid = sessionStorage.getItem('speedgifts_shop_return_product');
+        savedY = sessionStorage.getItem('speedgifts_shop_scroll');
+        returnPage = parseInt(sessionStorage.getItem('speedgifts_shop_return_page') || '1', 10);
+    } catch (e) {}
     if (!returnPid && !savedY) return;
 
     if (Number.isFinite(returnPage) && returnPage > 1 && state.page < returnPage) {
@@ -1359,9 +1364,11 @@ function restoreShopReturnPosition() {
         const card = returnPid ? document.querySelector(`.product-card[data-id="${returnPid}"]`) : null;
         if (card || (!card && tries >= maxTries)) {
             if (savedY) window.scrollTo({ top: parseInt(savedY, 10) || 0, behavior: 'auto' });
-            sessionStorage.removeItem('speedgifts_shop_return_product');
-            sessionStorage.removeItem('speedgifts_shop_scroll');
-            sessionStorage.removeItem('speedgifts_shop_return_page');
+            try {
+                sessionStorage.removeItem('speedgifts_shop_return_product');
+                sessionStorage.removeItem('speedgifts_shop_scroll');
+                sessionStorage.removeItem('speedgifts_shop_return_page');
+            } catch (e) {}
             const antiJumpStyle = document.getElementById('anti-jump-style');
             if (antiJumpStyle) antiJumpStyle.remove();
             return;

@@ -30,7 +30,7 @@ export async function fetchHomeDataBundle({
     if (isAdmin) {
         const [allProdSnap, ...otherSnaps] = await Promise.all([
             getDocs(prodCol).catch(() => ({ docs: [] })),
-            getDocs(catCol),
+            getDocs(catCol).catch(() => ({ docs: [] })),
             getDocs(megaCol).catch(() => ({ docs: [] })),
             getDocs(sliderCol).catch(() => ({ docs: [] })),
             getDocs(popupSettingsCol).catch(() => ({ empty: true })),
@@ -43,7 +43,7 @@ export async function fetchHomeDataBundle({
             getDocs(qConfig).catch(() => ({ docs: [] })),
             getDocs(qFeatured).catch(() => ({ docs: [] })),
             getDocs(qFallback).catch(() => ({ docs: [] })),
-            getDocs(catCol),
+            getDocs(catCol).catch(() => ({ docs: [] })),
             getDocs(megaCol).catch(() => ({ docs: [] })),
             getDocs(sliderCol).catch(() => ({ docs: [] })),
             getDocs(popupSettingsCol).catch(() => ({ empty: true })),

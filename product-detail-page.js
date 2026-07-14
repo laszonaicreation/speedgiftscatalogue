@@ -79,29 +79,35 @@ async function initTrafficTracking() {
     const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
     const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
 
-    if (urlParams.has('gclid') ||
-        urlParams.has('gbraid') ||
-        urlParams.has('wbraid') ||
-        urlParams.has('gad_source') ||
-        utmSrc === 'google' ||
-        utmSrc === 'google_ads' ||
-        utmSrc === 'googleads' ||
-        utmMed === 'cpc' ||
-        utmMed === 'ppc' ||
-        utmMed === 'google_ads') {
-        sessionStorage.setItem('traffic_source', 'Google Ads');
-    } else if (urlParams.has('utm_source')) {
-        sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
-    } else if (!sessionStorage.getItem('traffic_source')) {
-        sessionStorage.setItem('traffic_source', 'Normal');
+    try {
+        if (urlParams.has('gclid') ||
+            urlParams.has('gbraid') ||
+            urlParams.has('wbraid') ||
+            urlParams.has('gad_source') ||
+            utmSrc === 'google' ||
+            utmSrc === 'google_ads' ||
+            utmSrc === 'googleads' ||
+            utmMed === 'cpc' ||
+            utmMed === 'ppc' ||
+            utmMed === 'google_ads') {
+            sessionStorage.setItem('traffic_source', 'Google Ads');
+        } else if (urlParams.has('utm_source')) {
+            sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+        } else if (!sessionStorage.getItem('traffic_source')) {
+            sessionStorage.setItem('traffic_source', 'Normal');
+        }
+    } catch (e) {
+        console.warn("[Tracking] Storage access denied:", e);
     }
 }
 
 async function trackAdVisit() {
     const today = getTodayStr();
     const sessionKey = `ad_visit_tracked_${today}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, 'true');
+    try {
+        if (sessionStorage.getItem(sessionKey)) return;
+        sessionStorage.setItem(sessionKey, 'true');
+    } catch (e) {}
     await waitForAuth();
     const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
     await setDoc(statsRef, { adVisits: increment(1) }, { merge: true });
@@ -110,8 +116,10 @@ async function trackAdVisit() {
 async function trackNormalVisit() {
     const today = getTodayStr();
     const sessionKey = `normal_visit_tracked_${today}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, 'true');
+    try {
+        if (sessionStorage.getItem(sessionKey)) return;
+        sessionStorage.setItem(sessionKey, 'true');
+    } catch (e) {}
     await waitForAuth();
     const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
     await setDoc(statsRef, { normalVisits: increment(1) }, { merge: true });
@@ -122,7 +130,8 @@ async function trackProductView(id) {
     trackedProductViews.add(id);
     await waitForAuth();
     const today = getTodayStr();
-    const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
+    let isAd = false;
+    try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch (e) {}
     const globalField = isAd ? 'adProductClicks' : 'normalProductClicks';
 
     const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
@@ -135,7 +144,7 @@ async function trackProductView(id) {
 
 window.trackWhatsAppInquiry = async (ids) => {
     const idList = Array.isArray(ids) ? ids : [ids];
-    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
+    try { if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return; } catch (e) { return; }
     await waitForAuth();
     const today = getTodayStr();
     const dailyStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
@@ -521,7 +530,9 @@ async function bootstrap() {
             loadWishlist(); // Sync wishlist from cloud on login
         }
         await initTrafficTracking();
-        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+        let isAd = false;
+        try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch (e) {}
+        if (isAd) {
             await trackAdVisit().catch(() => { /* no-op */ });
         } else {
             await trackNormalVisit().catch(() => { /* no-op */ });
@@ -582,7 +593,8 @@ const backBtn = document.getElementById('detail-back-btn');
 if (backBtn) {
     backBtn.addEventListener('click', () => {
         // 1. If came from shop page, go back there (preserves filters/scroll)
-        const shopUrl = sessionStorage.getItem('speedgifts_shop_url');
+        let shopUrl = null;
+        try { shopUrl = sessionStorage.getItem('speedgifts_shop_url'); } catch (e) {}
         if (shopUrl && shopUrl.includes('shop.html')) {
             window.location.href = shopUrl;
             return;

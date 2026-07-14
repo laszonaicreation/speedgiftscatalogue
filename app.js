@@ -269,7 +269,9 @@ window.trackWhatsAppInquiry = async (ids) => {
     }
 
     // Record Ad Inquiry (Conversion)
-    if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+    let isGoogleAd = false;
+    try { isGoogleAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
+    if (isGoogleAd) {
         await waitForAuth();
         try {
             const today = getTodayStr();
@@ -294,8 +296,10 @@ window.trackWhatsAppInquiry = async (ids) => {
 /* DEBUG MODE HELPER: Run 'checkAdData()' in console to verify tracking */
 window.checkAdData = () => {
     console.log("--- AD TRACKING DEBUG ---");
-    console.log("Traffic Source Detected:", sessionStorage.getItem('traffic_source'));
-    console.log("Tracked this session?:", sessionStorage.getItem('ad_visit_tracked_v3'));
+    try {
+        console.log("Traffic Source Detected:", sessionStorage.getItem('traffic_source'));
+        console.log("Tracked this session?:", sessionStorage.getItem('ad_visit_tracked_v3'));
+    } catch(e) {}
     console.log("Current Data Memory State:", DATA.stats);
     const testProd = DATA.p.find(p => p.adInquiries > 0);
     console.log("Example Product with Inquiries:", testProd ? `${testProd.name}: ${testProd.adInquiries}` : "None found yet");
@@ -309,25 +313,27 @@ async function initTrafficTracking() {
 
     console.log("[Traffic] Detecting source...");
 
-    if (urlParams.has('gclid') ||
-        urlParams.has('gbraid') ||
-        urlParams.has('wbraid') ||
-        urlParams.has('gad_source') ||
-        utmSrc === 'google' ||
-        utmSrc === 'google_ads' ||
-        utmSrc === 'googleads' ||
-        utmMed === 'cpc' ||
-        utmMed === 'ppc' ||
-        utmMed === 'google_ads') {
-        sessionStorage.setItem('traffic_source', 'Google Ads');
-        console.log("[Traffic] Google Ads source verified.");
-    } else if (urlParams.has('utm_source')) {
-        sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
-        console.log(`[Traffic] UTM Source identified: ${urlParams.get('utm_source')}`);
-    } else if (!sessionStorage.getItem('traffic_source')) {
-        sessionStorage.setItem('traffic_source', 'Normal');
-        console.log("[Traffic] Normal traffic source set.");
-    }
+    try {
+        if (urlParams.has('gclid') ||
+            urlParams.has('gbraid') ||
+            urlParams.has('wbraid') ||
+            urlParams.has('gad_source') ||
+            utmSrc === 'google' ||
+            utmSrc === 'google_ads' ||
+            utmSrc === 'googleads' ||
+            utmMed === 'cpc' ||
+            utmMed === 'ppc' ||
+            utmMed === 'google_ads') {
+            sessionStorage.setItem('traffic_source', 'Google Ads');
+            console.log("[Traffic] Google Ads source verified.");
+        } else if (urlParams.has('utm_source')) {
+            sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+            console.log(`[Traffic] UTM Source identified: ${urlParams.get('utm_source')}`);
+        } else if (!sessionStorage.getItem('traffic_source')) {
+            sessionStorage.setItem('traffic_source', 'Normal');
+            console.log("[Traffic] Normal traffic source set.");
+        }
+    } catch(e) {}
 }
 
 // Global Image Error Tracking (Site Health)
@@ -366,15 +372,17 @@ async function trackNormalVisit() {
     const today = getTodayStr();
     const normalKey = `normal_visit_tracked_${today}`;
     const adKey = `ad_visit_tracked_${today}`;
-    // Cross-tab deduplication: skip if already tracked in ANY tab today
-    if (sessionStorage.getItem(normalKey) || localStorage.getItem(normalKey)) return;
-    // Mutual exclusion: if this browser already logged an Ad visit today, don't also count as normal
-    if (localStorage.getItem(adKey)) {
-        console.log('[Traffic] Skipping normal visit — Ad visit already recorded today.');
-        return;
+    try {
+        if (sessionStorage.getItem(normalKey) || localStorage.getItem(normalKey)) return;
+        if (localStorage.getItem(adKey)) {
+            console.log('[Traffic] Skipping normal visit — Ad visit already recorded today.');
+            return;
+        }
+        sessionStorage.setItem(normalKey, 'true');
+        localStorage.setItem(normalKey, 'true');
+    } catch (e) {
+        console.warn("[Storage] Access denied:", e);
     }
-    sessionStorage.setItem(normalKey, 'true');
-    localStorage.setItem(normalKey, 'true');
 
     await waitForAuth();
     try {
@@ -419,7 +427,9 @@ setInterval(() => {
 });
 
 async function syncSessionDuration() {
-    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
+    let isGoogleAd = false;
+    try { isGoogleAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
+    if (!isGoogleAd) return;
     if (totalActiveSeconds < 5) return;
 
     await waitForAuth();
@@ -452,8 +462,10 @@ function initImpressionTracking() {
 async function trackAdHop() {
     const today = getTodayStr();
     const sessionKey = `ad_hop_tracked_${today}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, 'true'); // Immediate set to prevent race
+    try {
+        if (sessionStorage.getItem(sessionKey)) return;
+        sessionStorage.setItem(sessionKey, 'true'); // Immediate set to prevent race
+    } catch (e) {}
 
     await waitForAuth();
     try {
@@ -470,14 +482,13 @@ async function trackAdVisit() {
     const today = getTodayStr();
     const adKey = `ad_visit_tracked_${today}`;
     const normalKey = `normal_visit_tracked_${today}`;
-    // Cross-tab deduplication: skip if already tracked in ANY tab today
-    if (sessionStorage.getItem(adKey) || localStorage.getItem(adKey)) return;
-    // Lock both keys immediately — prevents any tab from counting a normal visit today
-    sessionStorage.setItem(adKey, 'true');
-    localStorage.setItem(adKey, 'true');
-    // Mutual exclusion: block normal visit from being recorded in any other tab today
-    sessionStorage.setItem(normalKey, 'true');
-    localStorage.setItem(normalKey, 'true');
+    try {
+        if (sessionStorage.getItem(adKey) || localStorage.getItem(adKey)) return;
+        sessionStorage.setItem(adKey, 'true');
+        localStorage.setItem(adKey, 'true');
+        sessionStorage.setItem(normalKey, 'true');
+        localStorage.setItem(normalKey, 'true');
+    } catch (e) {}
 
     await waitForAuth();
     try {
@@ -584,7 +595,9 @@ onAuthStateChanged(auth, async (u) => {
             await refreshData();
         }
 
-        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+        let isGoogleAd = false;
+        try { isGoogleAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
+        if (isGoogleAd) {
             trackAdHop();
             trackAdVisit();
         } else {
@@ -1640,14 +1653,17 @@ async function trackProductView(id) {
     const sessionKey = `product_view_tracked_${today}_${id}`;
 
     // Strict Synchronous Guard to prevent double/triple counting
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, 'true');
+    try {
+        if (sessionStorage.getItem(sessionKey)) return;
+        sessionStorage.setItem(sessionKey, 'true');
+    } catch (e) {}
 
     console.log(`[Traffic] Product interaction tracking triggered: ${id}. waiting for auth...`);
     await waitForAuth();
 
     try {
-        const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
+        let isAd = false;
+        try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
 
         // 1. Update Global Stats (Product Journey Pillar)
         const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
@@ -1819,20 +1835,21 @@ async function _loadPopup() {
 // Tiny initPopup stub — runs at startup, loads module only if needed
 window.initPopup = () => {
     console.log("[Popup] Initializing logic...");
-    // Check if user is from Google Ads
-    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') {
-        console.log("[Popup] Blocked: Non-ads visitor.");
-        return;
-    }
-
-    // Check if user already submitted or dismissed
-    if (localStorage.getItem('popup_submitted')) {
-        console.log("[Popup] Blocked: Already submitted.");
-        return;
-    }
-    if (localStorage.getItem('popup_dismissed')) {
-        console.log("[Popup] Blocked: Already dismissed.");
-        return;
+    try {
+        if (sessionStorage.getItem('traffic_source') !== 'Google Ads') {
+            console.log("[Popup] Blocked: Non-ads visitor.");
+            return;
+        }
+        if (localStorage.getItem('popup_submitted')) {
+            console.log("[Popup] Blocked: Already submitted.");
+            return;
+        }
+        if (localStorage.getItem('popup_dismissed')) {
+            console.log("[Popup] Blocked: Already dismissed.");
+            return;
+        }
+    } catch (e) {
+        console.warn("[Popup] Storage access denied", e);
     }
 
     console.log("[Popup] Timer started: 20s delay...");
@@ -1844,7 +1861,7 @@ window.initPopup = () => {
 // closeGiftPopup + submitLead: shims so HTML onclick works before module loads.
 // Once _loadPopup() runs, initPopup() in app-popup.js replaces these with real impls.
 window.forceShowPopup = async () => { await _loadPopup(); window.forceShowPopup(); };
-window.closeGiftPopup = () => { document.getElementById('gift-popup-overlay')?.classList.remove('open'); document.body.style.overflow = 'auto'; localStorage.setItem('popup_dismissed', 'true'); };
+window.closeGiftPopup = () => { document.getElementById('gift-popup-overlay')?.classList.remove('open'); document.body.style.overflow = 'auto'; try{localStorage.setItem('popup_dismissed', 'true');}catch(e){} };
 window.submitLead = async (e) => {
     if (e) e.preventDefault(); // MUST be sync — prevents form reload before module loads
     await _loadPopup();

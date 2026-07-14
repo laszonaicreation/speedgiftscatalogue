@@ -109,7 +109,9 @@ function renderFavoritesSidebar() {
 window.__cartPageRemoveWish = (id) => {
     const idx = state.wishlist.findIndex(x => (typeof x === 'string' ? x : x.id) === id);
     if (idx >= 0) state.wishlist.splice(idx, 1);
-    localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist));
+    try {
+        localStorage.setItem(WISHLIST_KEY, JSON.stringify(state.wishlist));
+    } catch (e) {}
     updateWishlistBadges();
 };
 
