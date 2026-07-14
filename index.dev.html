@@ -24,25 +24,9 @@
     <meta name="keywords" content="personalized gifts UAE, customized gifts Dubai, custom gift delivery Abu Dhabi, personalized gifts Sharjah, custom gifts Ajman, photo frames UAE, mug printing UAE, wood engraving frames, bottles printing Dubai, t-shirt printing Abu Dhabi, hoodie printing UAE, keychains printing UAE, office colleagues gift items, customized gifts near me UAE, unique gifts UAE, corporate gifts UAE, birthday gifts UAE, anniversary gifts delivery UAE, custom gifts all over UAE, personalized gifts Ras Al Khaimah, custom gifts Fujairah, Speed Gifts">
     <link rel="icon" type="image/png" href="favicon.png">
 
-    <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    <link rel="preconnect" href="https://res.cloudinary.com">
 
-    <!-- Firebase LCP / FCP Optimizations -->
-    <link rel="dns-prefetch" href="https://firestore.googleapis.com">
-    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js">
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js">
-    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js">
-    <link rel="modulepreload" href="product-detail-utils.min.js?v=1783954629740">
-    <link rel="modulepreload" href="shared-navbar.min.js?v=1783954629740">
-    <link rel="modulepreload" href="shared-auth.min.js?v=1783954629740">
-    <link rel="modulepreload" href="shared-shell.min.js?v=1783954629740">
-    <link rel="modulepreload" href="shared-sidebar-renderers.min.js?v=1783954629740">
-    <link rel="modulepreload" href="wishlist.min.js?v=1783954629740">
-    <link rel="modulepreload" href="home-data.min.js?v=1783954629740">
-    <link rel="modulepreload" href="home-ui2.min.js?v=1783954629740">
-    <link rel="modulepreload" href="cart.min.js?v=1783954629740">
-
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1783954629740">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1784023137443">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -75,7 +59,7 @@
 
     <!-- Google Ads + Analytics: deferred after page load for better performance -->
 
-    <link rel="stylesheet" href="style.min.css?v=1783954629740">
+    <link rel="stylesheet" href="style.min.css?v=1784023137443">
     <!-- Responsive helpers + badge overrides moved to style.css -->
     <!-- Intl-Tel-Input CSS & JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.min.css"
@@ -155,90 +139,6 @@
   }
 }
 </script>
-    <!-- LCP PRELOAD HINT â€” THREE-TIER STRATEGY
-         â‘  Repeat visitors  â†’ localStorage (instant, ~0ms)
-         â‘¡ Cached config    â†’ _hero_config_ Firestore doc (~200ms)
-         â‘¢ First-time visitors â†’ sliders collection REST fetch (works on first ever visit)
-    -->
-    <script>
-        (function () {
-            var PROJECT = 'speed-catalogue';
-            var BASE_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/';
-            var HERO_DOC = BASE_URL + 'artifacts/' + PROJECT + '/public/data/products/_hero_config_';
-            var SLIDERS_COL = BASE_URL + 'artifacts/' + PROJECT + '/public/data/sliders';
-            var isMob = window.matchMedia('(max-width:767px)').matches;
-            var preloaded = false;
-
-            function injectPreload(url) {
-                if (!url || url.indexOf('http') !== 0 || preloaded) return;
-                preloaded = true;
-                var optimized = url;
-                if (url.indexOf('cloudinary.com') !== -1) {
-                    var w = isMob ? '1200' : '1920';
-                    optimized = url.indexOf('/upload/f_auto') === -1
-                        ? url.replace('/upload/', '/upload/f_auto,q_auto,w_' + w + ',c_limit/')
-                        : url;
-                }
-                var l = document.createElement('link');
-                l.rel = 'preload';
-                l.as = 'image';
-                l.href = optimized;
-                l.setAttribute('fetchpriority', 'high');
-                document.head.appendChild(l);
-                try { localStorage.setItem('sg_lcp_img_url', optimized); } catch (e) { }
-            }
-
-            function xhrGet(url, cb) {
-                try {
-                    var x = new XMLHttpRequest();
-                    x.open('GET', url, true);
-                    x.timeout = 4000;
-                    x.onload = function () { if (x.status === 200) cb(x.responseText); };
-                    x.send();
-                } catch (e) { }
-            }
-
-            // â‘  Fast path: repeat visitors â€” instant, zero network cost
-            try {
-                var cached = localStorage.getItem('sg_lcp_img_url');
-                if (cached && cached.indexOf('http') === 0) {
-                    injectPreload(cached);
-                    return; // done â€” no network calls needed
-                }
-            } catch (e) { }
-
-            // â‘¡ Try _hero_config_ (written after first slider render â€” NOT on very first visit)
-            xhrGet(HERO_DOC, function (text) {
-                try {
-                    var fields = JSON.parse(text).fields || {};
-                    var url = isMob
-                        ? ((fields.mobileUrl || {}).stringValue || (fields.desktopUrl || {}).stringValue)
-                        : (fields.desktopUrl || {}).stringValue;
-                    if (url) injectPreload(url);
-                } catch (e) { }
-            });
-
-            // â‘¢ Sliders collection â€” works even on the very first visit ever
-            //    Fetches the raw sliders list, picks the lowest-order slide, preloads its image.
-            xhrGet(SLIDERS_COL, function (text) {
-                try {
-                    if (preloaded) return; // â‘¡ already handled it
-                    var docs = JSON.parse(text).documents || [];
-                    if (!docs.length) return;
-                    // Sort by 'order' field ascending
-                    docs.sort(function (a, b) {
-                        var oa = parseInt(((a.fields || {}).order || {}).integerValue || 999, 10);
-                        var ob = parseInt(((b.fields || {}).order || {}).integerValue || 999, 10);
-                        return oa - ob;
-                    });
-                    var f = docs[0].fields || {};
-                    var imgKey = isMob ? 'mobileImg' : 'img';
-                    var url = (f[imgKey] || {}).stringValue || (f['img'] || {}).stringValue || '';
-                    if (url && url !== 'img/') injectPreload(url);
-                } catch (e) { }
-            });
-        })();
-    </script>
 </head>
 
 <body class="selection:bg-black selection:text-white">
@@ -1202,8 +1102,9 @@
         </div>
     </div>
     <!-- LEAD GENERATION POPUP -->
-    <div id="gift-popup-overlay"
+    <div id="gift-popup-overlay" style="display: none;"
         class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[5000] opacity-0 pointer-events-none transition-all duration-700 overflow-y-auto py-10 px-4 flex items-center justify-center">
+        <style>#gift-popup-overlay.open { display: flex !important; }</style>
         <div id="gift-popup"
             class="w-full max-w-[440px] popup-glass rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.15)] relative overflow-hidden">
 
@@ -1277,63 +1178,39 @@
             </div>
         </div>
     </div>
+
     <!-- Floating WhatsApp Button (Mobile Only) -->
     <button id="floating-whatsapp-btn" onclick="window.handleFloatingWhatsAppClick()" class="md:hidden">
         <i class="fa-brands fa-whatsapp"></i>
     </button>
 
     <!-- Intl-Tel-Input JS -->
-    <!-- Preload lazy modules â€” browser fetches these in parallel during HTML parse,
+    <!-- Preload lazy modules — browser fetches these in parallel during HTML parse,
          before any JS runs. Slider & spotlight will be ready by the time data arrives. -->
-    <link rel="modulepreload" href="./app-slider.min.js?v=1783954629740">
-    <link rel="modulepreload" href="./app-spotlight.min.js?v=1783954629740">
-    <script type="module" src="app.min.js?v=1783954629740"></script>
+    <link rel="modulepreload" href="./app-slider.min.js?v=1784023137443">
+    <link rel="modulepreload" href="./app-spotlight.min.js?v=1784023137443">
+    <script type="module" src="app.min.js?v=1784023137443"></script>
 
-    <!-- Google Tag Manager + Ads: loaded ONLY on user interaction for maximum PageSpeed score -->
+    <!-- Google Tag Manager -->
+    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-P6WMHVN6"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
 
-        let analyticsLoaded = false;
-        function loadAnalytics() {
-            if (analyticsLoaded) return;
-            analyticsLoaded = true;
+        gtag('js', new Date());
+        gtag('config', 'AW-789546339');
+        gtag('config', 'G-98ZMG3ZF7Z');
 
-            // Remove event listeners once triggered
-            window.removeEventListener('scroll', loadAnalytics);
-            window.removeEventListener('mousemove', loadAnalytics);
-            window.removeEventListener('touchstart', loadAnalytics);
-
-            console.log("User interaction detected, loading analytics...");
-
-            // GTM
-            (function (w, d, s, l, i) {
-                w[l] = w[l] || [];
-                w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-                var f = d.getElementsByTagName(s)[0],
-                    j = d.createElement(s),
-                    dl = l != 'dataLayer' ? '&l=' + l : '';
-                j.async = true;
-                j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-                f.parentNode.insertBefore(j, f);
-            })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
-
-            // Google Ads + GA4
-            var gads = document.createElement('script');
-            gads.async = true;
-            gads.src = 'https://www.googletagmanager.com/gtag/js?id=AW-789546339';
-            document.head.appendChild(gads);
-            gads.onload = function () {
-                gtag('js', new Date());
-                gtag('config', 'AW-789546339');
-                gtag('config', 'G-98ZMG3ZF7Z');
-            };
-        }
-
-        // Attach user interaction listeners
-        window.addEventListener('scroll', loadAnalytics, { passive: true, once: true });
-        window.addEventListener('mousemove', loadAnalytics, { passive: true, once: true });
-        window.addEventListener('touchstart', loadAnalytics, { passive: true, once: true });
+        (function (w, d, s, l, i) {
+            w[l] = w[l] || [];
+            w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+            var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s),
+                dl = l != 'dataLayer' ? '&l=' + l : '';
+            j.async = true;
+            j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+            f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
     </script>
 </body>
 

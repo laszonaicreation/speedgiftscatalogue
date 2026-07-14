@@ -64,10 +64,11 @@ async function processFolder(folderName) {
 async function run() {
     const stats1 = await processFolder('migrated');
     const stats2 = await processFolder('uploads');
+    const stats3 = await processFolder('sliders');
     
     console.log(`\n--- Summary ---`);
-    console.log(`Newly Created : ${stats1.processed + stats2.processed}`);
-    console.log(`Already Exists: ${stats1.skipped + stats2.skipped}`);
+    console.log(`Newly Created : ${stats1.processed + stats2.processed + stats3.processed}`);
+    console.log(`Already Exists: ${stats1.skipped + stats2.skipped + stats3.skipped}`);
     console.log(`Done!`);
     process.exit(0);
 }

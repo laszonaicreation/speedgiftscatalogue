@@ -2,10 +2,16 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
     const appMain = document.getElementById('app');
     if (!appMain) return;
 
-    const allImages = [...(product.images || [])];
-    [product.img, product.img2, product.img3].forEach((img) => {
-        if (img && img !== 'img/' && !allImages.includes(img)) allImages.push(img);
-    });
+    const allImages = [];
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+        product.images.forEach(url => {
+            if (url && url !== 'img/') allImages.push(url);
+        });
+    } else {
+        [product.img, product.img2, product.img3].forEach(url => {
+            if (url && url !== 'img/' && !allImages.includes(url)) allImages.push(url);
+        });
+    }
 
     appMain.innerHTML = `
 <style>
@@ -362,7 +368,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             <div class="flex gap-4 overflow-x-auto pb-6 snap-x px-2 modern-scrollbar">
                 ${reviews.length === 0 ? '<div class="w-full text-center py-10"><p class="text-[14px] text-gray-400 italic">No reviews yet. Be the first to share your experience!</p></div>' : 
                     reviews.map(r => `
-                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex-shrink-0 w-[280px] md:w-[320px] snap-center flex flex-col">
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex-shrink-0 snap-center flex flex-col" style="width: 320px; max-width: 85vw; white-space: normal; word-break: break-word;">
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex flex-col">
                                     <span class="font-bold text-gray-900 text-[15px] truncate">${r.reviewerName}</span>
