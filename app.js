@@ -1527,6 +1527,14 @@ window.preloadInitialBatch = () => {
     if (DATA.p && DATA.p.length) {
         DATA.p.slice(0, INITIAL_PRELOAD_PRODUCTS).forEach(p => window.preloadProductImage(p.id, 'low'));
     }
+    
+    // 3. Prefetch critical HTML pages for instant navigation
+    ['shop.html', 'cart.html', 'favourites.html', 'catalogue.html'].forEach(page => {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = page;
+        document.head.appendChild(link);
+    });
 };
 
 let homeCriticalAssetsPrimed = false;
