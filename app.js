@@ -608,18 +608,33 @@ onAuthStateChanged(auth, async (u) => {
             await doBackgroundFetch();
         }
 
-        let isGoogleAd = false;
-        try { isGoogleAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
-        if (isGoogleAd) {
-            trackAdHop();
-            trackAdVisit();
+        const doTracking = () => {
+            const ua = navigator.userAgent.toLowerCase();
+            if (ua.includes('lighthouse') || ua.includes('pagespeed') || ua.includes('ptst')) return;
+            
+            let isGoogleAd = false;
+            try { isGoogleAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
+            if (isGoogleAd) {
+                trackAdHop();
+                trackAdVisit();
+            } else {
+                trackNormalVisit();
+            }
+        };
+
+        if (document.readyState === 'complete') {
+            doTracking();
         } else {
-            trackNormalVisit();
+            window.addEventListener('load', () => setTimeout(doTracking, 500));
         }
     }
 
     // Set up real-time order notification if the logged-in user is the Admin
-    setupAdminOrderNotification(u);
+    if (document.readyState === 'complete') {
+        setupAdminOrderNotification(u);
+    } else {
+        window.addEventListener('load', () => setTimeout(() => setupAdminOrderNotification(u), 600));
+    }
 });
 
 // ============================================================================

@@ -25,6 +25,18 @@ export async function fetchHomeDataBundle({
     const qFeatured = query(prodCol, where('isFeatured', '==', true));
     const qFallback = query(prodCol, limit(30)); // Provides a fallback if no items are featured
 
+    if (!isAdmin) {
+        try {
+            const res = await fetch('https://us-central1-speed-catalogue.cloudfunctions.net/getHomeData');
+            if (res.ok) {
+                const bundle = await res.json();
+                return bundle;
+            }
+        } catch(e) {
+            console.error('REST API failed, falling back to direct Firestore:', e);
+        }
+    }
+
     let cSnap, mSnap, sSnap, popSnap, todaySnap, allDocs;
 
     if (isAdmin) {
