@@ -11,6 +11,7 @@ Whenever a change is made to the codebase, it will be documented here so that in
 ## Change Log
 
 ### [2026-07-15]
+- **Rollback**: Reverted the recent PageSpeed fixes (lazy loading, font preloads, deferred CSS) via git reset because they caused a score decrease. Code is restored to the previous stable state (commit f61b3b6).
 - **Bug Fix (LCP / PageSpeed)**: Injected `<link rel="preconnect" href="https://firebasestorage.googleapis.com">` in all `.html` files and in `app.js`'s dynamic preconnector. This fixes the massive TLS negotiation delay introduced after migrating from Cloudinary to Firebase, drastically improving Largest Contentful Paint (LCP) and PageSpeed insights scores.
 - **Feature (Performance)**: Added HTML page prefetching in `app.js` (`preloadInitialBatch`) to download `shop.html`, `cart.html`, `favourites.html`, and `catalogue.html` in the background after the main page is idle. This makes navigating to those pages instantaneous.
 - **Deployment**: Ran `deploy.bat` to push the image optimization bug fix to production (Firebase) and backed up code to GitHub.

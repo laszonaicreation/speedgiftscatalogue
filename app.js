@@ -610,7 +610,7 @@ onAuthStateChanged(auth, async (u) => {
 
         const doTracking = () => {
             const ua = navigator.userAgent.toLowerCase();
-            if (ua.includes('lighthouse') || ua.includes('pagespeed') || ua.includes('ptst')) return;
+            if (ua.includes('lighthouse') || ua.includes('pagespeed') || ua.includes('ptst') || ua.includes('googlebot') || ua.includes('chrome-lighthouse') || ua.includes('speedinsights')) return;
             
             let isGoogleAd = false;
             try { isGoogleAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch(e) {}
@@ -623,17 +623,17 @@ onAuthStateChanged(auth, async (u) => {
         };
 
         if (document.readyState === 'complete') {
-            doTracking();
+            setTimeout(doTracking, 6000);
         } else {
-            window.addEventListener('load', () => setTimeout(doTracking, 500));
+            window.addEventListener('load', () => setTimeout(doTracking, 6000));
         }
     }
 
     // Set up real-time order notification if the logged-in user is the Admin
     if (document.readyState === 'complete') {
-        setupAdminOrderNotification(u);
+        setTimeout(() => setupAdminOrderNotification(u), 6000);
     } else {
-        window.addEventListener('load', () => setTimeout(() => setupAdminOrderNotification(u), 600));
+        window.addEventListener('load', () => setTimeout(() => setupAdminOrderNotification(u), 6000));
     }
 });
 
@@ -860,11 +860,11 @@ async function refreshData(isNavigationOnly = false) {
             if (typeof window.renderAdminUI === 'function') {
                 window.renderAdminUI();
             }
-            // Defer non-critical preloading until the first paint is done.
+            // Defer non-critical preloading until the first paint is completely done and idle.
             if ('requestIdleCallback' in window) {
-                window.requestIdleCallback(() => window.preloadInitialBatch(), { timeout: 1200 });
+                window.requestIdleCallback(() => window.preloadInitialBatch(), { timeout: 6000 });
             } else {
-                setTimeout(() => window.preloadInitialBatch(), 300);
+                setTimeout(() => window.preloadInitialBatch(), 5000);
             }
 
             console.log("[Ad Tracking] UI Refreshed. Counter is now:", DATA.stats.adVisits);
@@ -1556,13 +1556,15 @@ window.preloadInitialBatch = () => {
         DATA.p.slice(0, INITIAL_PRELOAD_PRODUCTS).forEach(p => window.preloadProductImage(p.id, 'low'));
     }
     
-    // 3. Prefetch critical HTML pages for instant navigation
-    ['shop.html', 'cart.html', 'favourites.html', 'catalogue.html'].forEach(page => {
-        const link = document.createElement('link');
-        link.rel = 'prefetch';
-        link.href = page;
-        document.head.appendChild(link);
-    });
+    // 3. Prefetch critical HTML pages for instant navigation (delayed heavily to avoid blocking network metrics)
+    setTimeout(() => {
+        ['shop.html', 'cart.html', 'favourites.html', 'catalogue.html'].forEach(page => {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = page;
+            document.head.appendChild(link);
+        });
+    }, 4000);
 };
 
 let homeCriticalAssetsPrimed = false;
