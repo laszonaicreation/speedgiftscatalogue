@@ -583,16 +583,29 @@ onAuthStateChanged(auth, async (u) => {
         console.log("[Auth] Session active. Updating data...");
         await initTrafficTracking();
 
-        if (!u.isAnonymous) {
-            // Real signed-in user: load wishlist from Firebase in parallel with product data
-            const [,] = await Promise.all([
-                refreshData(),
-                loadWishlist()
-            ]);
+        const doBackgroundFetch = async () => {
+            if (!u.isAnonymous) {
+                // Real signed-in user: load wishlist from Firebase in parallel with product data
+                await Promise.all([
+                    refreshData(),
+                    loadWishlist()
+                ]);
+            } else {
+                // Anonymous/guest user: only load product data
+                // Wishlist is served from localStorage via initWishlist()
+                await refreshData();
+            }
+        };
+
+        // Delay background fetch if cache exists, to prevent Firestore from blocking window.onload
+        if (DATA.p && DATA.p.length > 0) {
+            if (document.readyState === 'complete') {
+                doBackgroundFetch();
+            } else {
+                window.addEventListener('load', () => setTimeout(doBackgroundFetch, 200));
+            }
         } else {
-            // Anonymous/guest user: only load product data
-            // Wishlist is served from localStorage via initWishlist()
-            await refreshData();
+            await doBackgroundFetch();
         }
 
         let isGoogleAd = false;
@@ -1550,8 +1563,6 @@ function primeHomeCriticalAssets() {
             link.crossOrigin = 'anonymous';
             document.head.appendChild(link);
         };
-        ensurePreconnect('https://res.cloudinary.com');
-        ensurePreconnect('https://api.cloudinary.com');
         ensurePreconnect('https://firebasestorage.googleapis.com');
 
         const prime = (src, priority = 'high') => {
