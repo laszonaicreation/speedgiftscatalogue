@@ -608,7 +608,11 @@ onAuthStateChanged(auth, async (u) => {
             await doBackgroundFetch();
         }
 
+        let trackingDone = false;
         const doTracking = () => {
+            if (trackingDone) return;
+            trackingDone = true;
+
             const ua = navigator.userAgent.toLowerCase();
             if (ua.includes('lighthouse') || ua.includes('pagespeed') || ua.includes('ptst') || ua.includes('googlebot') || ua.includes('chrome-lighthouse') || ua.includes('speedinsights')) return;
             
@@ -622,11 +626,8 @@ onAuthStateChanged(auth, async (u) => {
             }
         };
 
-        if (document.readyState === 'complete') {
-            setTimeout(doTracking, 6000);
-        } else {
-            window.addEventListener('load', () => setTimeout(doTracking, 6000));
-        }
+        ['scroll','mousemove','touchstart','keydown','click'].forEach(e => window.addEventListener(e, doTracking, {once:true, passive:true}));
+        setTimeout(doTracking, 15000);
     }
 
     // Set up real-time order notification if the logged-in user is the Admin
