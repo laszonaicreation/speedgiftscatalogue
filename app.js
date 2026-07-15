@@ -627,7 +627,6 @@ onAuthStateChanged(auth, async (u) => {
         };
 
         ['scroll','mousemove','touchstart','keydown','click'].forEach(e => window.addEventListener(e, doTracking, {once:true, passive:true}));
-        setTimeout(doTracking, 15000);
     }
 
     // Set up real-time order notification if the logged-in user is the Admin

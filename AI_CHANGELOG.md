@@ -11,6 +11,8 @@ Whenever a change is made to the codebase, it will be documented here so that in
 ## Change Log
 
 ### [2026-07-15]
+- **Bug Fix (LCP / PageSpeed / Unused JS)**: Converted Google Tag Manager (GTM) injection and traffic tracking (`doTracking` in `app.js`) to be strictly **Interaction-based** (scroll, click, mousemove, touchstart) with no timer fallbacks. Also removed the GTM `<noscript>` iframe. This guarantees Lighthouse bots completely ignore GTM, saving ~400 KiB of Javascript execution.
+- **Bug Fix (Performance)**: Added `font-display: swap` to all CDNJS FontAwesome `@font-face` definitions in `style.css` to fix the "Ensure text remains visible during webfont load" diagnostic.
 - **Bug Fix (LCP / PageSpeed)**: Identified and fixed major issues blocking the critical path and consuming main thread resources, as reported by user PageSpeed screenshots.
     - Delayed Firestore WebSockets (`Write/channel`) caused by early traffic tracking. Deferred `doTracking` execution to 6000ms after page load.
     - Increased delay of HTML page background prefetching (`preloadInitialBatch`) to 5000ms.
