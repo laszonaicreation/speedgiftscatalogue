@@ -26,7 +26,7 @@
 
     <link rel="preconnect" href="https://firebasestorage.googleapis.com">
 
-    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1784108307171">
+    <link rel="stylesheet" href="tailwind-compiled.min.css?v=1784112485447">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -59,7 +59,7 @@
 
     <!-- Google Ads + Analytics: deferred after page load for better performance -->
 
-    <link rel="stylesheet" href="style.min.css?v=1784108307171">
+    <link rel="stylesheet" href="style.min.css?v=1784112485447">
     <!-- Responsive helpers + badge overrides moved to style.css -->
     <!-- Intl-Tel-Input CSS & JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@24.5.0/build/css/intlTelInput.min.css"
@@ -1187,30 +1187,37 @@
     <!-- Intl-Tel-Input JS -->
     <!-- Preload lazy modules — browser fetches these in parallel during HTML parse,
          before any JS runs. Slider & spotlight will be ready by the time data arrives. -->
-    <link rel="modulepreload" href="./app-slider.min.js?v=1784108307171">
-    <link rel="modulepreload" href="./app-spotlight.min.js?v=1784108307171">
-    <script type="module" src="app.min.js?v=1784108307171"></script>
+    <link rel="modulepreload" href="./app-slider.min.js?v=1784112485447">
+    <link rel="modulepreload" href="./app-spotlight.min.js?v=1784112485447">
+    <script type="module" src="app.min.js?v=1784112485447"></script>
 
-    <!-- Google Tag Manager -->
-    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-P6WMHVN6"></script>
+    <!-- Google Tag Manager (Delayed) -->
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
-
         gtag('js', new Date());
         gtag('config', 'AW-789546339');
         gtag('config', 'G-98ZMG3ZF7Z');
 
-        (function (w, d, s, l, i) {
-            w[l] = w[l] || [];
-            w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-            var f = d.getElementsByTagName(s)[0],
-                j = d.createElement(s),
-                dl = l != 'dataLayer' ? '&l=' + l : '';
-            j.async = true;
-            j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-            f.parentNode.insertBefore(j, f);
-        })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                var script = document.createElement('script');
+                script.async = true;
+                script.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-P6WMHVN6';
+                document.head.appendChild(script);
+
+                (function (w, d, s, l, i) {
+                    w[l] = w[l] || [];
+                    w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+                    var f = d.getElementsByTagName(s)[0],
+                        j = d.createElement(s),
+                        dl = l != 'dataLayer' ? '&l=' + l : '';
+                    j.async = true;
+                    j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+                    f.parentNode.insertBefore(j, f);
+                })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
+            }, 1000); // 1 second after page load
+        });
     </script>
 </body>
 

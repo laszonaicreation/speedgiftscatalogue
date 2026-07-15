@@ -7,26 +7,9 @@
     <title>Speed Gifts - Exclusive Offers</title>
     <meta name="keywords" content="personalized gifts UAE, customized gifts Dubai, custom gift delivery Abu Dhabi, personalized gifts Sharjah, custom gifts Ajman, photo frames UAE, mug printing UAE, wood engraving frames, bottles printing Dubai, t-shirt printing Abu Dhabi, hoodie printing UAE, keychains printing UAE, office colleagues gift items, customized gifts near me UAE, unique gifts UAE, corporate gifts UAE, birthday gifts UAE, anniversary gifts delivery UAE, custom gifts all over UAE, personalized gifts Ras Al Khaimah, custom gifts Fujairah, Speed Gifts">
     <meta name="description" content="Speed Gifts is Abu Dhabi & Dubai's premier personalized gift shop. Shop custom gifts, photo frames, mug printing, wood engraving, bottle printing, t-shirt & hoodie printing, keychains, and unique corporate office gifts for every occasion in the UAE. Visit us at WTC Mall.">
-    <!-- Google Tag Manager -->
-    <script>(function (w, d, s, l, i) {
-            w[l] = w[l] || []; w[l].push({
-                'gtm.start':
-                    new Date().getTime(), event: 'gtm.js'
-            }); var f = d.getElementsByTagName(s)[0],
-                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-        })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');</script>
-    <!-- End Google Tag Manager -->
+    
 
-    <!-- GOOGLE ADS: Global Tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-789546339"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-        gtag('config', 'AW-789546339');
-        gtag('config', 'G-98ZMG3ZF7Z');
-    </script>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -49,12 +32,12 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Main Style CSS -->
-    <link rel="stylesheet" href="/style.min.css?v=1784108307171">
+    <link rel="stylesheet" href="/style.min.css?v=1784112485447">
     <!-- Responsive Helpers (Mirrored from Main Site) -->
     <style>
         @media (max-width: 767px) { .hidden-mobile { display: none !important; } }
     </style>
-    <link rel="stylesheet" href="/landing.min.css?v=1784108307171">
+    <link rel="stylesheet" href="/landing.min.css?v=1784112485447">
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -98,6 +81,39 @@
     </script>
 
     <meta name="robots" content="noindex, nofollow">
+<!-- Google Tracking (Delayed) -->
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'AW-789546339');
+        gtag('config', 'G-98ZMG3ZF7Z');
+
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                var script = document.createElement('script');
+                script.async = true;
+                script.src = 'https://www.googletagmanager.com/gtag/js?id=AW-789546339';
+                document.head.appendChild(script);
+
+                var gtmScript = document.createElement('script');
+                gtmScript.async = true;
+                gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-P6WMHVN6';
+                document.head.appendChild(gtmScript);
+
+                (function (w, d, s, l, i) {
+                    w[l] = w[l] || [];
+                    w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+                    var f = d.getElementsByTagName(s)[0],
+                        j = d.createElement(s),
+                        dl = l != 'dataLayer' ? '&l=' + l : '';
+                    j.async = true;
+                    j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+                    f.parentNode.insertBefore(j, f);
+                })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
+            }, 1000);
+        });
+    </script>
 </head>
 
 <body class="bg-white text-brand-dark antialiased">
@@ -334,7 +350,7 @@ viewBox="0 0 2.72 2.72"
     </a>
 
     <!-- Application Script -->
-    <script src="/landing-logic.min.js?v=1784108307171" type="module"></script>
+    <script src="/landing-logic.min.js?v=1784112485447" type="module"></script>
     <script> document.getElementById('year').innerText = new Date().getFullYear(); </script>
     <style>
         /* Robust Typography Isolation for Trust Badges */
