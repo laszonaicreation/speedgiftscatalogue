@@ -1552,6 +1552,7 @@ function primeHomeCriticalAssets() {
         };
         ensurePreconnect('https://res.cloudinary.com');
         ensurePreconnect('https://api.cloudinary.com');
+        ensurePreconnect('https://firebasestorage.googleapis.com');
 
         const prime = (src, priority = 'high') => {
             if (!src) return;
