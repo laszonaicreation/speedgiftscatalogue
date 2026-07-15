@@ -98,7 +98,15 @@ if (successCount > 0) {
             if (!fs.existsSync(filePath)) continue;
             let content = fs.readFileSync(filePath, 'utf8');
 
-            let newContent = content.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
+            let newContent = content;
+
+            // Handle inline CSS
+            const tailwindCss = fs.readFileSync(path.join(dir, 'tailwind-compiled.min.css'), 'utf8');
+            const styleCss = fs.readFileSync(path.join(dir, 'style.min.css'), 'utf8');
+            newContent = newContent.replace(/<style data-inline-src="tailwind-compiled\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="tailwind-compiled.min.css">${tailwindCss}</style>`);
+            newContent = newContent.replace(/<style data-inline-src="style\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="style.min.css">${styleCss}</style>`);
+
+            newContent = newContent.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
                 if (pathStr.includes('http')) return match;
                 if (pathStr.endsWith('.min.css')) return `href="${pathStr}?v=${ts}"`;
                 return `href="${pathStr.replace(/\.css$/, '.min.css')}?v=${ts}"`;
@@ -124,7 +132,15 @@ if (successCount > 0) {
         const devHtml = path.join(dir, 'index.dev.html');
         if (fs.existsSync(devHtml)) {
             let content = fs.readFileSync(devHtml, 'utf8');
-            let newContent = content.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
+            let newContent = content;
+
+            // Handle inline CSS
+            const tailwindCss = fs.readFileSync(path.join(dir, 'tailwind-compiled.min.css'), 'utf8');
+            const styleCss = fs.readFileSync(path.join(dir, 'style.min.css'), 'utf8');
+            newContent = newContent.replace(/<style data-inline-src="tailwind-compiled\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="tailwind-compiled.min.css">${tailwindCss}</style>`);
+            newContent = newContent.replace(/<style data-inline-src="style\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="style.min.css">${styleCss}</style>`);
+
+            newContent = newContent.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
                 if (pathStr.includes('http')) return match;
                 if (pathStr.endsWith('.min.css')) return `href="${pathStr}?v=${BUILD_VERSION}"`;
                 return `href="${pathStr.replace(/\.css$/, '.min.css')}?v=${BUILD_VERSION}"`;
