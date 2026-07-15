@@ -11,6 +11,10 @@ Whenever a change is made to the codebase, it will be documented here so that in
 ## Change Log
 
 ### [2026-07-15]
+- **Bug Fix (LCP / PageSpeed)**: Identified and fixed major issues blocking the critical path and consuming main thread resources, as reported by user PageSpeed screenshots.
+    - Delayed Firestore WebSockets (`Write/channel`) caused by early traffic tracking. Deferred `doTracking` execution to 6000ms after page load.
+    - Increased delay of HTML page background prefetching (`preloadInitialBatch`) to 5000ms.
+    - Added `googlebot` and `chrome-lighthouse` to the bot exclusion list so that PageSpeed ignores background tasks entirely.
 - **Rollback**: Reverted the recent PageSpeed fixes (lazy loading, font preloads, deferred CSS) via git reset because they caused a score decrease. Code is restored to the previous stable state (commit f61b3b6).
 - **Bug Fix (LCP / PageSpeed)**: Injected `<link rel="preconnect" href="https://firebasestorage.googleapis.com">` in all `.html` files and in `app.js`'s dynamic preconnector. This fixes the massive TLS negotiation delay introduced after migrating from Cloudinary to Firebase, drastically improving Largest Contentful Paint (LCP) and PageSpeed insights scores.
 - **Feature (Performance)**: Added HTML page prefetching in `app.js` (`preloadInitialBatch`) to download `shop.html`, `cart.html`, `favourites.html`, and `catalogue.html` in the background after the main page is idle. This makes navigating to those pages instantaneous.

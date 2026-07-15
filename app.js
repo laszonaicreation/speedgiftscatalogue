@@ -1564,7 +1564,7 @@ window.preloadInitialBatch = () => {
             link.href = page;
             document.head.appendChild(link);
         });
-    }, 4000);
+    }, 9000);
 };
 
 let homeCriticalAssetsPrimed = false;
