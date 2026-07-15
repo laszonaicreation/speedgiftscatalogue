@@ -88,6 +88,13 @@ initSharedAuth({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getOptimizedUrl(url, w = 300) {
+    if (url && typeof url === 'string' && url.includes('firebasestorage.googleapis.com')) {
+        if (w && w <= 600 && url.includes('.webp?')) {
+            return url.replace('.webp?', '_thumb.webp?');
+        }
+        return url;
+    }
+
     if (!url) return 'https://placehold.co/300x300?text=?';
     if (url.includes('cloudinary.com')) return url.replace('/upload/', `/upload/w_${w},f_auto,q_auto/`);
     return url;

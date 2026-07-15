@@ -1,0 +1,15 @@
+# AI Developer Log & Project Memory
+
+This file serves as a persistent memory and changelog for the AI assistant across different sessions. 
+Whenever a change is made to the codebase, it will be documented here so that in future sessions, the AI can read this file to understand the context and recent updates.
+
+## Current Project Context
+- **Project**: Speed Gifts (speedgifts.net)
+- **Stack**: Vanilla JS, HTML, Tailwind CSS, Firebase (Firestore, Auth, Hosting)
+- **Key Files**: `app.js` (Home/Tracking), `shop.js` (Catalog/Filters), `firebase.json` (Routing).
+
+## Change Log
+
+### [2026-07-15]
+- **Bug Fix (Image Optimization)**: Identified and fixed a critical performance bug where `getOptimizedUrl` in `shop.js`, `cart-page.js`, and 7 other files was still using Cloudinary logic instead of requesting Firebase thumbnails (`_thumb.webp?`). Updated all files to include the Firebase check, then ran `build.js` to minify and update cache-busters.
+- **Session Started**: Initialized persistent AI memory file (`AI_CHANGELOG.md`) to keep track of code changes and context across isolated sessions.

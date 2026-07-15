@@ -78,6 +78,13 @@ const getTodayStr = () => {
 window._sgGetTodayStr = () => getTodayStr();
 
 function getOptimizedUrl(url, width) {
+    if (url && typeof url === 'string' && url.includes('firebasestorage.googleapis.com')) {
+        if (width && width <= 600 && url.includes('.webp?')) {
+            return url.replace('.webp?', '_thumb.webp?');
+        }
+        return url;
+    }
+
     if (!url || typeof url !== 'string' || url === 'img/' || url === 'img') return '';
     if (!url.includes('cloudinary.com')) return url;
     const baseTransform = 'f_auto,q_auto';

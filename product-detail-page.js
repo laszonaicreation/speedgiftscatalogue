@@ -158,6 +158,13 @@ window.trackWhatsAppInquiry = async (ids) => {
 };
 
 function getOptimizedUrl(url, width) {
+    if (url && typeof url === 'string' && url.includes('firebasestorage.googleapis.com')) {
+        if (width && width <= 600 && url.includes('.webp?')) {
+            return url.replace('.webp?', '_thumb.webp?');
+        }
+        return url;
+    }
+
     if (!url || typeof url !== 'string') return url;
     if (url.includes('res.cloudinary.com') && width) {
         return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);

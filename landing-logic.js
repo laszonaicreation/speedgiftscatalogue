@@ -16,6 +16,13 @@ const PAGE_SIZE = 8; // Number of items per section
 
 // Helper for optimized Cloudinary URLs
 function getOptimizedUrl(url, width = 600) {
+    if (url && typeof url === 'string' && url.includes('firebasestorage.googleapis.com')) {
+        if (width && width <= 600 && url.includes('.webp?')) {
+            return url.replace('.webp?', '_thumb.webp?');
+        }
+        return url;
+    }
+
     if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return url || 'img/placeholder.jpg';
     if (url === 'img/') return 'https://placehold.co/600x600?text=No+Image';
 

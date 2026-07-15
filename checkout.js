@@ -47,6 +47,13 @@ window.showToast = showToast;
 
 // ── Image Optimizer ───────────────────────────────────────────────────────────
 function getOptimizedUrl(url, size = 150) {
+    if (url && typeof url === 'string' && url.includes('firebasestorage.googleapis.com')) {
+        if (size && size <= 600 && url.includes('.webp?')) {
+            return url.replace('.webp?', '_thumb.webp?');
+        }
+        return url;
+    }
+
     if (!url) return '';
     if (url.includes('res.cloudinary.com') && !url.includes('/upload/w_')) {
         return url.replace('/upload/', `/upload/w_${size},c_fill,f_auto,q_auto/`);

@@ -2038,6 +2038,13 @@ export function initAdmin(ctx) {
 
 
     function getOptimizedUrl(url, width) {
+    if (url && typeof url === 'string' && url.includes('firebasestorage.googleapis.com')) {
+        if (width && width <= 600 && url.includes('.webp?')) {
+            return url.replace('.webp?', '_thumb.webp?');
+        }
+        return url;
+    }
+
         if (!url || typeof url !== 'string') return '';
         if (!url.includes('cloudinary.com')) return url;
 
