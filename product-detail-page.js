@@ -1,7 +1,6 @@
-let initializeApp;
-let initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment, addDoc, query, where, orderBy;
-let getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile;
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
 import { getProductIdFromSearch, getProductDetailUrl, getShortShareUrl } from "./product-detail-utils.js";
@@ -20,60 +19,20 @@ const firebaseConfig = {
     appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
 };
 
+const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+const auth = getAuth(app);
 const appId = firebaseConfig.projectId;
 
-let app, db, auth, prodCol, catCol;
-let firebaseInitialized = false;
+window._sgAuth = auth;
+window._sgDb = db;
+window._sgAppId = appId;
+const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
+const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 
-async function initFirebaseConfig() {
-    if (firebaseInitialized) return;
-    
-    const [appMod, fsMod, authMod] = await Promise.all([
-        import("https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js"),
-        import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js"),
-        import("https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js")
-    ]);
-
-    initializeApp = appMod.initializeApp;
-    initializeFirestore = fsMod.initializeFirestore;
-    persistentLocalCache = fsMod.persistentLocalCache;
-    persistentMultipleTabManager = fsMod.persistentMultipleTabManager;
-    collection = fsMod.collection;
-    getDocs = fsMod.getDocs;
-    doc = fsMod.doc;
-    getDoc = fsMod.getDoc;
-    setDoc = fsMod.setDoc;
-    increment = fsMod.increment;
-    addDoc = fsMod.addDoc;
-    query = fsMod.query;
-    where = fsMod.where;
-    orderBy = fsMod.orderBy;
-
-    getAuth = authMod.getAuth;
-    signInAnonymously = authMod.signInAnonymously;
-    onAuthStateChanged = authMod.onAuthStateChanged;
-    signInWithEmailAndPassword = authMod.signInWithEmailAndPassword;
-    createUserWithEmailAndPassword = authMod.createUserWithEmailAndPassword;
-    GoogleAuthProvider = authMod.GoogleAuthProvider;
-    signInWithPopup = authMod.signInWithPopup;
-    sendPasswordResetEmail = authMod.sendPasswordResetEmail;
-    signOut = authMod.signOut;
-    updateProfile = authMod.updateProfile;
-
-    app = initializeApp(firebaseConfig);
-    db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
-    auth = getAuth(app);
-    window._sgAuth = auth;
-    window._sgDb = db;
-    window._sgAppId = appId;
-    prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-    catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
-    firebaseInitialized = true;
-}
-
-const DATA = window.DATA || { p: [], c: [] };
+const DATA = { p: [], c: [] };
 Object.defineProperty(window, '_sgDATA', { get: () => DATA, configurable: true });
 const state = { wishlist: [], currentVar: null };
 state.authMode = 'login';
@@ -103,10 +62,8 @@ const getTodayStr = () => {
 };
 
 async function waitForAuth() {
-    if (!firebaseInitialized) await initFirebaseConfig();
-    if (auth && auth.currentUser) return auth.currentUser;
+    if (auth.currentUser) return auth.currentUser;
     return new Promise(resolve => {
-        if (!auth) { resolve(null); return; }
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 unsubscribe();
@@ -122,35 +79,29 @@ async function initTrafficTracking() {
     const utmSrc = (urlParams.get('utm_source') || '').toLowerCase();
     const utmMed = (urlParams.get('utm_medium') || '').toLowerCase();
 
-    try {
-        if (urlParams.has('gclid') ||
-            urlParams.has('gbraid') ||
-            urlParams.has('wbraid') ||
-            urlParams.has('gad_source') ||
-            utmSrc === 'google' ||
-            utmSrc === 'google_ads' ||
-            utmSrc === 'googleads' ||
-            utmMed === 'cpc' ||
-            utmMed === 'ppc' ||
-            utmMed === 'google_ads') {
-            sessionStorage.setItem('traffic_source', 'Google Ads');
-        } else if (urlParams.has('utm_source')) {
-            sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
-        } else if (!sessionStorage.getItem('traffic_source')) {
-            sessionStorage.setItem('traffic_source', 'Normal');
-        }
-    } catch (e) {
-        console.warn("[Tracking] Storage access denied:", e);
+    if (urlParams.has('gclid') ||
+        urlParams.has('gbraid') ||
+        urlParams.has('wbraid') ||
+        urlParams.has('gad_source') ||
+        utmSrc === 'google' ||
+        utmSrc === 'google_ads' ||
+        utmSrc === 'googleads' ||
+        utmMed === 'cpc' ||
+        utmMed === 'ppc' ||
+        utmMed === 'google_ads') {
+        sessionStorage.setItem('traffic_source', 'Google Ads');
+    } else if (urlParams.has('utm_source')) {
+        sessionStorage.setItem('traffic_source', urlParams.get('utm_source'));
+    } else if (!sessionStorage.getItem('traffic_source')) {
+        sessionStorage.setItem('traffic_source', 'Normal');
     }
 }
 
 async function trackAdVisit() {
     const today = getTodayStr();
     const sessionKey = `ad_visit_tracked_${today}`;
-    try {
-        if (sessionStorage.getItem(sessionKey)) return;
-        sessionStorage.setItem(sessionKey, 'true');
-    } catch (e) {}
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
     await waitForAuth();
     const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
     await setDoc(statsRef, { adVisits: increment(1) }, { merge: true });
@@ -159,10 +110,8 @@ async function trackAdVisit() {
 async function trackNormalVisit() {
     const today = getTodayStr();
     const sessionKey = `normal_visit_tracked_${today}`;
-    try {
-        if (sessionStorage.getItem(sessionKey)) return;
-        sessionStorage.setItem(sessionKey, 'true');
-    } catch (e) {}
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
     await waitForAuth();
     const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
     await setDoc(statsRef, { normalVisits: increment(1) }, { merge: true });
@@ -173,8 +122,7 @@ async function trackProductView(id) {
     trackedProductViews.add(id);
     await waitForAuth();
     const today = getTodayStr();
-    let isAd = false;
-    try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch (e) {}
+    const isAd = sessionStorage.getItem('traffic_source') === 'Google Ads';
     const globalField = isAd ? 'adProductClicks' : 'normalProductClicks';
 
     const statsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
@@ -187,7 +135,7 @@ async function trackProductView(id) {
 
 window.trackWhatsAppInquiry = async (ids) => {
     const idList = Array.isArray(ids) ? ids : [ids];
-    try { if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return; } catch (e) { return; }
+    if (sessionStorage.getItem('traffic_source') !== 'Google Ads') return;
     await waitForAuth();
     const today = getTodayStr();
     const dailyStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_stats', today);
@@ -201,13 +149,6 @@ window.trackWhatsAppInquiry = async (ids) => {
 };
 
 function getOptimizedUrl(url, width) {
-    if (url && typeof url === 'string' && url.includes('firebasestorage.googleapis.com')) {
-        if (width && width <= 600 && url.includes('.webp?')) {
-            return url.replace('.webp?', '_thumb.webp?');
-        }
-        return url;
-    }
-
     if (!url || typeof url !== 'string') return url;
     if (url.includes('res.cloudinary.com') && width) {
         return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
@@ -402,7 +343,7 @@ window.submitProductReview = async (productId, name, rating, text, imageFile, su
         const updatedReviews = await fetchReviews(productId);
         const approvedReviews = updatedReviews.filter(r => r.status === 'approved');
         const product = DATA.p.find(x => x.id === productId);
-        renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
+        renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews, isUpdate });
     } catch (e) {
         console.error("Failed to submit review", e);
         window.showToast("Failed to submit review");
@@ -414,14 +355,11 @@ window.submitProductReview = async (productId, name, rating, text, imageFile, su
 };
 
 async function fetchReviews(productId) {
-    if (!firebaseInitialized) return [];
     try {
         const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
-        // Primary query without orderBy to avoid composite index requirement
-        const q = query(revCol, where("productId", "==", productId));
+        const q = query(revCol, where("productId", "==", productId), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
-        const reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return reviews.sort((a, b) => b.createdAt - a.createdAt);
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (e) {
         console.warn("Failed to fetch reviews", e);
         // Fallback for missing index:
@@ -527,11 +465,9 @@ async function renderById(id, isUpdate = false) {
     const reviews = await fetchReviews(id);
     const approvedReviews = reviews.filter(r => r.status === 'approved');
 
-    if (!isUpdate) {
-        injectSEO(product, approvedReviews);
-        trackProductView(id).catch(() => { /* no-op */ });
-    }
-    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews, isUpdate });
+    injectSEO(product, approvedReviews);
+    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
+    trackProductView(id).catch(() => { /* no-op */ });
 }
 
 function readDetailCache(id) {
@@ -552,114 +488,89 @@ async function bootstrap() {
     mountSharedShell('shop');
     initCart({ getProducts: () => DATA.p, getOptimizedUrl });
     wireDetailShellSearch();
+    initSharedAuth({
+        auth,
+        firebaseAuth: {
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            GoogleAuthProvider,
+            signInWithPopup,
+            sendPasswordResetEmail,
+            signOut,
+            updateProfile
+        },
+        getAuthUser: () => state.authUser,
+        setAuthMode: (mode) => { state.authMode = mode; },
+        getAuthMode: () => state.authMode,
+        updateAuthUserUI,
+        onSignOut: () => {
+            clearWishlistOnLogout();
+            clearCart(true);
+        },
+        showToast
+    });
+    onAuthStateChanged(auth, async (u) => {
+        // Always keep state.user current so wishlist.js (_sgState.user) works
+        state.user = u;
+        updateAuthUserUI();
+        if (!u) {
+            await signInAnonymously(auth).catch(() => { /* no-op */ });
+            return;
+        } else if (!u.isAnonymous) {
+            mergeCartOnLogin(u.uid);
+            loadWishlist(); // Sync wishlist from cloud on login
+        }
+        await initTrafficTracking();
+        if (sessionStorage.getItem('traffic_source') === 'Google Ads') {
+            await trackAdVisit().catch(() => { /* no-op */ });
+        } else {
+            await trackNormalVisit().catch(() => { /* no-op */ });
+        }
+    });
+
     const id = getProductIdFromSearch();
     if (!id) {
         window.location.replace('index.html');
         return;
     }
 
-    // Fast-path: render from window.DATA or session cache immediately (if available)
+    initWishlist();
+
+
+    // Fast-path: render from session cache immediately (if available),
+    // then sync with Firestore in background.
     const cached = readDetailCache(id);
     let initialRenderDone = false;
-    
-    // Check window.DATA first
-    const windowDataMatch = DATA.p.find(x => x.id === id);
-    if (windowDataMatch) {
-        await renderById(id);
-        initialRenderDone = true;
-    } else if (cached) {
+    if (cached) {
         DATA.p = [cached.product];
         DATA.c = Array.isArray(cached.categories) ? cached.categories : [];
         await renderById(id);
         initialRenderDone = true;
     }
 
-    // Single-item fetch for direct visits if not in cache or window.DATA (e.g. WhatsApp links for non-featured items)
+    // Single-item fetch for direct visits (much faster than fetching whole collection)
     if (!initialRenderDone) {
-        if (window.__INJECTED_PRODUCT__ && window.__INJECTED_PRODUCT__.id === id) {
-            DATA.p = [window.__INJECTED_PRODUCT__];
-            await renderById(id);
-            initialRenderDone = true;
-        } else {
-            await initFirebaseConfig(); // Must initialize immediately to fetch the missing product
-            try {
-                const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-                const productSnap = await getDoc(productRef);
-                if (productSnap.exists()) {
-                    DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
-                    await renderById(id);
-                    initialRenderDone = true;
-                } else {
-                    document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 mt-20">Product not found.</p>';
-                }
-            } catch (e) { console.warn("Single fetch failed:", e); }
-        }
+        try {
+            const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+            const productSnap = await getDoc(productRef);
+            if (productSnap.exists()) {
+                DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
+                await renderById(id);
+                initialRenderDone = true;
+            }
+        } catch (e) { console.warn("Single fetch failed:", e); }
     }
 
-    // Delay everything else so Lighthouse can finish LCP
-    const initRest = async () => {
-        if (!firebaseInitialized) await initFirebaseConfig();
-        
-        initSharedAuth({
-            auth,
-            firebaseAuth: {
-                signInWithEmailAndPassword,
-                createUserWithEmailAndPassword,
-                GoogleAuthProvider,
-                signInWithPopup,
-                sendPasswordResetEmail,
-                signOut,
-                updateProfile
-            },
-            getAuthUser: () => state.authUser,
-            setAuthMode: (mode) => { state.authMode = mode; },
-            getAuthMode: () => state.authMode,
-            updateAuthUserUI,
-            onSignOut: () => {
-                clearWishlistOnLogout();
-                clearCart(true);
-            },
-            showToast
-        });
-        
-        onAuthStateChanged(auth, async (u) => {
-            state.user = u;
-            updateAuthUserUI();
-            if (!u) {
-                await signInAnonymously(auth).catch(() => { /* no-op */ });
-                return;
-            } else if (!u.isAnonymous) {
-                mergeCartOnLogin(u.uid);
-                loadWishlist(); 
-            }
-            await initTrafficTracking();
-            let isAd = false;
-            try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch (e) {}
-            if (isAd) {
-                await trackAdVisit().catch(() => { /* no-op */ });
-            } else {
-                await trackNormalVisit().catch(() => { /* no-op */ });
-            }
-        });
+    // Background fetch: load categories for sidebar and full product list for recommendations.
+    // This runs after the user has seen the main product.
+    const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
+    DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(p.id));
+    DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        initWishlist();
-
-        // Background fetch: load categories for sidebar and full product list for recommendations.
-        const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
-        DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-            .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(p.id));
-        DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        renderCategoriesSidebar();
-        // Final render to populate recommendations and sidebars without wiping main DOM
-        await renderById(id, true);
-    };
-
-    if (document.readyState === 'complete') {
-        setTimeout(initRest, navigator.userAgent.includes("Chrome-Lighthouse") ? 999999 : 6000);
-    } else {
-        window.addEventListener('load', () => setTimeout(initRest, navigator.userAgent.includes("Chrome-Lighthouse") ? 999999 : 6000));
-    }
+    renderCategoriesSidebar();
+    // Final render to populate recommendations and sidebars
+    await renderById(id);
 }
 
 window.addEventListener('popstate', () => {
@@ -671,8 +582,7 @@ const backBtn = document.getElementById('detail-back-btn');
 if (backBtn) {
     backBtn.addEventListener('click', () => {
         // 1. If came from shop page, go back there (preserves filters/scroll)
-        let shopUrl = null;
-        try { shopUrl = sessionStorage.getItem('speedgifts_shop_url'); } catch (e) {}
+        const shopUrl = sessionStorage.getItem('speedgifts_shop_url');
         if (shopUrl && shopUrl.includes('shop.html')) {
             window.location.href = shopUrl;
             return;
