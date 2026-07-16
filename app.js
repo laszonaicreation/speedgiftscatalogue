@@ -600,9 +600,9 @@ onAuthStateChanged(auth, async (u) => {
         // Delay background fetch if cache exists, to prevent Firestore from blocking window.onload
         if (DATA.p && DATA.p.length > 0) {
             if (document.readyState === 'complete') {
-                doBackgroundFetch();
+                setTimeout(doBackgroundFetch, 6000);
             } else {
-                window.addEventListener('load', () => setTimeout(doBackgroundFetch, 200));
+                window.addEventListener('load', () => setTimeout(doBackgroundFetch, 6000));
             }
         } else {
             await doBackgroundFetch();

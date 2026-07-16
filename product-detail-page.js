@@ -32,7 +32,7 @@ window._sgAppId = appId;
 const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
 const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
 
-const DATA = { p: [], c: [] };
+const DATA = window.DATA || { p: [], c: [] };
 Object.defineProperty(window, '_sgDATA', { get: () => DATA, configurable: true });
 const state = { wishlist: [], currentVar: null };
 state.authMode = 'login';

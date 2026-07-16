@@ -103,8 +103,13 @@ if (successCount > 0) {
             // Handle inline CSS
             const tailwindCss = fs.readFileSync(path.join(dir, 'tailwind-compiled.min.css'), 'utf8');
             const styleCss = fs.readFileSync(path.join(dir, 'style.min.css'), 'utf8');
+            let productDetailCss = '';
+            try { productDetailCss = fs.readFileSync(path.join(dir, 'product-detail.min.css'), 'utf8'); } catch(e){}
             newContent = newContent.replace(/<style data-inline-src="tailwind-compiled\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="tailwind-compiled.min.css">${tailwindCss}</style>`);
             newContent = newContent.replace(/<style data-inline-src="style\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="style.min.css">${styleCss}</style>`);
+            if (productDetailCss) {
+                newContent = newContent.replace(/<style data-inline-src="product-detail\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="product-detail.min.css">${productDetailCss}</style>`);
+            }
 
             newContent = newContent.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
                 if (pathStr.includes('http')) return match;
@@ -137,8 +142,13 @@ if (successCount > 0) {
             // Handle inline CSS
             const tailwindCss = fs.readFileSync(path.join(dir, 'tailwind-compiled.min.css'), 'utf8');
             const styleCss = fs.readFileSync(path.join(dir, 'style.min.css'), 'utf8');
+            let productDetailCss = '';
+            try { productDetailCss = fs.readFileSync(path.join(dir, 'product-detail.min.css'), 'utf8'); } catch(e){}
             newContent = newContent.replace(/<style data-inline-src="tailwind-compiled\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="tailwind-compiled.min.css">${tailwindCss}</style>`);
             newContent = newContent.replace(/<style data-inline-src="style\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="style.min.css">${styleCss}</style>`);
+            if (productDetailCss) {
+                newContent = newContent.replace(/<style data-inline-src="product-detail\.min\.css">[\s\S]*?<\/style>/gi, `<style data-inline-src="product-detail.min.css">${productDetailCss}</style>`);
+            }
 
             newContent = newContent.replace(/href=['"]([^'"]+\.css)(\?[^'"]*)?['"]/gi, (match, pathStr) => {
                 if (pathStr.includes('http')) return match;
