@@ -44,18 +44,19 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         <div class="detail-media-pane">
             <div class="zoom-img-container relative aspect-square rounded-2xl overflow-hidden shadow-sm" onmousemove="handleZoom(event, this)" onmouseleave="resetZoom(this)" onclick="openFullScreen('${allImages[0] || product.img}')">
                 <div class="absolute top-3 left-3 z-20 flex flex-col gap-2">
-                    <button id="detail-share-btn" onclick="event.stopPropagation(); window.shareProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}')"
+                    <button id="detail-share-btn" aria-label="Share product" onclick="event.stopPropagation(); window.shareProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}')"
                         class="flex items-center justify-center bg-white text-gray-600 hover:text-black hover:bg-gray-50 transition-all active:scale-95 border border-gray-200 shadow-sm rounded-full" style="width: 34px; height: 34px;">
                         <i class="fa-solid fa-share-nodes text-[13px]"></i>
                     </button>
                     
-                    <button id="detail-wish-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist(event, '${product.id}')"
+                    <button id="detail-wish-btn" aria-label="Add to wishlist" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist(event, '${product.id}')"
                         class="flex items-center justify-center bg-white text-gray-600 hover:text-red-500 hover:bg-gray-50 transition-all active:scale-95 border border-gray-200 shadow-sm rounded-full" style="width: 34px; height: 34px;">
                         <i class="${(typeof window.getWishlistItems === 'function' ? window.getWishlistItems() : (state?.wishlist || [])).some(x => (typeof x === 'string' ? x : x.id) === product.id) ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-[13px]"></i>
                     </button>
                 </div>
                 <img src="${getOptimizedUrl(allImages[0] || product.img, 600)}" 
                      id="main-detail-img" 
+                     alt="${(product.name || 'Product').replace(/"/g, '&quot;')}"
                      class="w-full h-full object-cover no-animation" 
                      fetchpriority="high" 
                      loading="eager"
@@ -142,11 +143,11 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 <div class="flex flex-col gap-3 md:hidden mt-6">
                     <span class="text-[13px] font-bold text-gray-900 uppercase tracking-wider">Quantity</span>
                     <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm" style="width: 120px; height: 44px;">
-                        <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
+                        <button type="button" aria-label="Decrease quantity" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(-1)">
                             <i class="fa-solid fa-minus text-xs"></i>
                         </button>
                         <input type="number" class="detail-qty-input w-10 h-full text-center font-bold text-gray-900 text-sm outline-none bg-transparent border-none p-0 no-spinners" value="1" min="1" max="${product.stockCount !== undefined ? product.stockCount : (product.inStock !== false ? 100 : 0)}" onchange="window.validateDetailQty(this)">
-                        <button type="button" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(1)">
+                        <button type="button" aria-label="Increase quantity" class="flex-1 h-full text-gray-500 hover:text-black hover:bg-gray-50 transition-colors" onclick="window.updateDetailQty(1)">
                             <i class="fa-solid fa-plus text-xs"></i>
                         </button>
                     </div>

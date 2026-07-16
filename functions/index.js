@@ -52,7 +52,7 @@ exports.renderProduct = onRequest(async (req, res) => {
                 description = description.substring(0, 150) + '...';
 
                 // Get first valid image
-                let imageUrl = product.img || (product.images && product.images[0]) || 'https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png';
+                let imageUrl = (product.images && product.images.length > 0) ? product.images[0] : (product.img || 'https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png');
                 let lcpImageUrl = imageUrl;
                 
                 // WhatsApp does not support .webp and ignores images > 300KB. 
