@@ -541,7 +541,15 @@ async function bootstrap() {
     // then sync with Firestore in background.
     const cached = readDetailCache(id);
     let initialRenderDone = false;
-    if (cached) {
+
+    // 1. First priority: Injected SSR Data (Fastest, zero layout shift)
+    if (window.__INJECTED_PRODUCT__ && window.__INJECTED_PRODUCT__.id === id) {
+        DATA.p = [window.__INJECTED_PRODUCT__];
+        await renderById(id);
+        initialRenderDone = true;
+    }
+    // 2. Second priority: Session cache
+    else if (cached) {
         DATA.p = [cached.product];
         DATA.c = Array.isArray(cached.categories) ? cached.categories : [];
         await renderById(id);

@@ -19,7 +19,7 @@ export function renderCategoriesSidebarMainLike({
         return `
             <div class="sidebar-cat-item group" onclick="${onSelectCategoryJs} applyFilter('${c.id}')">
                 <div class="sidebar-cat-img-box">
-                    <img src="${imgUrl}" alt="${safeName}" ${imgUrl ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
+                    <img src="${imgUrl}" alt="${safeName}" loading="lazy" ${imgUrl ? "onerror=\"this.src='https://placehold.co/100x100?text=Icon'\"" : ''}>
                 </div>
                 <h4 class="sidebar-cat-name">${c.name || 'Category'}</h4>
                 <span class="sidebar-cat-count">${productCount}</span>
