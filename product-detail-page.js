@@ -153,6 +153,10 @@ function getOptimizedUrl(url, width) {
     if (url.includes('res.cloudinary.com') && width) {
         return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
     }
+    // Firebase Storage: use _thumb.webp for fast loading when width <= 600
+    if (url.includes('firebasestorage.googleapis.com') && width && width <= 600 && url.includes('.webp?')) {
+        return url.replace('.webp?', '_thumb.webp?');
+    }
     return url;
 }
 

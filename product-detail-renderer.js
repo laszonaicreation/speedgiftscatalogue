@@ -61,7 +61,8 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                      fetchpriority="high" 
                      loading="eager"
                      data-full-res="${getOptimizedUrl(allImages[0] || product.img, 1000)}"
-                     data-high-res="${getOptimizedUrl(allImages[0] || product.img, 1000)}">
+                     data-high-res="${getOptimizedUrl(allImages[0] || product.img, 1000)}"
+                     onerror="if(this.src.includes('_thumb')){this.onerror=null;this.src=this.dataset.fullRes||this.dataset.highRes;}">
             </div>
             <div class="thumb-grid justify-center lg:justify-start mt-4" id="detail-thumb-grid">
                 ${allImages.map((img, i) => `
