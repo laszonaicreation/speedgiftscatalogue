@@ -31,7 +31,11 @@ export function getProductIdFromSearch(search = window.location.search, pathname
     if (queryId) return queryId;
     
     if (pathname.startsWith('/p/')) {
-        return pathname.split('/p/')[1].split('/')[0];
+        try {
+            return decodeURIComponent(pathname.split('/p/')[1].split('/')[0]);
+        } catch (e) {
+            return pathname.split('/p/')[1].split('/')[0];
+        }
     }
     return null;
 }

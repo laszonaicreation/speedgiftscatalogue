@@ -15,7 +15,11 @@ exports.renderProduct = onRequest(async (req, res) => {
         // Support shorter URL format: /p/PRODUCT_ID
         if (!productId && req.path.startsWith('/p/')) {
             const parts = req.path.split('/');
-            productId = parts[2]; // ['', 'p', 'PRODUCT_ID']
+            try {
+                productId = decodeURIComponent(parts[2]); // ['', 'p', 'PRODUCT_ID']
+            } catch (e) {
+                productId = parts[2];
+            }
         }
 
         // Fetch the raw HTML template

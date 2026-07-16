@@ -414,11 +414,14 @@ window.submitProductReview = async (productId, name, rating, text, imageFile, su
 };
 
 async function fetchReviews(productId) {
+    if (!firebaseInitialized) return [];
     try {
         const revCol = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
-        const q = query(revCol, where("productId", "==", productId), orderBy("createdAt", "desc"));
+        // Primary query without orderBy to avoid composite index requirement
+        const q = query(revCol, where("productId", "==", productId));
         const snap = await getDocs(q);
-        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return reviews.sort((a, b) => b.createdAt - a.createdAt);
     } catch (e) {
         console.warn("Failed to fetch reviews", e);
         // Fallback for missing index:
@@ -514,7 +517,7 @@ function injectSEO(product, reviews) {
     script.textContent = JSON.stringify(schema);
 }
 
-async function renderById(id) {
+async function renderById(id, isUpdate = false) {
     const product = DATA.p.find(x => x.id === id);
     if (!product) {
         document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 mt-20">Product not found.</p>';
@@ -524,9 +527,11 @@ async function renderById(id) {
     const reviews = await fetchReviews(id);
     const approvedReviews = reviews.filter(r => r.status === 'approved');
 
-    injectSEO(product, approvedReviews);
-    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
-    trackProductView(id).catch(() => { /* no-op */ });
+    if (!isUpdate) {
+        injectSEO(product, approvedReviews);
+        trackProductView(id).catch(() => { /* no-op */ });
+    }
+    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews, isUpdate });
 }
 
 function readDetailCache(id) {
@@ -646,8 +651,8 @@ async function bootstrap() {
         DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         renderCategoriesSidebar();
-        // Final render to populate recommendations and sidebars
-        await renderById(id);
+        // Final render to populate recommendations and sidebars without wiping main DOM
+        await renderById(id, true);
     };
 
     if (document.readyState === 'complete') {
