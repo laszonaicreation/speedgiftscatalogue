@@ -450,7 +450,11 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                 </div>
             </div>
         </div>
-    </div>`;
+    </div>
+    
+    ${reviewsHtml}
+    ${recommendationsHtml}
+</div>`;
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
