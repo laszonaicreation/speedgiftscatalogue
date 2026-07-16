@@ -60,6 +60,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                      class="w-full h-full object-cover no-animation" 
                      fetchpriority="high" 
                      loading="eager"
+                     data-full-res="${getOptimizedUrl(allImages[0] || product.img, 1000)}"
                      data-high-res="${getOptimizedUrl(allImages[0] || product.img, 1000)}">
             </div>
             <div class="thumb-grid justify-center lg:justify-start mt-4" id="detail-thumb-grid">
@@ -480,20 +481,26 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         window.preloadDetailImages(allImages);
     }
 
-    // --- Progressive Image Upgrade Logic ---
+    // --- Progressive Image Upgrade: Thumb → Full Quality ---
     const mainImg = document.getElementById('main-detail-img');
-    if (mainImg && mainImg.dataset.highRes) {
-        const highResUrl = mainImg.dataset.highRes;
-        const tempImg = new Image();
-        tempImg.onload = () => {
-            // Only swap if the user hasn't already switched to a different thumbnail
-            if (mainImg.dataset.highRes === highResUrl) {
-                mainImg.src = highResUrl;
-                mainImg.style.filter = 'none'; // Ensure no blur if added
-            }
-        };
-        // Small delay to prioritize initial page rendering
-        setTimeout(() => { tempImg.src = highResUrl; }, 400);
+    if (mainImg) {
+        const fullResUrl = mainImg.dataset.fullRes || mainImg.dataset.highRes;
+        if (fullResUrl && mainImg.src !== fullResUrl) {
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                // Only swap if user hasn't switched to another image
+                if (mainImg.dataset.fullRes === fullResUrl || mainImg.dataset.highRes === fullResUrl) {
+                    mainImg.style.transition = 'opacity 0.4s ease';
+                    mainImg.style.opacity = '0.85';
+                    setTimeout(() => {
+                        mainImg.src = fullResUrl;
+                        mainImg.style.opacity = '1';
+                    }, 50);
+                }
+            };
+            // Small delay so thumb renders first (good for LCP)
+            setTimeout(() => { tempImg.src = fullResUrl; }, 300);
+        }
     }
 
     // --- Add JSON-LD Structured Data for Googlebot ---
