@@ -12,7 +12,8 @@
       ".agent/**",
       "app.js",
       "deploy.bat",
-      "style.css"
+      "style.css",
+      "product-detail.html"
     ],
     "headers": [
       {

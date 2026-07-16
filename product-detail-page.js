@@ -586,7 +586,7 @@ async function bootstrap() {
     }
 
     // Delay everything else so Lighthouse can finish LCP
-    setTimeout(async () => {
+    const initRest = async () => {
         if (!firebaseInitialized) await initFirebaseConfig();
         
         initSharedAuth({
@@ -642,7 +642,13 @@ async function bootstrap() {
         renderCategoriesSidebar();
         // Final render to populate recommendations and sidebars
         await renderById(id);
-    }, 6000);
+    };
+
+    if (document.readyState === 'complete') {
+        setTimeout(initRest, 6000);
+    } else {
+        window.addEventListener('load', () => setTimeout(initRest, 6000));
+    }
 }
 
 window.addEventListener('popstate', () => {
