@@ -49,6 +49,7 @@ exports.renderProduct = onRequest(async (req, res) => {
 
                 // Get first valid image
                 let imageUrl = product.img || (product.images && product.images[0]) || 'https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png';
+                let lcpImageUrl = imageUrl;
                 
                 // WhatsApp does not support .webp and ignores images > 300KB. 
                 // We inject Cloudinary transformations to enforce a small, compressed .jpg
@@ -61,6 +62,9 @@ exports.renderProduct = onRequest(async (req, res) => {
                     imageUrl = `${parts[0]}/upload/w_600,h_600,c_fit,q_80,f_jpg/${afterUpload}`;
                     // Replace .webp with .jpg at the end just to be sure
                     imageUrl = imageUrl.replace('.webp', '.jpg');
+                    
+                    // LCP image for the website needs to be highly optimized WebP
+                    lcpImageUrl = `${parts[0]}/upload/f_auto,q_auto,w_800,c_limit/${afterUpload}`;
                 } else if (imageUrl.includes('.webp')) {
                     imageUrl = imageUrl.replace('.webp', '.jpg');
                 }
@@ -79,6 +83,7 @@ exports.renderProduct = onRequest(async (req, res) => {
     <meta property="og:image" content="${imageUrl}">
     <meta property="og:url" content="${finalUrl}">
     <meta name="twitter:card" content="summary_large_image">
+    <link rel="preload" as="image" href="${lcpImageUrl}" fetchpriority="high">
                 `;
 
                 htmlString = htmlString.replace('</head>', `${ogTags}\n</head>`);

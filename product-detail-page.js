@@ -1,6 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+let initializeApp;
+let initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment, addDoc, query, where, orderBy;
+let getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile;
+
 import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
 import { getProductIdFromSearch, getProductDetailUrl, getShortShareUrl } from "./product-detail-utils.js";
@@ -19,11 +20,46 @@ const firebaseConfig = {
     appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
 };
 
+const appId = firebaseConfig.projectId;
+
 let app, db, auth, prodCol, catCol;
 let firebaseInitialized = false;
 
-function initFirebaseConfig() {
+async function initFirebaseConfig() {
     if (firebaseInitialized) return;
+    
+    const [appMod, fsMod, authMod] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js"),
+        import("https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js")
+    ]);
+
+    initializeApp = appMod.initializeApp;
+    initializeFirestore = fsMod.initializeFirestore;
+    persistentLocalCache = fsMod.persistentLocalCache;
+    persistentMultipleTabManager = fsMod.persistentMultipleTabManager;
+    collection = fsMod.collection;
+    getDocs = fsMod.getDocs;
+    doc = fsMod.doc;
+    getDoc = fsMod.getDoc;
+    setDoc = fsMod.setDoc;
+    increment = fsMod.increment;
+    addDoc = fsMod.addDoc;
+    query = fsMod.query;
+    where = fsMod.where;
+    orderBy = fsMod.orderBy;
+
+    getAuth = authMod.getAuth;
+    signInAnonymously = authMod.signInAnonymously;
+    onAuthStateChanged = authMod.onAuthStateChanged;
+    signInWithEmailAndPassword = authMod.signInWithEmailAndPassword;
+    createUserWithEmailAndPassword = authMod.createUserWithEmailAndPassword;
+    GoogleAuthProvider = authMod.GoogleAuthProvider;
+    signInWithPopup = authMod.signInWithPopup;
+    sendPasswordResetEmail = authMod.sendPasswordResetEmail;
+    signOut = authMod.signOut;
+    updateProfile = authMod.updateProfile;
+
     app = initializeApp(firebaseConfig);
     db = initializeFirestore(app, {
         localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
@@ -67,7 +103,7 @@ const getTodayStr = () => {
 };
 
 async function waitForAuth() {
-    if (!firebaseInitialized) initFirebaseConfig();
+    if (!firebaseInitialized) await initFirebaseConfig();
     if (auth && auth.currentUser) return auth.currentUser;
     return new Promise(resolve => {
         if (!auth) { resolve(null); return; }
@@ -535,7 +571,7 @@ async function bootstrap() {
 
     // Single-item fetch for direct visits if not in cache or window.DATA (e.g. WhatsApp links for non-featured items)
     if (!initialRenderDone) {
-        initFirebaseConfig(); // Must initialize immediately to fetch the missing product
+        await initFirebaseConfig(); // Must initialize immediately to fetch the missing product
         try {
             const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
             const productSnap = await getDoc(productRef);
@@ -551,7 +587,7 @@ async function bootstrap() {
 
     // Delay everything else so Lighthouse can finish LCP
     setTimeout(async () => {
-        if (!firebaseInitialized) initFirebaseConfig();
+        if (!firebaseInitialized) await initFirebaseConfig();
         
         initSharedAuth({
             auth,
