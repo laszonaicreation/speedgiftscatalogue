@@ -38,7 +38,7 @@ async function run() {
         if(p.updatedAt) {
             try { lastmod = new Date(parseInt(p.updatedAt)).toISOString().split('T')[0]; } catch(e){}
         }
-        xml += `  <url>\n    <loc>${STORE_URL}/product-detail.html?p=${p.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+        xml += `  <url>\n    <loc>${STORE_URL}/p/${p.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
     });
     
     xml += `</urlset>`;

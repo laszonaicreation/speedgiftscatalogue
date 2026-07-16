@@ -13,7 +13,7 @@ export function isStandaloneDetailPage(pathname = window.location.pathname) {
 
 export function getProductDetailUrl(id, origin = window.location.origin, pathname = window.location.pathname) {
     const basePath = getBasePath(pathname);
-    return `${origin}${basePath}${PRODUCT_DETAIL_PAGE}?id=${encodeURIComponent(id)}`;
+    return `${origin}${basePath}/p/${encodeURIComponent(id)}`;
 }
 
 export function getShortShareUrl(id, origin = window.location.origin) {

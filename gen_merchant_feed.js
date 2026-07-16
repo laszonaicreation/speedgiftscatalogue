@@ -60,7 +60,7 @@ async function run() {
       <g:id>${p.id}</g:id>
       <g:title>${safeName}</g:title>
       <g:description>${safeDesc}</g:description>
-      <g:link>${STORE_URL}/product-detail.html?p=${p.id}</g:link>
+      <g:link>${STORE_URL}/p/${p.id}</g:link>
       <g:image_link>${safeImg}</g:image_link>
       <g:condition>new</g:condition>
       <g:availability>${availability}</g:availability>
