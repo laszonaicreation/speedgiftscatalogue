@@ -533,9 +533,25 @@ async function bootstrap() {
         initialRenderDone = true;
     }
 
+    // Single-item fetch for direct visits if not in cache or window.DATA (e.g. WhatsApp links for non-featured items)
+    if (!initialRenderDone) {
+        initFirebaseConfig(); // Must initialize immediately to fetch the missing product
+        try {
+            const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+            const productSnap = await getDoc(productRef);
+            if (productSnap.exists()) {
+                DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
+                await renderById(id);
+                initialRenderDone = true;
+            } else {
+                document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 mt-20">Product not found.</p>';
+            }
+        } catch (e) { console.warn("Single fetch failed:", e); }
+    }
+
     // Delay everything else so Lighthouse can finish LCP
     setTimeout(async () => {
-        initFirebaseConfig();
+        if (!firebaseInitialized) initFirebaseConfig();
         
         initSharedAuth({
             auth,
@@ -580,19 +596,6 @@ async function bootstrap() {
         });
 
         initWishlist();
-
-        // Single-item fetch for direct visits if not in cache
-        if (!initialRenderDone) {
-            try {
-                const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-                const productSnap = await getDoc(productRef);
-                if (productSnap.exists()) {
-                    DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
-                    await renderById(id);
-                    initialRenderDone = true;
-                }
-            } catch (e) { console.warn("Single fetch failed:", e); }
-        }
 
         // Background fetch: load categories for sidebar and full product list for recommendations.
         const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
