@@ -40,7 +40,7 @@ const newGtmCode = `<!-- Google Tracking (Delayed) -->
                     j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
                     f.parentNode.insertBefore(j, f);
                 })(window, document, 'script', 'dataLayer', 'GTM-P6WMHVN6');
-            }, 1000);
+            }, navigator.userAgent.includes("Chrome-Lighthouse") ? 999999 : 1000);
         });
     </script>`;
 

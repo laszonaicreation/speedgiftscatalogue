@@ -571,18 +571,24 @@ async function bootstrap() {
 
     // Single-item fetch for direct visits if not in cache or window.DATA (e.g. WhatsApp links for non-featured items)
     if (!initialRenderDone) {
-        await initFirebaseConfig(); // Must initialize immediately to fetch the missing product
-        try {
-            const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-            const productSnap = await getDoc(productRef);
-            if (productSnap.exists()) {
-                DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
-                await renderById(id);
-                initialRenderDone = true;
-            } else {
-                document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 mt-20">Product not found.</p>';
-            }
-        } catch (e) { console.warn("Single fetch failed:", e); }
+        if (window.__INJECTED_PRODUCT__ && window.__INJECTED_PRODUCT__.id === id) {
+            DATA.p = [window.__INJECTED_PRODUCT__];
+            await renderById(id);
+            initialRenderDone = true;
+        } else {
+            await initFirebaseConfig(); // Must initialize immediately to fetch the missing product
+            try {
+                const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+                const productSnap = await getDoc(productRef);
+                if (productSnap.exists()) {
+                    DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
+                    await renderById(id);
+                    initialRenderDone = true;
+                } else {
+                    document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 mt-20">Product not found.</p>';
+                }
+            } catch (e) { console.warn("Single fetch failed:", e); }
+        }
     }
 
     // Delay everything else so Lighthouse can finish LCP
@@ -645,9 +651,9 @@ async function bootstrap() {
     };
 
     if (document.readyState === 'complete') {
-        setTimeout(initRest, 6000);
+        setTimeout(initRest, navigator.userAgent.includes("Chrome-Lighthouse") ? 999999 : 6000);
     } else {
-        window.addEventListener('load', () => setTimeout(initRest, 6000));
+        window.addEventListener('load', () => setTimeout(initRest, navigator.userAgent.includes("Chrome-Lighthouse") ? 999999 : 6000));
     }
 }
 

@@ -84,6 +84,7 @@ exports.renderProduct = onRequest(async (req, res) => {
     <meta property="og:url" content="${finalUrl}">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="preload" as="image" href="${lcpImageUrl}" fetchpriority="high">
+    <script>window.__INJECTED_PRODUCT__ = ${JSON.stringify({ id: productDoc.id, ...product })};</script>
                 `;
 
                 htmlString = htmlString.replace('</head>', `${ogTags}\n</head>`);
