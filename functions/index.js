@@ -1,8 +1,10 @@
 const { onRequest } = require('firebase-functions/v2/https');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onObjectFinalized } = require('firebase-functions/v2/storage');
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
+const sharp = require('sharp');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -294,5 +296,53 @@ exports.sendOrderEmailNotification = onDocumentCreated('orders/{orderId}', async
         }
     } catch (error) {
         console.error('Error securely deducting stock:', error);
+    }
+});
+
+exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event) => {
+    const fileBucket = event.data.bucket;
+    const filePath = event.data.name; // e.g. "uploads/product_123.webp"
+    const contentType = event.data.contentType;
+
+    // Exit if this is triggered on a file that is not an image
+    if (!contentType || !contentType.startsWith('image/')) {
+        return console.log('Not an image.');
+    }
+
+    // Exit if the image is already a thumbnail to prevent infinite loops
+    if (filePath.endsWith('_thumb.webp')) {
+        return console.log('Already a Thumbnail.');
+    }
+
+    // We only process .webp files since that's what the admin panel uploads
+    if (!filePath.endsWith('.webp')) {
+        return console.log('Not a .webp image, skipping.');
+    }
+
+    console.log(`Processing file: ${filePath}`);
+    
+    const bucket = admin.storage().bucket(fileBucket);
+    
+    try {
+        // Download file into memory
+        const [buffer] = await bucket.file(filePath).download();
+        
+        // Resize and compress
+        const thumbBuffer = await sharp(buffer)
+            .resize({ width: 400, withoutEnlargement: true })
+            .webp({ quality: 70 })
+            .toBuffer();
+            
+        // Save the thumb file back to the same folder with the new name
+        const thumbPath = filePath.replace('.webp', '_thumb.webp');
+        await bucket.file(thumbPath).save(thumbBuffer, {
+            metadata: {
+                contentType: 'image/webp'
+            }
+        });
+        
+        console.log(`Thumbnail created successfully at ${thumbPath}`);
+    } catch (error) {
+        console.error('Error generating thumbnail:', error);
     }
 });
