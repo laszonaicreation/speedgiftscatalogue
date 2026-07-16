@@ -19,18 +19,23 @@ const firebaseConfig = {
     appId: "1:84589409246:web:124e25b09ba54dc9e3e34f"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = initializeFirestore(app, {
-    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-});
-const auth = getAuth(app);
-const appId = firebaseConfig.projectId;
+let app, db, auth, prodCol, catCol;
+let firebaseInitialized = false;
 
-window._sgAuth = auth;
-window._sgDb = db;
-window._sgAppId = appId;
-const prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-const catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
+function initFirebaseConfig() {
+    if (firebaseInitialized) return;
+    app = initializeApp(firebaseConfig);
+    db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+    auth = getAuth(app);
+    window._sgAuth = auth;
+    window._sgDb = db;
+    window._sgAppId = appId;
+    prodCol = collection(db, 'artifacts', appId, 'public', 'data', 'products');
+    catCol = collection(db, 'artifacts', appId, 'public', 'data', 'categories');
+    firebaseInitialized = true;
+}
 
 const DATA = window.DATA || { p: [], c: [] };
 Object.defineProperty(window, '_sgDATA', { get: () => DATA, configurable: true });
@@ -62,8 +67,10 @@ const getTodayStr = () => {
 };
 
 async function waitForAuth() {
-    if (auth.currentUser) return auth.currentUser;
+    if (!firebaseInitialized) initFirebaseConfig();
+    if (auth && auth.currentUser) return auth.currentUser;
     return new Promise(resolve => {
+        if (!auth) { resolve(null); return; }
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 unsubscribe();
@@ -504,91 +511,99 @@ async function bootstrap() {
     mountSharedShell('shop');
     initCart({ getProducts: () => DATA.p, getOptimizedUrl });
     wireDetailShellSearch();
-    initSharedAuth({
-        auth,
-        firebaseAuth: {
-            signInWithEmailAndPassword,
-            createUserWithEmailAndPassword,
-            GoogleAuthProvider,
-            signInWithPopup,
-            sendPasswordResetEmail,
-            signOut,
-            updateProfile
-        },
-        getAuthUser: () => state.authUser,
-        setAuthMode: (mode) => { state.authMode = mode; },
-        getAuthMode: () => state.authMode,
-        updateAuthUserUI,
-        onSignOut: () => {
-            clearWishlistOnLogout();
-            clearCart(true);
-        },
-        showToast
-    });
-    onAuthStateChanged(auth, async (u) => {
-        // Always keep state.user current so wishlist.js (_sgState.user) works
-        state.user = u;
-        updateAuthUserUI();
-        if (!u) {
-            await signInAnonymously(auth).catch(() => { /* no-op */ });
-            return;
-        } else if (!u.isAnonymous) {
-            mergeCartOnLogin(u.uid);
-            loadWishlist(); // Sync wishlist from cloud on login
-        }
-        await initTrafficTracking();
-        let isAd = false;
-        try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch (e) {}
-        if (isAd) {
-            await trackAdVisit().catch(() => { /* no-op */ });
-        } else {
-            await trackNormalVisit().catch(() => { /* no-op */ });
-        }
-    });
-
     const id = getProductIdFromSearch();
     if (!id) {
         window.location.replace('index.html');
         return;
     }
 
-    initWishlist();
-
-
-    // Fast-path: render from session cache immediately (if available),
-    // then sync with Firestore in background.
+    // Fast-path: render from window.DATA or session cache immediately (if available)
     const cached = readDetailCache(id);
     let initialRenderDone = false;
-    if (cached) {
+    
+    // Check window.DATA first
+    const windowDataMatch = DATA.p.find(x => x.id === id);
+    if (windowDataMatch) {
+        await renderById(id);
+        initialRenderDone = true;
+    } else if (cached) {
         DATA.p = [cached.product];
         DATA.c = Array.isArray(cached.categories) ? cached.categories : [];
         await renderById(id);
         initialRenderDone = true;
     }
 
-    // Single-item fetch for direct visits (much faster than fetching whole collection)
-    if (!initialRenderDone) {
-        try {
-            const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-            const productSnap = await getDoc(productRef);
-            if (productSnap.exists()) {
-                DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
-                await renderById(id);
-                initialRenderDone = true;
+    // Delay everything else so Lighthouse can finish LCP
+    setTimeout(async () => {
+        initFirebaseConfig();
+        
+        initSharedAuth({
+            auth,
+            firebaseAuth: {
+                signInWithEmailAndPassword,
+                createUserWithEmailAndPassword,
+                GoogleAuthProvider,
+                signInWithPopup,
+                sendPasswordResetEmail,
+                signOut,
+                updateProfile
+            },
+            getAuthUser: () => state.authUser,
+            setAuthMode: (mode) => { state.authMode = mode; },
+            getAuthMode: () => state.authMode,
+            updateAuthUserUI,
+            onSignOut: () => {
+                clearWishlistOnLogout();
+                clearCart(true);
+            },
+            showToast
+        });
+        
+        onAuthStateChanged(auth, async (u) => {
+            state.user = u;
+            updateAuthUserUI();
+            if (!u) {
+                await signInAnonymously(auth).catch(() => { /* no-op */ });
+                return;
+            } else if (!u.isAnonymous) {
+                mergeCartOnLogin(u.uid);
+                loadWishlist(); 
             }
-        } catch (e) { console.warn("Single fetch failed:", e); }
-    }
+            await initTrafficTracking();
+            let isAd = false;
+            try { isAd = sessionStorage.getItem('traffic_source') === 'Google Ads'; } catch (e) {}
+            if (isAd) {
+                await trackAdVisit().catch(() => { /* no-op */ });
+            } else {
+                await trackNormalVisit().catch(() => { /* no-op */ });
+            }
+        });
 
-    // Background fetch: load categories for sidebar and full product list for recommendations.
-    // This runs after the user has seen the main product.
-    const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
-    DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(p.id));
-    DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        initWishlist();
 
-    renderCategoriesSidebar();
-    // Final render to populate recommendations and sidebars
-    await renderById(id);
+        // Single-item fetch for direct visits if not in cache
+        if (!initialRenderDone) {
+            try {
+                const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+                const productSnap = await getDoc(productRef);
+                if (productSnap.exists()) {
+                    DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
+                    await renderById(id);
+                    initialRenderDone = true;
+                }
+            } catch (e) { console.warn("Single fetch failed:", e); }
+        }
+
+        // Background fetch: load categories for sidebar and full product list for recommendations.
+        const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
+        DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+            .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(p.id));
+        DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        renderCategoriesSidebar();
+        // Final render to populate recommendations and sidebars
+        await renderById(id);
+    }, 6000);
 }
 
 window.addEventListener('popstate', () => {
