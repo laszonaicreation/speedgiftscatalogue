@@ -198,6 +198,7 @@ exports.renderHome = onRequest(async (req, res) => {
         if (!htmlResponse.ok) throw new Error('Failed to fetch template');
         let htmlString = await htmlResponse.text();
         let preloadTag = '';
+        let ssrSliderKey = null; // Will be set if sliders exist — used to prevent re-render after Firebase fetch
         if (sliders && sliders.length > 0) {
             const sortedSliders = [...sliders].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
             const firstMobile = sortedSliders.find(s => s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img');
@@ -223,21 +224,41 @@ exports.renderHome = onRequest(async (req, res) => {
                 
                 const altText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
                 
+                // data-ssr-slide="1" lets app-slider.js detect this is SSR content
                 firstSlideHtml = `
-                <div class="slider-slide relative" data-index="0">
+                <div class="slider-slide relative" data-index="0" data-ssr-slide="1">
                     <picture>
                         ${mUrl && dUrl && mUrl !== dUrl ? `<source media="(max-width: 767px)" srcset="${validSrcMobile}">` : ''}
                         <img src="${validSrcDesktop}" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="${altText}">
                     </picture>
                 </div>`;
                 
+                // Pre-compute the sliderMarkupKey for BOTH mobile and desktop.
+                // app-slider.js will compare against this to skip the re-render
+                // when Firebase Firestore data (fetched at ~7s on slow 4G) matches SSR data.
+                // Key format: "m" or "d" + "::id|img|title|link" for each slide
+                const computeKey = (isMob) => {
+                    const devicePrefix = isMob ? 'm' : 'd';
+                    const parts = sortedSliders
+                        .filter(s => isMob
+                            ? (s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img')
+                            : (s.img && s.img !== 'img/' && s.img !== 'img'))
+                        .map(s => `${s.id||''}|${isMob ? (s.mobileImg||'') : (s.img||'')}|${s.title||''}|${s.link||''}`);
+                    return [devicePrefix, ...parts].join('::');
+                };
+                const mobileKey = computeKey(true);
+                const desktopKey = computeKey(false);
+                ssrSliderKey = { m: mobileKey, d: desktopKey };
+                
                 // Inject into the HTML string directly inside home-slider
-                htmlString = htmlString.replace(/(<div id="home-slider"[^>]*>)/, `$1\n${firstSlideHtml}`);
+                // IMPORTANT: Use function form of replace() to prevent $ chars in Firebase URLs from being
+                // interpreted as regex replacement patterns ($1, $&, etc.)
+                htmlString = htmlString.replace(/(<div id="home-slider"[^>]*>)/, (match) => match + '\n' + firstSlideHtml);
             }
         }
 
-        // Inject data
-        const injectionScript = `<script>window.__INJECTED_HOME_DATA__ = ${JSON.stringify(responseData)};</script>`;
+        // Inject data + SSR slider key (prevents JS re-render after Firebase fetch if data unchanged)
+        const injectionScript = `<script>window.__INJECTED_HOME_DATA__ = ${JSON.stringify(responseData)};${ssrSliderKey ? `window._sgSSRSliderKeys=${JSON.stringify(ssrSliderKey)};` : ''}</script>`;
 
         if (htmlString.includes('<head>')) {
             htmlString = htmlString.replace('<head>', '<head>\n' + preloadTag);

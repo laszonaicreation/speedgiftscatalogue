@@ -5,10 +5,12 @@
 // Live data read via window._sgDATA / window._sgState / window._sgGetOptUrl.
 // ─────────────────────────────────────────────────────────────────────────────
 
+const _ssrKeys = window._sgSSRSliderKeys || {};
+
 export function initSlider({ db, appId, doc, setDoc }) {
     let sliderInterval;
     let currentSlide = 0;
-    let sliderMarkupKey = '';
+    let sliderMarkupKey = null;
     let announcementInterval;
     let currentAnnouncement = 0;
 
@@ -105,43 +107,56 @@ export function initSlider({ db, appId, doc, setDoc }) {
             isMobile ? 'm' : 'd',
             ...visibleSliders.map((s) => `${s.id || ''}|${isMobile ? (s.mobileImg || '') : (s.img || '')}|${s.title || ''}|${s.link || ''}`)
         ].join('::');
-        const canReuseMarkup = sliderMarkupKey === nextMarkupKey && slider.children.length === visibleSliders.length;
+
+        if (sliderMarkupKey === null) {
+            sliderMarkupKey = (isMobile ? _ssrKeys.m : _ssrKeys.d) || '';
+        }
+
+        // Also skip if SSR pre-rendered the first slide and the markup key matches.
+        // SSR injects only 1 slide (data-ssr-slide) but the key encodes ALL slides,
+        // so matching key means data is identical — no need to re-render.
+        const ssrSlidePresent = !!slider.querySelector('[data-ssr-slide]');
+        const canReuseMarkup = sliderMarkupKey === nextMarkupKey && (
+            slider.children.length === visibleSliders.length || ssrSlidePresent
+        );
+
         if (canReuseMarkup) {
             if (container) container.classList.remove('hidden');
             if (wrapper) wrapper.classList.remove('hidden');
-            return;
+            // We skip modifying slider.innerHTML so we don't cause LCP layout shifts!
+        } else {
+            slider.innerHTML = visibleSliders.map((slide, index) => {
+                const s = slide;
+                const i = index;
+                const displayImg = isMobile ? s.mobileImg : s.img;
+                const overlayHTML = s.title ? (isMobile
+                    ? `<div class="absolute bottom-12 left-8 text-white z-20">
+                         <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
+                       </div>`
+                    : `<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end pb-14 pl-16 z-20 pointer-events-none">
+                         <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
+                       </div>`
+                ) : '';
+
+                const imgUrl = getOptUrl(isMobile ? s.mobileImg : s.img, isMobile ? 1200 : null);
+                const validSrc = imgUrl ? imgUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+                return `
+                    <div class="slider-slide relative" data-index="${i}">
+                        <img src="${validSrc}" 
+                             class="${index === 0 ? 'no-animation' : ''} w-full h-full object-cover"
+                             alt="${s.title || ''}" 
+                             ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="eager"'}
+                             onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
+                             style="${s.link ? 'cursor:pointer' : ''}"
+                             draggable="false">
+                        ${overlayHTML}
+                    </div>
+                `;
+            }).join('');
+            
+            sliderMarkupKey = nextMarkupKey;
         }
-
-        slider.innerHTML = visibleSliders.map((slide, index) => {
-            const s = slide;
-            const i = index;
-            const displayImg = isMobile ? s.mobileImg : s.img;
-            const overlayHTML = s.title ? (isMobile
-                ? `<div class="absolute bottom-12 left-8 text-white z-20">
-                     <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
-                   </div>`
-                : `<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end pb-14 pl-16 z-20 pointer-events-none">
-                     <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
-                   </div>`
-            ) : '';
-
-            const imgUrl = getOptUrl(isMobile ? s.mobileImg : s.img, isMobile ? 1200 : null);
-            const validSrc = imgUrl ? imgUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-            return `
-                <div class="slider-slide relative" data-index="${i}">
-                    <img src="${validSrc}" 
-                         class="${index === 0 ? 'no-animation' : ''} w-full h-full object-cover"
-                         alt="${s.title || ''}" 
-                         ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="eager"'}
-                         onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
-                         style="${s.link ? 'cursor:pointer' : ''}"
-                         draggable="false">
-                    ${overlayHTML}
-                </div>
-            `;
-        }).join('');
-        sliderMarkupKey = nextMarkupKey;
 
         // ── REMOVE LOADING STATE ──────────────────────────────────────────────
         // Now that real slider content is in place, snap back to normal white design
