@@ -197,13 +197,60 @@ exports.renderHome = onRequest(async (req, res) => {
         const htmlResponse = await fetch(rawHtmlUrl);
         if (!htmlResponse.ok) throw new Error('Failed to fetch template');
         let htmlString = await htmlResponse.text();
+        let preloadTag = '';
+        if (sliders && sliders.length > 0) {
+            const sortedSliders = [...sliders].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+            const firstMobile = sortedSliders.find(s => s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img');
+            const firstDesktop = sortedSliders.find(s => s.img && s.img !== 'img/' && s.img !== 'img');
+
+            const mUrl = firstMobile ? firstMobile.mobileImg : null;
+            const dUrl = firstDesktop ? firstDesktop.img : null;
+
+            if (mUrl && dUrl && mUrl !== dUrl) {
+                preloadTag = `<link rel="preload" as="image" href="${mUrl}" media="(max-width: 767px)" fetchpriority="high">\n<link rel="preload" as="image" href="${dUrl}" media="(min-width: 768px)" fetchpriority="high">\n`;
+            } else if (mUrl || dUrl) {
+                preloadTag = `<link rel="preload" as="image" href="${mUrl || dUrl}" fetchpriority="high">\n`;
+            }
+            
+            // Hide the skeleton using CSS since we are injecting the actual image
+            preloadTag += '<style>#slider-skeleton, #slider-skeleton-dots { display: none !important; }</style>\n';
+
+            // Generate SSR HTML for the first slide to eliminate JS-induced LCP delay
+            let firstSlideHtml = '';
+            if (firstDesktop || firstMobile) {
+                let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                let validSrcMobile = mUrl || dUrl || validSrcDesktop;
+                
+                const altText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
+                
+                firstSlideHtml = `
+                <div class="slider-slide relative" data-index="0">
+                    <picture>
+                        ${mUrl && dUrl && mUrl !== dUrl ? `<source media="(max-width: 767px)" srcset="${validSrcMobile}">` : ''}
+                        <img src="${validSrcDesktop}" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="${altText}">
+                    </picture>
+                </div>`;
+                
+                // Inject into the HTML string directly inside home-slider
+                htmlString = htmlString.replace(/(<div id="home-slider"[^>]*>)/, `$1\n${firstSlideHtml}`);
+            }
+        }
 
         // Inject data
         const injectionScript = `<script>window.__INJECTED_HOME_DATA__ = ${JSON.stringify(responseData)};</script>`;
-        if (htmlString.includes('</head>')) {
-            htmlString = htmlString.replace('</head>', injectionScript + '</head>');
+
+        if (htmlString.includes('<head>')) {
+            htmlString = htmlString.replace('<head>', '<head>\n' + preloadTag);
         } else {
-            htmlString = injectionScript + htmlString;
+            htmlString = preloadTag + htmlString;
+        }
+
+        if (htmlString.includes('</body>')) {
+            htmlString = htmlString.replace('</body>', injectionScript + '\n</body>');
+        } else if (htmlString.includes('</head>')) {
+            htmlString = htmlString.replace('</head>', injectionScript + '\n</head>');
+        } else {
+            htmlString += injectionScript;
         }
 
         res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
