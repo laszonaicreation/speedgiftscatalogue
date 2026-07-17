@@ -28,7 +28,7 @@ exports.renderProduct = onRequest(async (req, res) => {
         // We fetch the static file from the hosting domain
         const hostUrl = `https://${process.env.GCLOUD_PROJECT}.web.app`;
         const rawHtmlUrl = `${hostUrl}/product-detail-static.html`;
-        
+
         const htmlResponse = await fetch(rawHtmlUrl);
         let htmlString = await htmlResponse.text();
 
@@ -47,7 +47,7 @@ exports.renderProduct = onRequest(async (req, res) => {
             if (productDoc.exists) {
                 const product = productDoc.data();
                 const title = `${product.name} | Speed Gifts`;
-                
+
                 // Clean description
                 let description = product.desc || product.details || `Buy ${product.name} at Speed Gifts.`;
                 description = description.replace(/<[^>]*>?/gm, ''); // remove html tags if any
@@ -56,7 +56,7 @@ exports.renderProduct = onRequest(async (req, res) => {
                 // Get first valid image
                 let imageUrl = (product.images && product.images.length > 0) ? product.images[0] : (product.img || 'https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png');
                 let lcpImageUrl = imageUrl;
-                
+
                 // WhatsApp does not support .webp and ignores images > 300KB. 
                 // We inject Cloudinary transformations to enforce a small, compressed .jpg
                 if (imageUrl.includes('res.cloudinary.com') && imageUrl.includes('/upload/')) {
@@ -68,7 +68,7 @@ exports.renderProduct = onRequest(async (req, res) => {
                     imageUrl = `${parts[0]}/upload/w_600,h_600,c_fit,q_80,f_jpg/${afterUpload}`;
                     // Replace .webp with .jpg at the end just to be sure
                     imageUrl = imageUrl.replace('.webp', '.jpg');
-                    
+
                     // LCP image for the website needs to be highly optimized WebP
                     lcpImageUrl = `${parts[0]}/upload/f_auto,q_auto,w_800,c_limit/${afterUpload}`;
                 } else if (imageUrl.includes('firebasestorage.googleapis.com') && imageUrl.includes('.webp?')) {
@@ -83,7 +83,7 @@ exports.renderProduct = onRequest(async (req, res) => {
 
                 // Determine the actual requested domain for the og:url
                 const actualHost = req.headers['x-forwarded-host'] || req.hostname || `${process.env.GCLOUD_PROJECT}.web.app`;
-                const finalUrl = req.path.startsWith('/p/') 
+                const finalUrl = req.path.startsWith('/p/')
                     ? `https://${actualHost}/p/${productId}`
                     : `https://${actualHost}/product-detail.html?id=${productId}`;
 
@@ -127,7 +127,7 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
         const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
 
         const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
-        
+
         const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
             prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
             prodCol.where('isFeatured', '==', true).get(),
@@ -165,7 +165,7 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
         const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
         const statsDoc = rawProducts.find(p => p.id === '_ad_stats_');
         const stats = statsDoc ? { ...defaultStats, ...statsDoc } : { ...defaultStats };
-        
+
         if (todaySnap && todaySnap.exists) {
             const td = todaySnap.data();
             stats.adVisits += (td.adVisits || 0) + (td.landingAdVisits || 0);
@@ -204,7 +204,7 @@ exports.sendOrderEmailNotification = onDocumentCreated('orders/{orderId}', async
     if (!snapshot) return;
 
     const order = snapshot.data();
-    
+
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -320,19 +320,19 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event
     }
 
     console.log(`Processing file: ${filePath}`);
-    
+
     const bucket = admin.storage().bucket(fileBucket);
-    
+
     try {
         // Download file into memory
         const [buffer] = await bucket.file(filePath).download();
-        
+
         // Resize and compress
         const thumbBuffer = await sharp(buffer)
             .resize({ width: 400, withoutEnlargement: true })
             .webp({ quality: 70 })
             .toBuffer();
-            
+
         // Save the thumb file back to the same folder with the new name
         const thumbPath = filePath.replace('.webp', '_thumb.webp');
         await bucket.file(thumbPath).save(thumbBuffer, {
@@ -340,7 +340,7 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event
                 contentType: 'image/webp'
             }
         });
-        
+
         console.log(`Thumbnail created successfully at ${thumbPath}`);
     } catch (error) {
         console.error('Error generating thumbnail:', error);

@@ -1,15 +1,29 @@
 const fs = require('fs');
-let content = fs.readFileSync('product-detail-page.js', 'utf8');
+let content = fs.readFileSync('product-detail-renderer.js', 'utf8');
 
-content = content.replace(
-    'async function renderById(id) {',
-    'async function renderById(id, isUpdate = false) {'
-);
+const reviewsStart = content.indexOf('${(() => {\n        // --- REVIEWS SECTION ---');
+const reviewsStartFallback = content.indexOf('${(() => {\r\n        // --- REVIEWS SECTION ---');
 
-content = content.replace(
-    'renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });',
-    'renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews, isUpdate });'
-);
+const startIdx = reviewsStart !== -1 ? reviewsStart : reviewsStartFallback;
 
-fs.writeFileSync('product-detail-page.js', content, 'utf8');
-console.log('Updated renderById');
+if (startIdx !== -1) {
+    const endIdx = content.indexOf('})()}', startIdx) + 5;
+    content = content.substring(0, startIdx) + '<div id="reviews-section"></div>' + content.substring(endIdx);
+    console.log("Replaced reviews IIFE");
+} else {
+    console.log("Reviews IIFE not found");
+}
+
+const recsStart = content.indexOf('${(() => {\n            const currentCatId');
+const recsStartFallback = content.indexOf('${(() => {\r\n            const currentCatId');
+const recStartIdx = recsStart !== -1 ? recsStart : recsStartFallback;
+
+if (recStartIdx !== -1) {
+    const endIdx = content.indexOf('})()}', recStartIdx) + 5;
+    content = content.substring(0, recStartIdx) + '<div id="recommendations-section"></div>' + content.substring(endIdx);
+    console.log("Replaced recs IIFE");
+} else {
+    console.log("Recs IIFE not found");
+}
+
+fs.writeFileSync('product-detail-renderer.js', content);

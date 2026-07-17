@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, doc, getDoc, setDoc, increment, addDoc, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
@@ -467,9 +467,11 @@ async function renderById(id, isUpdate = false) {
     }
     
     // 1. Initial Instant Render (No waiting for reviews)
-    injectSEO(product, []);
-    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: [] });
-    trackProductView(id).catch(() => { /* no-op */ });
+    if (!isUpdate) {
+        injectSEO(product, []);
+        renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: [], isUpdate: false });
+        trackProductView(id).catch(() => { /* no-op */ });
+    }
 
     // 2. Background Fetch for Reviews and Lazy Render Below-the-fold
     setTimeout(async () => {
@@ -576,29 +578,54 @@ async function bootstrap() {
         initialRenderDone = true;
     }
 
-    // Single-item fetch for direct visits (much faster than fetching whole collection)
-    if (!initialRenderDone) {
-        try {
-            const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-            const productSnap = await getDoc(productRef);
-            if (productSnap.exists()) {
-                DATA.p = [{ id: productSnap.id, ...productSnap.data() }];
+    // Always fetch the live product in the background for "Stale-While-Revalidate"
+    let liveProduct = null;
+    try {
+        const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+        const productSnap = await getDoc(productRef);
+        if (productSnap.exists()) {
+            liveProduct = { id: productSnap.id, ...productSnap.data() };
+            // Replace the cached product with the live one
+            const pIdx = DATA.p.findIndex(p => p.id === id);
+            if (pIdx > -1) DATA.p[pIdx] = liveProduct;
+            else DATA.p.push(liveProduct);
+            
+            if (!initialRenderDone) {
                 await renderById(id);
                 initialRenderDone = true;
             }
-        } catch (e) { console.warn("Single fetch failed:", e); }
+        }
+    } catch (e) { console.warn("Single fetch failed:", e); }
+
+    // Background fetch: load categories for sidebar and ONLY related products for recommendations.
+    // This avoids blocking the main thread by fetching the entire catalog!
+    let recommendationsQuery = prodCol; // fallback if no catId
+    const currentProduct = liveProduct || DATA.p.find(p => p.id === id);
+    if (currentProduct && currentProduct.catId) {
+        recommendationsQuery = query(prodCol, where('catId', '==', String(currentProduct.catId)), limit(8));
+    } else {
+        recommendationsQuery = query(prodCol, limit(8));
     }
 
-    // Background fetch: load categories for sidebar and full product list for recommendations.
-    // This runs after the user has seen the main product.
-    const [prodSnap, catSnap] = await Promise.all([getDocs(prodCol), getDocs(catCol)]);
-    DATA.p = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    const [prodSnap, catSnap] = await Promise.all([getDocs(recommendationsQuery), getDocs(catCol)]);
+    
+    const relatedProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }))
         .filter(p => !['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(p.id));
+        
+    // Merge recommendations into DATA.p safely
+    const existingIds = new Set(DATA.p.map(p => p.id));
+    relatedProducts.forEach(rp => {
+        if (!existingIds.has(rp.id)) {
+            DATA.p.push(rp);
+            existingIds.add(rp.id);
+        }
+    });
+
     DATA.c = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     renderCategoriesSidebar();
-    // Final render to populate recommendations and sidebars
-    await renderById(id);
+    // Final render to populate recommendations, sidebars, AND live update the UI (price/stock)
+    await renderById(id, true);
 }
 
 window.addEventListener('popstate', () => {
