@@ -465,13 +465,29 @@ async function renderById(id, isUpdate = false) {
         document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 mt-20">Product not found.</p>';
         return;
     }
-    // Fetch reviews before rendering
-    const reviews = await fetchReviews(id);
-    const approvedReviews = reviews.filter(r => r.status === 'approved');
-
-    injectSEO(product, approvedReviews);
-    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews });
+    
+    // 1. Initial Instant Render (No waiting for reviews)
+    injectSEO(product, []);
+    renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: [] });
     trackProductView(id).catch(() => { /* no-op */ });
+
+    // 2. Background Fetch for Reviews and Lazy Render Below-the-fold
+    setTimeout(async () => {
+        try {
+            const reviews = await fetchReviews(id);
+            const approvedReviews = reviews.filter(r => r.status === 'approved');
+            
+            // Inject SEO again to include aggregateRating if there are reviews
+            if (approvedReviews.length > 0) {
+                injectSEO(product, approvedReviews);
+            }
+            
+            // Re-render only the reviews and recommendations sections
+            renderProductDetailView({ product, DATA, state, getOptimizedUrl, getBadgeLabel, reviews: approvedReviews, isUpdate: true });
+        } catch(e) {
+            console.error("Failed to lazy load reviews:", e);
+        }
+    }, 100);
 }
 
 function readDetailCache(id) {
