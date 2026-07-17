@@ -6,6 +6,7 @@ const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
 const sharp = require('sharp');
+const zlib = require('zlib');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -107,7 +108,17 @@ exports.renderProduct = onRequest(async (req, res) => {
 
         // Send the modified HTML
         res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
-        res.status(200).send(htmlString);
+        res.set('Content-Type', 'text/html; charset=utf-8');
+        const acceptEncoding = req.headers['accept-encoding'] || '';
+        if (acceptEncoding.includes('br')) {
+            res.set('Content-Encoding', 'br');
+            res.status(200).send(zlib.brotliCompressSync(htmlString));
+        } else if (acceptEncoding.includes('gzip')) {
+            res.set('Content-Encoding', 'gzip');
+            res.status(200).send(zlib.gzipSync(htmlString));
+        } else {
+            res.status(200).send(htmlString);
+        }
     } catch (error) {
         console.error('Error rendering product page:', error);
         res.status(500).send('Internal Server Error');
@@ -196,7 +207,17 @@ exports.renderHome = onRequest(async (req, res) => {
         }
 
         res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
-        res.status(200).send(htmlString);
+        res.set('Content-Type', 'text/html; charset=utf-8');
+        const acceptEncoding = req.headers['accept-encoding'] || '';
+        if (acceptEncoding.includes('br')) {
+            res.set('Content-Encoding', 'br');
+            res.status(200).send(zlib.brotliCompressSync(htmlString));
+        } else if (acceptEncoding.includes('gzip')) {
+            res.set('Content-Encoding', 'gzip');
+            res.status(200).send(zlib.gzipSync(htmlString));
+        } else {
+            res.status(200).send(htmlString);
+        }
     } catch (error) {
         console.error('Error rendering home page:', error);
         res.status(500).send('Internal Server Error');
