@@ -106,7 +106,7 @@ exports.renderProduct = onRequest(async (req, res) => {
         }
 
         // Send the modified HTML
-        res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+        res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
         res.status(200).send(htmlString);
     } catch (error) {
         console.error('Error rendering product page:', error);
@@ -191,7 +191,7 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
             stats
         };
 
-        res.set('Cache-Control', 'public, max-age=60, s-maxage=300');
+        res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
         res.status(200).json(responseData);
     } catch (error) {
         console.error('Error fetching home data:', error);
