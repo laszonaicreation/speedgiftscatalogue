@@ -169,16 +169,33 @@ setTimeout(revealPage, 5000);
 window._sgTryInstantCacheRender = function () {
     try {
         if (DATA.p && DATA.p.length > 0) return; // Firebase already loaded — skip
-        const raw = localStorage.getItem('speedgifts_home_cache');
-        if (!raw) return;
-        const cache = JSON.parse(raw);
+        let cache = null;
+        if (window.__INJECTED_HOME_DATA__) {
+            cache = {
+                p: window.__INJECTED_HOME_DATA__.products || [],
+                c: window.__INJECTED_HOME_DATA__.categories || [],
+                m: window.__INJECTED_HOME_DATA__.megaMenus || [],
+                s: window.__INJECTED_HOME_DATA__.sliders || [],
+                announcements: window.__INJECTED_HOME_DATA__.announcements || [],
+                popupSettings: window.__INJECTED_HOME_DATA__.popupSettings || { title: '', msg: '', img: '' },
+                landingSettings: window.__INJECTED_HOME_DATA__.landingSettings || null,
+                homeSettings: window.__INJECTED_HOME_DATA__.homeSettings || null,
+                stats: window.__INJECTED_HOME_DATA__.stats || { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 }
+            };
+            console.log('[Cache] Instant render from INJECTED SSR DATA — products:', cache.p.length);
+        } else {
+            const raw = localStorage.getItem('speedgifts_home_cache');
+            if (raw) cache = JSON.parse(raw);
+            if (cache) console.log('[Cache] Instant render from cache — products:', cache.p ? cache.p.length : 0);
+        }
+        
         if (!cache || !Array.isArray(cache.p) || cache.p.length === 0) return;
         DATA = cache;
-        console.log('[Cache] Instant render from cache — products:', DATA.p.length);
 
         // Ensure hearts are colored immediately on first paint
         try {
             const wRaw = localStorage.getItem('speedgifts_wishlist');
+
             if (wRaw) {
                 const parsedW = JSON.parse(wRaw);
                 state.wishlist = parsedW.map(e => typeof e === 'string' ? { id: e } : e);

@@ -167,15 +167,25 @@ if (successCount > 0) {
     console.log(`\n⏭  No HTML update needed (no files were rebuilt).`);
 }
 
-// ── Summary ───────────────────────────────────────────────────────────────────
+// ── Summary ───────────────────────────────────────────────────────────────────// 🛠️ Summary 🛠️
 console.log(`\n========================================`);
 console.log(`Build complete!`);
-console.log(`  ✅ Rebuilt : ${successCount} files`);
-console.log(`  ⏭  Skipped : ${skippedCount} files (already up-to-date)`);
+console.log(`  🚀 Rebuilt : ${successCount} files`);
+console.log(`  ⏭️  Skipped : ${skippedCount} files (already up-to-date)`);
 if (failCount > 0) {
     console.log(`  ❌ Failed  : ${failCount} files`);
     process.exit(1);
 } else {
     console.log(`  All operations completed successfully.`);
 }
+
+console.log(`\nGenerating -static.html copies for Cloud Functions...`);
+['index.html', 'product-detail.html'].forEach(file => {
+    if (fs.existsSync(file)) {
+        const content = fs.readFileSync(file, 'utf8');
+        fs.writeFileSync(file.replace('.html', '-static.html'), content, 'utf8');
+        console.log(`  -> Copied ${file} to ${file.replace('.html', '-static.html')}`);
+    }
+});
+
 console.log(`========================================\n`);
