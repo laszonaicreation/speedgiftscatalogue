@@ -207,16 +207,21 @@ window._sgTryInstantCacheRender = function () {
         // Restore state instantly before first paint
         if (typeof applyHomeSnapshotIfAny === 'function') applyHomeSnapshotIfAny();
 
-        if (typeof renderHome === 'function') renderHome();
         _loadSliderModule(); // Instantiate slider immediately using cache
         if (typeof _loadSpotlightModule === 'function') _loadSpotlightModule();
-        revealPage(); // Cache render complete — show page
+
+        // Yield to the browser to paint the LCP (slider) BEFORE executing heavy DOM work
+        requestAnimationFrame(() => {
+            if (typeof renderHome === 'function') renderHome();
+            revealPage(); // Cache render complete — show page
+        });
     } catch (e) {
         console.warn('[Cache] Render failed:', e);
     }
 };
-// Fire after one event-loop tick so the DOM template is fully parsed & available
-setTimeout(window._sgTryInstantCacheRender, 0);
+// Execute immediately instead of setTimeout(0) to ensure DATA.p is populated
+// BEFORE onAuthStateChanged fires, so the 6000ms Firebase fetch delay works.
+window._sgTryInstantCacheRender();
 
 // Wire cart globals for home page
 window.handleCartClick = () => { window.location.href = 'cart.html'; };
