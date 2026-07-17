@@ -1,6 +1,7 @@
 const { onRequest } = require('firebase-functions/v2/https');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 const nodemailer = require('nodemailer');
@@ -344,5 +345,63 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event
         console.log(`Thumbnail created successfully at ${thumbPath}`);
     } catch (error) {
         console.error('Error generating thumbnail:', error);
+    }
+});
+
+// Cache Warmer: Runs daily to ping all product pages and ensure the CDN cache is hot.
+exports.warmCache = onSchedule({
+    schedule: "0 2 * * *",
+    timeZone: "Asia/Dubai",
+    timeoutSeconds: 300,
+    memory: "256MiB"
+}, async (event) => {
+    try {
+        console.log('Starting Cache Warming...');
+        // The appId or projectId is used as the document path. 
+        // Based on the code, it uses 'artifacts/speed-catalogue/public/data/products'
+        // Wait, how does getHomeData get the products?
+        const snapshot = await db.collection('artifacts').doc('speed-catalogue')
+                               .collection('public').doc('data')
+                               .collection('products').get();
+        
+        if (snapshot.empty) {
+            console.log('No products found for cache warming.');
+            return;
+        }
+
+        const productIds = [];
+        snapshot.forEach(doc => {
+            if (!['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(doc.id)) {
+                productIds.push(doc.id);
+            }
+        });
+
+        console.log(`Found ${productIds.length} products to warm up.`);
+
+        let successCount = 0;
+        let failCount = 0;
+
+        // Fetch in batches of 10 to avoid overwhelming the network/hosting limits
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
+            const batch = productIds.slice(i, i + BATCH_SIZE);
+            const promises = batch.map(async (id) => {
+                const url = `https://speedgifts.net/p/${encodeURIComponent(id)}`;
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) successCount++;
+                    else failCount++;
+                } catch (e) {
+                    failCount++;
+                }
+            });
+            await Promise.all(promises);
+            // Optional: slight delay between batches to be safe
+            await new Promise(r => setTimeout(r, 500));
+        }
+
+        console.log(`Cache warming complete. Success: ${successCount}, Failed: ${failCount}`);
+    } catch (error) {
+        console.error('Error during cache warming:', error);
     }
 });

@@ -50,6 +50,25 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             </a>
         </div>
     `;
+
+    const getTitleHtml = () => `
+        <h1 class="detail-product-name capitalize !mb-0">${product.name}</h1>
+        ${product.inStock === false ? '<span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-sm whitespace-nowrap">Out of Stock</span>' : ''}
+    `;
+
+    const getPriceHtml = () => {
+        const origP = parseFloat(product.originalPrice);
+        const saleP = parseFloat(product.price);
+        if (product.originalPrice && origP > saleP) {
+            const disc = Math.round((1 - saleP / origP) * 100);
+            return `<div class="flex items-baseline gap-3 flex-wrap mt-1">
+                        <span class="detail-price-text text-xl md:text-2xl">${product.price} AED</span>
+                        <span class="text-base line-through text-gray-400 font-normal">${product.originalPrice} AED</span>
+                        <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
+                    </div>`;
+        }
+        return `<p class="detail-price-text text-xl md:text-2xl">${product.price} AED</p>`;
+    };
     const reviewsHtml = `
         <div id="reviews-section" style="margin-top: 5rem; padding-top: 4rem;" class="border-t border-gray-100 w-full max-w-3xl mx-auto">
             <!-- Header -->
@@ -188,6 +207,18 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
         if (summaryEl) {
             summaryEl.innerHTML = getRatingSummaryHtml();
         }
+        
+        // Stale-While-Revalidate Live DOM updates for Title and Price
+        const titleContainer = document.getElementById('detail-title-container');
+        if (titleContainer) {
+            titleContainer.innerHTML = getTitleHtml();
+        }
+        
+        const priceContainer = document.getElementById('detail-price-container');
+        if (priceContainer) {
+            priceContainer.innerHTML = getPriceHtml();
+        }
+        
         return;
     }
 
@@ -255,24 +286,11 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             const badgeText = product.badge ? getBadgeLabel(product.badge) : 'Top Selection';
             return `<span class="detail-badge badge-${badgeKey}" style="display:inline-flex;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:400;letter-spacing:0.04em;margin-bottom:8px;color:#111111;">${badgeText}</span>`;
         })()}
-                    <div class="flex items-center gap-3 mb-2 md:mb-3">
-                        <h1 class="detail-product-name capitalize !mb-0">${product.name}</h1>
-                        ${product.inStock === false ? '<span class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase shadow-sm">Out of Stock</span>' : ''}
+                    <div id="detail-title-container" class="flex items-center gap-3 mb-2 md:mb-3">
+                        ${getTitleHtml()}
                     </div>
                     <div id="detail-price-container">
-                    ${(() => {
-            const origP = parseFloat(product.originalPrice);
-            const saleP = parseFloat(product.price);
-            if (product.originalPrice && origP > saleP) {
-                const disc = Math.round((1 - saleP / origP) * 100);
-                return `<div class="flex items-baseline gap-3 flex-wrap mt-1">
-                                <span class="detail-price-text text-xl md:text-2xl">${product.price} AED</span>
-                                <span class="text-base line-through text-gray-400 font-normal">${product.originalPrice} AED</span>
-                                <span class="text-[11px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full">${disc}% OFF</span>
-                            </div>`;
-            }
-            return `<p class="detail-price-text text-xl md:text-2xl">${product.price} AED</p>`;
-        })()}
+                        ${getPriceHtml()}
                     </div>
                     ${`
                         <div id="product-detail-rating-summary" class="flex flex-col gap-3 mt-3">
