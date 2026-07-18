@@ -232,7 +232,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
 <div class="max-w-6xl mx-auto pt-4 pb-36 md:pt-10 md:pb-16 px-0 md:px-4 detail-view-container text-left">
     <!-- Breadcrumbs -->
     <nav class="flex items-center text-[10px] font-bold text-gray-400 mb-6 w-full overflow-x-auto no-scrollbar whitespace-nowrap uppercase tracking-widest" style="gap: 8px;">
-        <a href="index.html" class="hover:text-black transition-colors flex items-center" style="gap: 6px;">
+        <a href="/" class="hover:text-black transition-colors flex items-center" style="gap: 6px;">
             <i class="fa-solid fa-house text-[10px]"></i> Home
         </a>
         <span class="text-gray-300">/</span>

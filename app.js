@@ -101,7 +101,7 @@ const _spotlightModulePromise = import(_isMinBuild ? './app-spotlight.min.js' : 
 })();
 
 function setupHomeSharedShell() {
-    // Home already has its own full shell markup in index.html.
+    // Home already has its own full shell markup in /.
     // Avoid mounting shared shell here to prevent duplicate/invalid DOM state.
     if (document.querySelector('body > nav.sticky')) return;
 
@@ -1817,9 +1817,9 @@ window.focusSearch = () => {
 // SLIDER + ANNOUNCEMENT — lazy-loaded from app-slider.js
 // Stubs replaced once the module resolves (parallel to Firebase data fetch).
 // ─────────────────────────────────────────────────────────────────────────────
-let renderSlider = () => { };
-let renderAnnouncementBar = () => { };
-let _sliderModuleLoaded = false;
+var renderSlider = () => { };
+var renderAnnouncementBar = () => { };
+var _sliderModuleLoaded = false;
 
 async function _loadSliderModule() {
     if (_sliderModuleLoaded) return;
@@ -1954,7 +1954,7 @@ document.addEventListener('mousedown', (e) => {
 // Stub replaced once the module resolves.
 // ─────────────────────────────────────────────────────────────────────────────
 window.renderSpotlightSection = () => { }; // no-op stub until module loads
-let _spotlightModuleLoaded = false;
+var _spotlightModuleLoaded = false;
 
 async function _loadSpotlightModule() {
     if (_spotlightModuleLoaded) return;

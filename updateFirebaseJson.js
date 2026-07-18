@@ -2,7 +2,7 @@ const fs = require('fs');
 
 let config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
 
-// 1. Remove the "no-cache" header for index.html if it exists
+// 1. Remove the "no-cache" header for / if it exists
 if (config.hosting && config.hosting.headers) {
     config.hosting.headers = config.hosting.headers.filter(h => h.source !== 'index.html');
 }

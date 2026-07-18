@@ -73,14 +73,15 @@ exports.renderProduct = onRequest(async (req, res) => {
 
                     // LCP image for the website needs to be highly optimized WebP
                     lcpImageUrl = `${parts[0]}/upload/f_auto,q_auto,w_800,c_limit/${afterUpload}`;
-                } else if (imageUrl.includes('firebasestorage.googleapis.com') && imageUrl.includes('.webp?')) {
-                    // Firebase Storage: preload _thumb.webp for fast LCP (matches what JS renders first)
-                    // JS shows thumb instantly, then swaps to full quality in background
-                    lcpImageUrl = imageUrl.replace('.webp?', '_thumb.webp?');
-                    // WhatsApp og:image - keep as jpg
-                    imageUrl = imageUrl.replace('.webp', '.jpg');
-                } else if (imageUrl.includes('.webp')) {
-                    imageUrl = imageUrl.replace('.webp', '.jpg');
+                } else if (imageUrl.includes('firebasestorage.googleapis.com')) {
+                    // Firebase Storage does NOT auto-convert formats like Cloudinary.
+                    // .jpg files don't exist — only .webp files are stored.
+                    // Modern WhatsApp fully supports WebP, so use the original .webp URL.
+                    // For LCP preload, use the _thumb.webp variant if available.
+                    if (imageUrl.includes('.webp?')) {
+                        lcpImageUrl = imageUrl.replace('.webp?', '_thumb.webp?');
+                    }
+                    // imageUrl stays as-is (.webp) — WhatsApp will render it correctly
                 }
 
                 // Determine the actual requested domain for the og:url

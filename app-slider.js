@@ -6,8 +6,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _ssrKeys = window._sgSSRSliderKeys || {};
+console.log("APP SLIDER MODULE LOADED!");
 
 export function initSlider({ db, appId, doc, setDoc }) {
+    console.log("INIT SLIDER CALLED with args:", { db: !!db, appId: !!appId });
     let sliderInterval;
     let currentSlide = 0;
     let sliderMarkupKey = null;
@@ -21,6 +23,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
     // ─── SLIDER ──────────────────────────────────────────────────────────────
 
     function renderSlider() {
+        console.log("RENDER SLIDER CALLED");
         const DATA = getData();
         const state = getState();
 
@@ -112,19 +115,53 @@ export function initSlider({ db, appId, doc, setDoc }) {
             sliderMarkupKey = (isMobile ? _ssrKeys.m : _ssrKeys.d) || '';
         }
 
-        // Also skip if SSR pre-rendered the first slide and the markup key matches.
-        // SSR injects only 1 slide (data-ssr-slide) but the key encodes ALL slides,
-        // so matching key means data is identical — no need to re-render.
         const ssrSlidePresent = !!slider.querySelector('[data-ssr-slide]');
-        const canReuseMarkup = sliderMarkupKey === nextMarkupKey && (
-            slider.children.length === visibleSliders.length || ssrSlidePresent
-        );
+        const canReuseMarkup = sliderMarkupKey === nextMarkupKey;
+        console.log("Slider Markup Key SSR:", sliderMarkupKey);
+        console.log("Slider Markup Key NEXT:", nextMarkupKey);
+        console.log("canReuseMarkup:", canReuseMarkup);
+
+        if (container) container.classList.remove('hidden');
+        if (wrapper) wrapper.classList.remove('hidden');
 
         if (canReuseMarkup) {
-            if (container) container.classList.remove('hidden');
-            if (wrapper) wrapper.classList.remove('hidden');
-            // We skip modifying slider.innerHTML so we don't cause LCP layout shifts!
+            // If SSR is present but we haven't added the rest of the slides yet, add them now
+            if (ssrSlidePresent && slider.children.length < visibleSliders.length) {
+                const restOfSlidesHtml = visibleSliders.slice(1).map((slide, index) => {
+                    const s = slide;
+                    const i = index + 1; // start from 1
+                    const displayImg = isMobile ? s.mobileImg : s.img;
+                    const overlayHTML = s.title ? (isMobile
+                        ? `<div class="absolute bottom-12 left-8 text-white z-20">
+                             <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
+                           </div>`
+                        : `<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end pb-14 pl-16 z-20 pointer-events-none">
+                             <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
+                           </div>`
+                    ) : '';
+
+                    const imgUrl = getOptUrl(displayImg, isMobile ? 1200 : null);
+                    const validSrc = imgUrl ? imgUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+                    return `
+                        <div class="slider-slide relative" data-index="${i}">
+                            <img src="${validSrc}" 
+                                 class="w-full h-full object-cover"
+                                 alt="${s.title || ''}" 
+                                 fetchpriority="auto" loading="lazy"
+                                 onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
+                                 style="${s.link ? 'cursor:pointer' : ''}"
+                                 draggable="false">
+                            ${overlayHTML}
+                        </div>
+                    `;
+                }).join('');
+                slider.insertAdjacentHTML('beforeend', restOfSlidesHtml);
+            }
         } else {
+            // The data changed, we MUST re-render entirely.
+            // But we can PRESERVE the first slide if it's the same image to prevent LCP blink!
+            // Actually, if it changed, it's safer to just re-render.
             slider.innerHTML = visibleSliders.map((slide, index) => {
                 const s = slide;
                 const i = index;
@@ -138,7 +175,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
                        </div>`
                 ) : '';
 
-                const imgUrl = getOptUrl(isMobile ? s.mobileImg : s.img, isMobile ? 1200 : null);
+                const imgUrl = getOptUrl(displayImg, isMobile ? 1200 : null);
                 const validSrc = imgUrl ? imgUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
                 return `
@@ -146,7 +183,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
                         <img src="${validSrc}" 
                              class="${index === 0 ? 'no-animation' : ''} w-full h-full object-cover"
                              alt="${s.title || ''}" 
-                             ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="eager"'}
+                             ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="lazy"'}
                              onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
                              style="${s.link ? 'cursor:pointer' : ''}"
                              draggable="false">

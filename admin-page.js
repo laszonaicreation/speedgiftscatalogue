@@ -1,6 +1,6 @@
 // ============================================================================
 // admin-page.js — Standalone Admin Panel Entry Point
-// Completely independent from app.js / index.html.
+// Completely independent from app.js / /.
 // Handles: Firebase init, auth guard, data fetch, initAdmin(ctx)
 // ============================================================================
 
