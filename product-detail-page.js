@@ -191,7 +191,7 @@ function renderCategoriesSidebar() {
 }
 
 
-window.goBackToHome = () => { window.location.href = 'index.html'; };
+window.goBackToHome = () => { window.location.href = '/'; };
 window.focusSearch = () => { window.location.href = 'shop.html'; };
 function openShopWithSearch(query) {
     const q = String(query || '').trim();
@@ -552,7 +552,7 @@ async function bootstrap() {
 
     const id = getProductIdFromSearch();
     if (!id) {
-        window.location.replace('index.html');
+        window.location.replace('/');
         return;
     }
 
@@ -660,7 +660,7 @@ if (backBtn) {
         if (window.history.length > 1) {
             window.history.back();
         } else {
-            window.location.href = 'index.html';
+            window.location.href = '/';
         }
     });
 }

@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         window.addEventListener('popstate', function(event) {
             if (event.state && event.state.os_page === 1) {
-                window.location.replace('index.html');
+                window.location.replace('/');
             }
         });
     }

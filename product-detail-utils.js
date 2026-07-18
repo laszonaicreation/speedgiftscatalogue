@@ -1,5 +1,5 @@
 const PRODUCT_DETAIL_PAGE = 'product-detail.html';
-const HOME_PAGE = 'index.html';
+const HOME_PAGE = '/';
 
 function getBasePath(pathname = window.location.pathname) {
     const cleanPath = pathname.split('?')[0].split('#')[0];
