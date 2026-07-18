@@ -3148,10 +3148,10 @@ export function initAdmin(ctx) {
                 </div>
 
                 <!-- 3-COLUMN BODY (inline grid) -->
-                <div class="grid grid-cols-1 lg:grid-cols-3" style="border-top:0;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:0;">
 
                     <!-- Col 1: Customer -->
-                    <div class="border-b lg:border-b-0 lg:border-r border-gray-100" style="padding:20px;min-width:0;">
+                    <div style="padding:20px;border-right:1px solid #f3f4f6;min-width:0;">
                         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
                             <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;flex-shrink:0;">
                                 ${initials}
@@ -3173,7 +3173,7 @@ export function initAdmin(ctx) {
                     </div>
 
                     <!-- Col 2: Delivery -->
-                    <div class="border-b lg:border-b-0 lg:border-r border-gray-100" style="padding:20px;min-width:0;">
+                    <div style="padding:20px;border-right:1px solid #f3f4f6;min-width:0;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
                             <div style="width:24px;height:24px;border-radius:8px;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                                 <i class="fa-solid fa-location-dot" style="color:#8b5cf6;font-size:11px;"></i>
