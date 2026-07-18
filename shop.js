@@ -513,7 +513,7 @@ function buildCard(p, index) {
                     ${index < 8 ? 'fetchpriority="high"' : ''}
                     class="${index < 8 ? 'loaded' : ''}"
                     onload="this.classList.add('loaded')"
-                    onerror="this.src='https://placehold.co/400x500?text=Speed+Gifts'"
+                    onerror="window.handleImgError(this, 'https://placehold.co/400x500?text=Speed+Gifts')">
                 >`
             : `<div style="width:100%;height:100%;background:#f3f4f6;"></div>`
         }
@@ -683,7 +683,7 @@ function renderMobileVisualCategories() {
             const img = getOptimizedUrl(cat.img, 160) || 'https://placehold.co/160x160?text=Category';
             return `<button class="category-item ${state.filter === cat.id ? 'active' : ''}" data-id="${cat.id}" onclick="applyFilter('${cat.id}')">
                         <div class="category-img-box">
-                            <img src="${img}" alt="${(cat.name || 'Category').replace(/"/g, '&quot;')}" onerror="this.src='https://placehold.co/160x160?text=Category'">
+                            <img src="${img}" alt="${(cat.name || 'Category').replace(/"/g, '&quot;')}" onerror="window.handleImgError(this, 'https://placehold.co/160x160?text=Category')">
                         </div>
                         <span class="category-label">${cat.name || 'Category'}</span>
                     </button>`;
@@ -735,7 +735,7 @@ function renderDesktopMegaMenu() {
                 return `
                     <div class="mega-cat-card" onclick="applyFilter('${cat.id}')">
                         <div class="mega-cat-img-wrap">
-                            <img src="${img}" alt="${(cat.name || 'Category').replace(/"/g, '&quot;')}" onerror="this.src='https://placehold.co/100x100?text=Icon'">
+                            <img src="${img}" alt="${(cat.name || 'Category').replace(/"/g, '&quot;')}" onerror="window.handleImgError(this, 'https://placehold.co/100x100?text=Icon')">
                         </div>
                         <span class="mega-cat-name">${cat.name || 'Category'}</span>
                         <i class="fa-solid fa-chevron-right mega-cat-arrow"></i>

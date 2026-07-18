@@ -1,3 +1,48 @@
+window.handleImgError = function (img, fallbackUrl) {
+    if (img._handledErrorCount) {
+        img._handledErrorCount++;
+    } else {
+        img._handledErrorCount = 1;
+    }
+
+    if (img._handledErrorCount > 3) {
+        img.onerror = null;
+        if (fallbackUrl) img.src = fallbackUrl;
+        return;
+    }
+
+    const src = img.src || '';
+
+    // If Cloudinary, try removing transformations first
+    if (src.includes('cloudinary.com') && img._handledErrorCount === 1) {
+        const originalUrl = src.replace(/\/upload\/[^/]+\//, '/upload/');
+        if (originalUrl !== src) {
+            setTimeout(() => { img.src = originalUrl; }, 100);
+            return;
+        }
+    }
+
+    // If Firebase Storage, try removing the _thumb suffix first
+    if (src.includes('firebasestorage.googleapis.com') && img._handledErrorCount === 1) {
+        if (src.includes('_thumb.webp?')) {
+            const originalUrl = src.replace('_thumb.webp?', '.webp?');
+            setTimeout(() => { img.src = originalUrl; }, 100);
+            return;
+        }
+    }
+
+    // Try reloading with a cache buster parameter to retry
+    setTimeout(() => {
+        try {
+            const urlObj = new URL(src, window.location.origin);
+            urlObj.searchParams.set('retry', Date.now());
+            img.src = urlObj.toString();
+        } catch (e) {
+            img.src = src + (src.includes('?') ? '&' : '?') + 'retry=' + Date.now();
+        }
+    }, 200 * img._handledErrorCount);
+};
+
 export function mountSharedShell(page = 'shop') {
     const root = document.getElementById('shared-shell-root');
     if (!root) return;

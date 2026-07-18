@@ -1339,7 +1339,7 @@ export function initAdmin(ctx) {
                     <td class="py-3 px-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                <img src="${imgSrc}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/40x40?text=Gift'">
+                                <img src="${imgSrc}" class="w-full h-full object-cover" onerror="window.handleImgError(this, 'https://placehold.co/40x40?text=Gift')">
                             </div>
                             <div class="flex flex-col w-[160px] md:w-[250px] lg:w-[300px]">
                                 <span class="text-[12px] font-bold text-black whitespace-normal leading-tight">${p.name}</span>
@@ -2515,7 +2515,7 @@ export function initAdmin(ctx) {
                         <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[7px] text-center font-bold uppercase py-1">Desktop</div>
                     </div>
                     <div class="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 border">
-                        <img src="${getOptimizedUrl(s.mobileImg, 200)}" class="w-full h-full object-cover ${!hasMobile ? 'opacity-20 grayscale' : ''}" onerror="this.src='https://placehold.co/200x200?text=No+Mobile'">
+                        <img src="${getOptimizedUrl(s.mobileImg, 200)}" class="w-full h-full object-cover ${!hasMobile ? 'opacity-20 grayscale' : ''}" onerror="window.handleImgError(this, 'https://placehold.co/200x200?text=No+Mobile')">
                         <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-[7px] text-center font-bold uppercase py-1">Mobile</div>
                     </div>
                     <div class="flex-1 min-w-0">
@@ -2918,7 +2918,7 @@ export function initAdmin(ctx) {
             <div class="flex-shrink-0 w-5 h-5 rounded-md border-2 border-gray-200 bg-white flex items-center justify-center transition-all mega-tick-box" style="min-width:20px;">
                 <svg class="mega-tick-icon hidden" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <img src="${getOptimizedUrl(c.img, 50)}" class="flex-shrink-0 w-7 h-7 object-cover rounded-lg bg-gray-100" onerror="this.src='https://placehold.co/50x50?text=Icon'">
+            <img src="${getOptimizedUrl(c.img, 50)}" class="flex-shrink-0 w-7 h-7 object-cover rounded-lg bg-gray-100" onerror="window.handleImgError(this, 'https://placehold.co/50x50?text=Icon')">
             <span class="text-[11px] font-semibold text-gray-700 leading-tight truncate">${c.name}</span>
         </label>
     `).join('');
@@ -2979,7 +2979,7 @@ export function initAdmin(ctx) {
             const thumbs = mappedCats.slice(0, 5).map(c => `
             <img src="${getOptimizedUrl(c.img, 60)}" title="${c.name}"
                 class="w-9 h-9 rounded-xl object-cover border-2 border-white shadow-sm -ml-2 first:ml-0 bg-gray-100"
-                onerror="this.src='https://placehold.co/60x60?text=?'">
+                onerror="window.handleImgError(this, 'https://placehold.co/60x60?text=?')">
         `).join('');
 
             const extra = mappedCats.length > 5 ? `<span class="w-9 h-9 rounded-xl bg-gray-100 border-2 border-white shadow-sm -ml-2 flex items-center justify-center text-[9px] font-black text-gray-500">+${mappedCats.length - 5}</span>` : '';
@@ -3101,7 +3101,7 @@ export function initAdmin(ctx) {
             const itemsHtml = (o.items || []).slice(0, 3).map(i => `
                 <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;">
                     <div style="position:relative;flex-shrink:0;">
-                        <img src="${getOptimizedUrl(i.img, 48)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #e5e7eb;background:#f9fafb;" onerror="this.src='https://placehold.co/48x48'">
+                        <img src="${getOptimizedUrl(i.img, 48)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid #e5e7eb;background:#f9fafb;" onerror="window.handleImgError(this, 'https://placehold.co/48x48')">
                         <span style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#111;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #fff;">${i.qty||1}</span>
                     </div>
                     <div style="flex:1;min-width:0;">

@@ -35,7 +35,7 @@ function fmt(ts) {
     return d.toLocaleDateString('en-AE', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 function imgUrl(url, size = 90) {
-    if (!url) return '';
+    if (!url || url === 'img/') return '';
     if (url.includes('res.cloudinary.com') && !url.includes('/upload/w_'))
         return url.replace('/upload/', `/upload/w_${size},c_fill,f_auto,q_auto/`);
     return url;

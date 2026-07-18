@@ -1663,26 +1663,7 @@ function getOptimizedUrl(url, width) {
     return url.replace('/upload/', `/upload/${fullTransform}/`);
 }
 
-// Fallback: If Cloudinary transform URL fails, retry with original URL
-window.handleImgError = function (img) {
-    if (img._retried) return; // Avoid infinite loop
-    img._retried = true;
-    const src = img.src || '';
-    if (!src.includes('cloudinary.com')) {
-        img.classList.add('loaded');
-        if (!img.src || img.src.endsWith('/img/') || img.src === 'img/' || img.src === window.location.href) {
-            img.src = 'https://placehold.co/800x800?text=Image';
-        }
-        return;
-    }
-    // Strip all transforms and load the raw original URL
-    const originalUrl = src.replace(/\/upload\/[^/]+\//, '/upload/');
-    if (originalUrl !== src) {
-        img.src = originalUrl;
-    } else {
-        img.classList.add('loaded');
-    }
-};
+
 
 function ensureGridImagesVisible(gridEl) {
     if (!gridEl) return;

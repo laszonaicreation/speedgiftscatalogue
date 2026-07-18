@@ -170,7 +170,7 @@ function getOptimizedUrl(url, size = 400) {
         return url;
     }
 
-    if (!url) return '';
+    if (!url || url === 'img/') return '';
     if (url.includes('res.cloudinary.com') && !url.includes('/upload/w_')) {
         return url.replace('/upload/', `/upload/w_${size},c_fill,f_auto,q_auto/`);
     }
@@ -254,7 +254,7 @@ function renderCartPage() {
                     src="${imgUrl || 'https://placehold.co/300x300?text=Gift'}"
                     alt="${safeName}"
                     loading="lazy"
-                    onerror="this.src='https://placehold.co/300x300?text=Gift'">
+                    onerror="window.handleImgError(this, 'https://placehold.co/300x300?text=Gift')">
             </a>
             <div class="item-details">
                 <div class="item-header">

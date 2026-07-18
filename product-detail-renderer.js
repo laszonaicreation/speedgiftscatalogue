@@ -166,7 +166,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                                 <div class="img-container mb-4 relative">
                                     ${badgeHtml}
                                     <div class="wish-btn shadow-sm hidden-desktop" onclick="window.toggleWishlist(event, '${rp.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                                    <img src="${getOptimizedUrl(rpImg, 600)}" alt="${rp.name}" decoding="async" onload="this.classList.add('loaded')" onerror="this.src='https://placehold.co/400x500?text=Image+Error'">
+                                    <img src="${getOptimizedUrl(rpImg, 600)}" alt="${rp.name}" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this, 'https://placehold.co/400x500?text=Image+Error')">
                                 </div>
                                 <div class="px-1 text-left flex justify-between items-start mt-4">
                                     <div class="flex-1 min-w-0">
@@ -581,7 +581,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
                                 <div class="img-container mb-4 relative">
                                     ${badgeHtml}
                                     <div class="wish-btn shadow-sm hidden-desktop" onclick="window.toggleWishlist(event, '${rp.id}')"><i class="fa-solid fa-heart text-[10px]"></i></div>
-                                    <img src="${getOptimizedUrl(rpImg, 600)}" alt="${rp.name}" decoding="async" onload="this.classList.add('loaded')" onerror="this.src='https://placehold.co/400x500?text=Image+Error'">
+                                    <img src="${getOptimizedUrl(rpImg, 600)}" alt="${rp.name}" decoding="async" onload="this.classList.add('loaded')" onerror="window.handleImgError(this, 'https://placehold.co/400x500?text=Image+Error')">
                                 </div>
                                 <div class="px-1 text-left flex justify-between items-start mt-4">
                                     <div class="flex-1 min-w-0">

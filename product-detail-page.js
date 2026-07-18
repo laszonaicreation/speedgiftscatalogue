@@ -149,7 +149,7 @@ window.trackWhatsAppInquiry = async (ids) => {
 };
 
 function getOptimizedUrl(url, width) {
-    if (!url || typeof url !== 'string') return url;
+    if (!url || typeof url !== 'string' || url === 'img/') return '';
     if (url.includes('res.cloudinary.com') && width) {
         return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
     }

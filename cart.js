@@ -255,7 +255,7 @@ export function renderCartSidebar() {
         <div class="cart-item" data-id="${item.id}" data-size="${item.size || ''}" data-color="${item.color || ''}">
             <div class="cart-item-img">
                 <img src="${imgUrl || 'https://placehold.co/200x200?text=Product'}" alt="${safeName}"
-                     onerror="this.src='https://placehold.co/200x200?text=Product'">
+                     onerror="window.handleImgError(this, 'https://placehold.co/200x200?text=Product')">
             </div>
             <div class="cart-item-info">
                 <h4 class="cart-item-name">${safeName}</h4>
