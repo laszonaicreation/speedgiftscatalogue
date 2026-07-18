@@ -14,7 +14,8 @@
       "deploy.bat",
       "style.css",
       "product-detail.html",
-      "index.html"
+      "index.html",
+      "shop.html"
     ],
     "redirects": [
       {
@@ -72,6 +73,14 @@
       {
         "source": "/",
         "function": "renderHome"
+      },
+      {
+        "source": "/shop",
+        "function": "renderShop"
+      },
+      {
+        "source": "/shop.html",
+        "function": "renderShop"
       },
       {
         "source": "**",

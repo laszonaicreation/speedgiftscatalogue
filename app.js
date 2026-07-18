@@ -96,7 +96,7 @@ const _spotlightModulePromise = import(_isMinBuild ? './app-spotlight.min.js' : 
         const val = params.get(key);
         if (val) forward.set(key, val);
     });
-    const target = `shop.html${forward.toString() ? `?${forward.toString()}` : ''}`;
+    const target = `/shop${forward.toString() ? `?${forward.toString()}` : ''}`;
     window.location.replace(target);
 })();
 
@@ -1385,7 +1385,7 @@ window.applyFilter = (id, e) => {
     if (e) e.stopPropagation();
     const params = new URLSearchParams();
     if (id && id !== 'all') params.set('c', id);
-    const target = `shop.html${params.toString() ? `?${params.toString()}` : ''}`;
+    const target = `/shop${params.toString() ? `?${params.toString()}` : ''}`;
     window.location.href = target;
 };
 
@@ -1393,7 +1393,7 @@ function openShopWithSearch(query) {
     const q = (query || '').trim();
     const params = new URLSearchParams();
     if (q) params.set('q', q);
-    window.location.href = `shop.html${params.toString() ? `?${params.toString()}` : ''}`;
+    window.location.href = `/shop${params.toString() ? `?${params.toString()}` : ''}`;
 }
 window.showSearchSuggestions = (show) => {
     // Both desktop and mobile search tags are scoped by IDs globally now
@@ -1580,7 +1580,7 @@ window.preloadInitialBatch = () => {
     
     // 3. Prefetch critical HTML pages for instant navigation (delayed heavily to avoid blocking network metrics)
     setTimeout(() => {
-        ['shop.html', 'cart.html', 'favourites.html', 'catalogue.html'].forEach(page => {
+        ['/shop', 'cart.html', 'favourites.html', 'catalogue.html'].forEach(page => {
             const link = document.createElement('link');
             link.rel = 'prefetch';
             link.href = page;

@@ -137,7 +137,7 @@ function renderEmpty() {
         <i class="fa-regular fa-heart"></i>
         <h2>No favourites yet</h2>
         <p>Tap the ❤️ heart icon on any product to save it here and find it easily later.</p>
-        <a href="/shop.html" class="sg-empty-btn">Browse Products &rarr;</a>
+        <a href="/shop" class="sg-empty-btn">Browse Products &rarr;</a>
     </div>`;
 }
 
@@ -238,10 +238,10 @@ function updateCount() {
 window.handleFavoritesClick = () => { /* already on favourites page */ };
 
 // ── focusSearch — redirect to shop ───────────────────────────────────────────
-window.focusSearch = () => { window.location.href = '/shop.html'; };
+window.focusSearch = () => { window.location.href = '/shop'; };
 
 // ── openCategoriesSidebar ─────────────────────────────────────────────────────
-window.openCategoriesSidebar = () => { window.location.href = '/shop.html'; };
+window.openCategoriesSidebar = () => { window.location.href = '/shop'; };
 
 window._sgWishlistCallback = () => {
     // Fired whenever wishlist changes (from other tabs, realtime sync, etc.)

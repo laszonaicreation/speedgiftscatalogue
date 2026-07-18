@@ -224,7 +224,7 @@ function setupCTAs(user) {
         <a href="account.html#orders" class="os-btn os-btn-primary">
             <i class="fa-solid fa-box-open"></i> View My Orders
         </a>
-        <a href="shop.html" class="os-btn os-btn-secondary">
+        <a href="/shop" class="os-btn os-btn-secondary">
             <i class="fa-solid fa-bag-shopping"></i> Continue Shopping
         </a>`;
     } else {
@@ -239,7 +239,7 @@ function setupCTAs(user) {
         <a href="login.html" class="os-btn os-btn-primary" style="margin-top:0.875rem;">
             <i class="fa-solid fa-user-plus"></i> Create Free Account
         </a>
-        <a href="shop.html" class="os-btn os-btn-secondary">
+        <a href="/shop" class="os-btn os-btn-secondary">
             <i class="fa-solid fa-bag-shopping"></i> Continue Shopping
         </a>`;
     }

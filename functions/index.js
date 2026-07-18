@@ -293,6 +293,68 @@ exports.renderHome = onRequest(async (req, res) => {
     }
 });
 
+exports.renderShop = onRequest(async (req, res) => {
+    try {
+        const appId = req.query.appId || 'speed-catalogue';
+        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+
+        const prodCol = dataRef.collection('products');
+        const catCol = dataRef.collection('categories');
+        const megaCol = dataRef.collection('mega_menus');
+
+        // We only need basic configs to exclude them from the product list
+        const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats_', '_hero_config_'];
+
+        const [prodSnap, catSnap, megaSnap] = await Promise.all([
+            prodCol.get(),
+            catCol.get(),
+            megaCol.get()
+        ]);
+
+        const rawProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const products = rawProducts.filter(p => !configDocIds.includes(p.id) && !p.id.startsWith('--'));
+        const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const responseData = {
+            products,
+            categories,
+            megaMenus
+        };
+
+        const rawHtmlUrl = `https://${process.env.GCLOUD_PROJECT}.web.app/shop-static.html`;
+        const htmlResponse = await fetch(rawHtmlUrl);
+        if (!htmlResponse.ok) throw new Error('Failed to fetch shop template');
+        let htmlString = await htmlResponse.text();
+
+        const injectionScript = `<script>window.__INJECTED_SHOP_DATA__ = ${JSON.stringify(responseData)};</script>`;
+
+        if (htmlString.includes('</body>')) {
+            htmlString = htmlString.replace('</body>', injectionScript + '\n</body>');
+        } else if (htmlString.includes('</head>')) {
+            htmlString = htmlString.replace('</head>', injectionScript + '\n</head>');
+        } else {
+            htmlString += injectionScript;
+        }
+
+        res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+        res.set('Content-Type', 'text/html; charset=utf-8');
+        const acceptEncoding = req.headers['accept-encoding'] || '';
+        if (acceptEncoding.includes('br')) {
+            res.set('Content-Encoding', 'br');
+            res.status(200).send(zlib.brotliCompressSync(htmlString));
+        } else if (acceptEncoding.includes('gzip')) {
+            res.set('Content-Encoding', 'gzip');
+            res.status(200).send(zlib.gzipSync(htmlString));
+        } else {
+            res.status(200).send(htmlString);
+        }
+    } catch (error) {
+        console.error('Error rendering shop page:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
     try {
         const appId = req.query.appId || 'speed-catalogue';
@@ -559,6 +621,19 @@ exports.warmCache = onSchedule({
 
         let successCount = 0;
         let failCount = 0;
+
+        // Warm up Main Page and Shop Page first
+        try {
+            console.log('Warming up main home page...');
+            const homeRes = await fetch("https://speedgifts.net/");
+            if (homeRes.ok) successCount++; else failCount++;
+        } catch (e) { failCount++; }
+
+        try {
+            console.log('Warming up shop page...');
+            const shopRes = await fetch("https://speedgifts.net/shop");
+            if (shopRes.ok) successCount++; else failCount++;
+        } catch (e) { failCount++; }
 
         // Fetch in batches of 10 to avoid overwhelming the network/hosting limits
         const BATCH_SIZE = 10;

@@ -236,7 +236,7 @@ export function renderProductDetailView({ product, DATA, state, getOptimizedUrl,
             <i class="fa-solid fa-house text-[10px]"></i> Home
         </a>
         <span class="text-gray-300">/</span>
-        <a href="shop.html" class="hover:text-black transition-colors">Shop</a>
+        <a href="/shop" class="hover:text-black transition-colors">Shop</a>
         <span class="text-gray-300">/</span>
         <span class="text-gray-800 font-black truncate max-w-[150px] sm:max-w-xs">${product.name}</span>
     </nav>

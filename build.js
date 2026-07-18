@@ -180,7 +180,7 @@ if (failCount > 0) {
 }
 
 console.log(`\nGenerating -static.html copies for Cloud Functions...`);
-['index.html', 'product-detail.html'].forEach(file => {
+['index.html', 'product-detail.html', '/shop'].forEach(file => {
     if (fs.existsSync(file)) {
         const content = fs.readFileSync(file, 'utf8');
         fs.writeFileSync(file.replace('.html', '-static.html'), content, 'utf8');

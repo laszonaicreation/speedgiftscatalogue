@@ -186,18 +186,18 @@ function renderCategoriesSidebar() {
         categories: DATA.c || [],
         products: DATA.p || [],
         getOptimizedUrl,
-        onSelectCategoryJs: "window.closeCategoriesSidebar(); window.location.href='shop.html';"
+        onSelectCategoryJs: "window.closeCategoriesSidebar(); window.location.href='/shop';"
     });
 }
 
 
 window.goBackToHome = () => { window.location.href = '/'; };
-window.focusSearch = () => { window.location.href = 'shop.html'; };
+window.focusSearch = () => { window.location.href = '/shop'; };
 function openShopWithSearch(query) {
     const q = String(query || '').trim();
     const params = new URLSearchParams();
     if (q) params.set('q', q);
-    window.location.href = `shop.html${params.toString() ? `?${params.toString()}` : ''}`;
+    window.location.href = `/shop${params.toString() ? `?${params.toString()}` : ''}`;
 }
 function wireDetailShellSearch() {
     const deskInput = document.getElementById('desk-search');
@@ -638,7 +638,7 @@ if (backBtn) {
     backBtn.addEventListener('click', () => {
         // 1. If came from shop page, go back there (preserves filters/scroll)
         const shopUrl = sessionStorage.getItem('speedgifts_shop_url');
-        if (shopUrl && shopUrl.includes('shop.html')) {
+        if (shopUrl && shopUrl.includes('/shop')) {
             window.location.href = shopUrl;
             return;
         }

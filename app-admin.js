@@ -517,7 +517,7 @@ export function initAdmin(ctx) {
             const today = new Date().toISOString().split('T')[0];
 
             // Add static pages
-            const staticPages = ['', 'shop.html', 'about.html', 'contact.html'];
+            const staticPages = ['', '/shop', 'about.html', 'contact.html'];
             staticPages.forEach(page => {
                 xmlContent += `  <url>\n    <loc>${STORE_URL}${page ? '/' + page : ''}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
             });

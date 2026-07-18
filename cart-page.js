@@ -140,7 +140,7 @@ window.openCartSidebar = () => { };
 window.closeCartSidebar = () => { };
 window.openCategoriesSidebar = () => { };
 window.closeCategoriesSidebar = () => { };
-window.focusSearch = () => { window.location.href = 'shop.html'; };
+window.focusSearch = () => { window.location.href = '/shop'; };
 
 // ── Init Auth (login modal) ───────────────────────────────────────────────────
 initSharedAuth({

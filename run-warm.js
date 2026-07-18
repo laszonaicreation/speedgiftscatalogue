@@ -18,6 +18,14 @@ async function run() {
         } catch(e) {
             console.error("Failed to warm up main page:", e);
         }
+
+        console.log("Warming up shop page...");
+        try {
+            await fetch("https://speedgifts.net/shop");
+            console.log("Shop page warmed up successfully.");
+        } catch(e) {
+            console.error("Failed to warm up shop page:", e);
+        }
         
         const products = data.documents
             .map(doc => doc.name.split('/').pop())

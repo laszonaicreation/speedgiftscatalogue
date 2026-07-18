@@ -150,20 +150,27 @@ onAuthStateChanged(auth, async (user) => {
 
 async function fetchData() {
     try {
-        const [pSnap, cSnap, mSnap] = await Promise.all([
-            getDocs(prodCol),
-            getDocs(catCol),
-            getDocs(megaCol).catch(() => ({ docs: [] }))
-        ]);
+        if (window.__INJECTED_SHOP_DATA__) {
+            const injected = window.__INJECTED_SHOP_DATA__;
+            DATA.products = injected.products || [];
+            DATA.categories = injected.categories || [];
+            DATA.megaMenus = injected.megaMenus || [];
+        } else {
+            const [pSnap, cSnap, mSnap] = await Promise.all([
+                getDocs(prodCol),
+                getDocs(catCol),
+                getDocs(megaCol).catch(() => ({ docs: [] }))
+            ]);
 
-        DATA.products = pSnap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .filter(p => !INTERNAL_IDS.includes(p.id));
+            DATA.products = pSnap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(p => !INTERNAL_IDS.includes(p.id));
 
-        DATA.categories = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        DATA.megaMenus = mSnap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (a.order || 0) - (b.order || 0));
+            DATA.categories = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            DATA.megaMenus = mSnap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+        }
 
         // Read URL params for deep linking
         const params = new URLSearchParams(window.location.search);
