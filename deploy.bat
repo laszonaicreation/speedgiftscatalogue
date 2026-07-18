@@ -68,4 +68,10 @@ echo ========================================
 echo   Deploy Complete! Site is live.
 echo ========================================
 echo.
+
+echo [6/6] Warming up CDN Cache...
+call node run-warm.js
+echo Done! Cache is hot and ready.
+echo.
+
 pause
