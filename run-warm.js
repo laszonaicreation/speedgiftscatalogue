@@ -10,6 +10,14 @@ async function run() {
             console.error("No products found");
             return;
         }
+
+        console.log("Warming up main home page...");
+        try {
+            await fetch("https://speedgifts.net/");
+            console.log("Main page warmed up successfully.");
+        } catch(e) {
+            console.error("Failed to warm up main page:", e);
+        }
         
         const products = data.documents
             .map(doc => doc.name.split('/').pop())
