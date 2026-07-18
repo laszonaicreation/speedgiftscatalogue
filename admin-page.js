@@ -336,7 +336,11 @@ onAuthStateChanged(auth, async (user) => {
         // On standalone admin.html, closing the panel should go HOME — not show a blank page.
         // Override hideAdminPanel after app-admin.js sets it up.
         window.hideAdminPanel = () => {
-            window.location.href = '/';
+            if (window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+                window.location.href = 'index.html';
+            } else {
+                window.location.href = '/';
+            }
         };
 
         // Set the saved tab in state before showAdminPanel opens
