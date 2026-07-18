@@ -3151,7 +3151,7 @@ export function initAdmin(ctx) {
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:0;">
 
                     <!-- Col 1: Customer -->
-                    <div style="padding:20px;border-right:1px solid #f3f4f6;">
+                    <div style="padding:20px;border-right:1px solid #f3f4f6;min-width:0;">
                         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
                             <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;flex-shrink:0;">
                                 ${initials}
@@ -3173,7 +3173,7 @@ export function initAdmin(ctx) {
                     </div>
 
                     <!-- Col 2: Delivery -->
-                    <div style="padding:20px;border-right:1px solid #f3f4f6;">
+                    <div style="padding:20px;border-right:1px solid #f3f4f6;min-width:0;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
                             <div style="width:24px;height:24px;border-radius:8px;background:#f5f3ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                                 <i class="fa-solid fa-location-dot" style="color:#8b5cf6;font-size:11px;"></i>
@@ -3193,7 +3193,7 @@ export function initAdmin(ctx) {
                     </div>
 
                     <!-- Col 3: Items + Totals -->
-                    <div style="padding:20px;display:flex;flex-direction:column;">
+                    <div style="padding:20px;display:flex;flex-direction:column;min-width:0;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <div style="width:24px;height:24px;border-radius:8px;background:#fff7ed;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
