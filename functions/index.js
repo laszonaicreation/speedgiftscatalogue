@@ -678,7 +678,39 @@ exports.warmCache = onSchedule({
             if (shopRes.ok) successCount++; else failCount++;
         } catch (e) { failCount++; }
 
-        // 2. Fetch categories and warm them up
+        // 2. Fetch products and warm them up
+        const prodSnapshot = await db.collection('artifacts').doc('speed-catalogue')
+            .collection('public').doc('data')
+            .collection('products').get();
+        
+        if (!prodSnapshot.empty) {
+            const productIds = [];
+            prodSnapshot.forEach(doc => {
+                if (!doc.id.startsWith('_') && !doc.id.startsWith('--')) {
+                    productIds.push(doc.id);
+                }
+            });
+
+            console.log(`Found ${productIds.length} products to warm up.`);
+            const BATCH_SIZE = 10;
+            for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
+                const batch = productIds.slice(i, i + BATCH_SIZE);
+                const promises = batch.map(async (id) => {
+                    const url = `https://speedgifts.net/product/${encodeURIComponent(id)}`;
+                    try {
+                        const res = await fetch(url);
+                        if (res.ok) successCount++;
+                        else failCount++;
+                    } catch (e) {
+                        failCount++;
+                    }
+                });
+                await Promise.all(promises);
+                await new Promise(r => setTimeout(r, 200)); // slight delay
+            }
+        }
+
+        // 3. Fetch categories and warm them up
         const catSnapshot = await db.collection('artifacts').doc('speed-catalogue')
             .collection('public').doc('data')
             .collection('categories').get();

@@ -27,9 +27,34 @@ async function run() {
             console.error("Failed to warm up shop page:", e);
         }
         
-        // Product caching removed to save Firestore reads during deployment
-
+        // Warm up products
         const BATCH_SIZE = 10;
+        console.log("Fetching products to warm up...");
+        const products = data.documents
+            .map(doc => doc.name.split('/').pop())
+            .filter(id => !['_ad_stats_', '--global-stats_', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(id));
+        
+        console.log(`Fetched ${products.length} products to warm up.`);
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < products.length; i += BATCH_SIZE) {
+            const batch = products.slice(i, i + BATCH_SIZE);
+            const promises = batch.map(async (id) => {
+                const url = `https://speedgifts.net/product/${encodeURIComponent(id)}`;
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) successCount++;
+                    else failCount++;
+                } catch (e) {
+                    failCount++;
+                }
+            });
+            await Promise.all(promises);
+            await new Promise(r => setTimeout(r, 500)); // small delay to prevent overwhelming
+            console.log(`Product Progress: ${Math.min(i + BATCH_SIZE, products.length)} / ${products.length}`);
+        }
+        console.log(`Product Cache warming complete. Success: ${successCount}, Failed: ${failCount}`);
 
         // Warm up categories
         console.log("Fetching categories from Firestore...");
