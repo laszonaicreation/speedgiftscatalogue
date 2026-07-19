@@ -952,15 +952,28 @@ async function refreshData(isNavigationOnly = false) {
         const grid = document.getElementById('product-grid');
         const needsRender = visualDataChanged || !grid || grid.children.length === 0;
 
+        const doSafeRender = () => {
+            const scrollPos = window.scrollY || document.documentElement.scrollTop;
+            const minHeight = document.body.scrollHeight;
+            document.body.style.minHeight = minHeight + 'px';
+            
+            renderHome();
+            
+            requestAnimationFrame(() => {
+                window.scrollTo(0, scrollPos);
+                document.body.style.minHeight = '';
+            });
+        };
+
         if (!isAdminOpen) {
             if (prodId && DATA.p.length > 0) {
                 viewDetail(prodId, true);
             } else {
-                if (needsRender) renderHome();
+                if (needsRender) doSafeRender();
                 applyHomeSnapshotIfAny();
             }
         } else {
-            if (needsRender) renderHome();
+            if (needsRender) doSafeRender();
             applyHomeSnapshotIfAny();
         }
 

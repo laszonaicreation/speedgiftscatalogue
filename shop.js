@@ -183,6 +183,10 @@ async function fetchData() {
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
                 
             if (hasInjected) {
+                const scrollPos = window.scrollY || document.documentElement.scrollTop;
+                const minHeight = document.body.scrollHeight;
+                document.body.style.minHeight = minHeight + 'px';
+
                 // Re-render
                 renderCategoryChips();
                 renderMobileVisualCategories();
@@ -190,6 +194,11 @@ async function fetchData() {
                 renderDesktopMegaMenu();
                 renderFilterBanner();
                 renderProducts();
+
+                requestAnimationFrame(() => {
+                    window.scrollTo(0, scrollPos);
+                    document.body.style.minHeight = '';
+                });
             }
         };
 
