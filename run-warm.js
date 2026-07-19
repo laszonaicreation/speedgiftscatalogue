@@ -29,6 +29,8 @@ async function run() {
         
         // Product caching removed to save Firestore reads during deployment
 
+        const BATCH_SIZE = 10;
+
         // Warm up categories
         console.log("Fetching categories from Firestore...");
         try {
