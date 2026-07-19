@@ -652,40 +652,20 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event
     }
 });
 
-// Cache Warmer: Runs daily to ping all product pages and ensure the CDN cache is hot.
+// Cache Warmer: Runs every 30 minutes to ping home, shop, and category pages to ensure the CDN cache is hot.
 exports.warmCache = onSchedule({
-    schedule: "0 2 * * *",
+    schedule: "every 30 minutes",
     timeZone: "Asia/Dubai",
     timeoutSeconds: 300,
     memory: "256MiB"
 }, async (event) => {
     try {
         console.log('Starting Cache Warming...');
-        // The appId or projectId is used as the document path. 
-        // Based on the code, it uses 'artifacts/speed-catalogue/public/data/products'
-        // Wait, how does getHomeData get the products?
-        const snapshot = await db.collection('artifacts').doc('speed-catalogue')
-                               .collection('public').doc('data')
-                               .collection('products').get();
         
-        if (snapshot.empty) {
-            console.log('No products found for cache warming.');
-            return;
-        }
-
-        const productIds = [];
-        snapshot.forEach(doc => {
-            if (!['_ad_stats_', '--global-stats--', '_announcements_', '_landing_settings_', '_home_settings_', '_hero_config_'].includes(doc.id)) {
-                productIds.push(doc.id);
-            }
-        });
-
-        console.log(`Found ${productIds.length} products to warm up.`);
-
         let successCount = 0;
         let failCount = 0;
 
-        // Warm up Main Page and Shop Page first
+        // 1. Warm up Main Page and Shop Page first
         try {
             console.log('Warming up main home page...');
             const homeRes = await fetch("https://speedgifts.net/");
@@ -698,12 +678,23 @@ exports.warmCache = onSchedule({
             if (shopRes.ok) successCount++; else failCount++;
         } catch (e) { failCount++; }
 
-        // Fetch in batches of 10 to avoid overwhelming the network/hosting limits
-        const BATCH_SIZE = 10;
-        for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
-            const batch = productIds.slice(i, i + BATCH_SIZE);
-            const promises = batch.map(async (id) => {
-                const url = `https://speedgifts.net/p/${encodeURIComponent(id)}`;
+        // 2. Fetch categories and warm them up
+        const catSnapshot = await db.collection('artifacts').doc('speed-catalogue')
+            .collection('public').doc('data')
+            .collection('categories').get();
+
+        if (catSnapshot.empty) {
+            console.log('No categories found for cache warming.');
+        } else {
+            const categoryIds = [];
+            catSnapshot.forEach(doc => {
+                categoryIds.push(doc.id);
+            });
+
+            console.log(`Found ${categoryIds.length} categories to warm up.`);
+
+            for (const catId of categoryIds) {
+                const url = `https://speedgifts.net/shop?c=${encodeURIComponent(catId)}`;
                 try {
                     const res = await fetch(url);
                     if (res.ok) successCount++;
@@ -711,10 +702,9 @@ exports.warmCache = onSchedule({
                 } catch (e) {
                     failCount++;
                 }
-            });
-            await Promise.all(promises);
-            // Optional: slight delay between batches to be safe
-            await new Promise(r => setTimeout(r, 500));
+                // Optional: slight delay
+                await new Promise(r => setTimeout(r, 200));
+            }
         }
 
         console.log(`Cache warming complete. Success: ${successCount}, Failed: ${failCount}`);
