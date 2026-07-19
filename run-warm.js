@@ -65,7 +65,7 @@ async function run() {
             console.error("Failed to warm up categories:", e);
         }
 
-        console.log(`Manual Cache warming complete. Success: ${successCount}, Failed: ${failCount}`);
+        console.log(`Manual Cache warming complete.`);
     } catch(e) {
         console.error("Error:", e);
     }
