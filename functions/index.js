@@ -11,6 +11,17 @@ const zlib = require('zlib');
 admin.initializeApp();
 const db = admin.firestore();
 
+// ─── Global In-Memory Cache ───────────────────────────────────────
+const memoryCache = {
+    homeData: null,
+    homeDataTime: 0,
+    shopData: null,
+    shopDataTime: 0,
+    homeRawHtml: null,
+    shopRawHtml: null
+};
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
 exports.renderProduct = onRequest(async (req, res) => {
     try {
         // The frontend sometimes uses ?id=... and sometimes ?p=...
@@ -129,75 +140,95 @@ exports.renderProduct = onRequest(async (req, res) => {
 exports.renderHome = onRequest(async (req, res) => {
     try {
         const appId = req.query.appId || 'speed-catalogue';
-        const today = new Date().toISOString().split('T')[0];
-        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+        const now = Date.now();
+        let responseData = null;
 
-        const prodCol = dataRef.collection('products');
-        const catCol = dataRef.collection('categories');
-        const megaCol = dataRef.collection('mega_menus');
-        const sliderCol = dataRef.collection('sliders');
-        const popupCol = dataRef.collection('popup_settings');
-        const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
+        // Use memory cache if valid
+        if (memoryCache.homeData && (now - memoryCache.homeDataTime < CACHE_TTL_MS)) {
+            responseData = memoryCache.homeData;
+            console.log('[renderHome] Using memory cache (fast path)');
+        } else {
+            console.log('[renderHome] Fetching from Firestore (cache miss)');
+            const today = new Date().toISOString().split('T')[0];
+            const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
 
-        const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
+            const prodCol = dataRef.collection('products');
+            const catCol = dataRef.collection('categories');
+            const megaCol = dataRef.collection('mega_menus');
+            const sliderCol = dataRef.collection('sliders');
+            const popupCol = dataRef.collection('popup_settings');
+            const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
 
-        const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
-            prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
-            prodCol.where('isFeatured', '==', true).get(),
-            prodCol.limit(30).get(),
-            catCol.get(),
-            megaCol.get(),
-            sliderCol.get(),
-            popupCol.limit(1).get(),
-            dailyStatsRef.get().catch(() => null)
-        ]);
+            const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
 
-        const uniqueMap = new Map();
-        [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs].forEach(d => {
-            if (!uniqueMap.has(d.id)) {
-                uniqueMap.set(d.id, { id: d.id, ...d.data() });
+            const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
+                prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
+                prodCol.where('isFeatured', '==', true).get(),
+                prodCol.limit(30).get(),
+                catCol.get(),
+                megaCol.get(),
+                sliderCol.get(),
+                popupCol.limit(1).get(),
+                dailyStatsRef.get().catch(() => null)
+            ]);
+
+            const uniqueMap = new Map();
+            [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs].forEach(d => {
+                if (!uniqueMap.has(d.id)) {
+                    uniqueMap.set(d.id, { id: d.id, ...d.data() });
+                }
+            });
+
+            const rawProducts = Array.from(uniqueMap.values());
+            const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const sliders = sliderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            const announcementsDoc = rawProducts.find(p => p.id === '_announcements_');
+            const announcements = announcementsDoc ? (announcementsDoc.messages || []) : [];
+
+            const popupSettings = (!popupSnap.empty) ? popupSnap.docs[0].data() : null;
+
+            const landingDoc = rawProducts.find(p => p.id === '_landing_settings_');
+            const landingSettings = landingDoc ? { ...landingDoc } : null;
+
+            const homeSettingsDoc = rawProducts.find(p => p.id === '_home_settings_');
+            const homeSettings = homeSettingsDoc ? { ...homeSettingsDoc } : null;
+
+            const products = rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--'));
+            
+            let stats = null;
+            if (todaySnap && todaySnap.exists) {
+                stats = todaySnap.data();
             }
-        });
 
-        const rawProducts = Array.from(uniqueMap.values());
-        const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
-        const sliders = sliderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        const announcementsDoc = rawProducts.find(p => p.id === '_announcements_');
-        const announcements = announcementsDoc ? (announcementsDoc.messages || []) : [];
-
-        const popupSettings = (!popupSnap.empty) ? popupSnap.docs[0].data() : null;
-
-        const landingDoc = rawProducts.find(p => p.id === '_landing_settings_');
-        const landingSettings = landingDoc ? { ...landingDoc } : null;
-
-        const homeSettingsDoc = rawProducts.find(p => p.id === '_home_settings_');
-        const homeSettings = homeSettingsDoc ? { ...homeSettingsDoc } : null;
-
-        const products = rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--'));
-        
-        let stats = null;
-        if (todaySnap && todaySnap.exists) {
-            stats = todaySnap.data();
+            responseData = {
+                products,
+                categories,
+                megaMenus,
+                sliders,
+                announcements,
+                popupSettings,
+                landingSettings,
+                homeSettings,
+                stats
+            };
+            
+            // Save to memory cache
+            memoryCache.homeData = responseData;
+            memoryCache.homeDataTime = now;
         }
 
-        const responseData = {
-            products,
-            categories,
-            megaMenus,
-            sliders,
-            announcements,
-            popupSettings,
-            landingSettings,
-            homeSettings,
-            stats
-        };
-
         const rawHtmlUrl = 'https://speed-catalogue.web.app/index-static.html';
-        const htmlResponse = await fetch(rawHtmlUrl);
-        if (!htmlResponse.ok) throw new Error('Failed to fetch template');
-        let htmlString = await htmlResponse.text();
+        let htmlString = memoryCache.homeRawHtml;
+        if (!htmlString) {
+            const htmlResponse = await fetch(rawHtmlUrl);
+            if (!htmlResponse.ok) throw new Error('Failed to fetch template');
+            htmlString = await htmlResponse.text();
+            memoryCache.homeRawHtml = htmlString;
+        }
+        
+        const sliders = responseData.sliders;
         let preloadTag = '';
         let ssrSliderKey = null; // Will be set if sliders exist — used to prevent re-render after Firebase fetch
         if (sliders && sliders.length > 0) {
@@ -296,36 +327,54 @@ exports.renderHome = onRequest(async (req, res) => {
 exports.renderShop = onRequest(async (req, res) => {
     try {
         const appId = req.query.appId || 'speed-catalogue';
-        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+        const now = Date.now();
+        let responseData = null;
 
-        const prodCol = dataRef.collection('products');
-        const catCol = dataRef.collection('categories');
-        const megaCol = dataRef.collection('mega_menus');
+        // Use memory cache if valid
+        if (memoryCache.shopData && (now - memoryCache.shopDataTime < CACHE_TTL_MS)) {
+            responseData = memoryCache.shopData;
+            console.log('[renderShop] Using memory cache (fast path)');
+        } else {
+            console.log('[renderShop] Fetching from Firestore (cache miss)');
+            const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
 
-        // We only need basic configs to exclude them from the product list
-        const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats_', '_hero_config_'];
+            const prodCol = dataRef.collection('products');
+            const catCol = dataRef.collection('categories');
+            const megaCol = dataRef.collection('mega_menus');
 
-        const [prodSnap, catSnap, megaSnap] = await Promise.all([
-            prodCol.get(),
-            catCol.get(),
-            megaCol.get()
-        ]);
+            // We only need basic configs to exclude them from the product list
+            const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats_', '_hero_config_'];
 
-        const rawProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const products = rawProducts.filter(p => !configDocIds.includes(p.id) && !p.id.startsWith('--'));
-        const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const [prodSnap, catSnap, megaSnap] = await Promise.all([
+                prodCol.get(),
+                catCol.get(),
+                megaCol.get()
+            ]);
 
-        const responseData = {
-            products,
-            categories,
-            megaMenus
-        };
+            const rawProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const products = rawProducts.filter(p => !configDocIds.includes(p.id) && !p.id.startsWith('--'));
+            const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            responseData = {
+                products,
+                categories,
+                megaMenus
+            };
+            
+            // Save to memory cache
+            memoryCache.shopData = responseData;
+            memoryCache.shopDataTime = now;
+        }
 
         const rawHtmlUrl = `https://${process.env.GCLOUD_PROJECT}.web.app/shop-static.html`;
-        const htmlResponse = await fetch(rawHtmlUrl);
-        if (!htmlResponse.ok) throw new Error('Failed to fetch shop template');
-        let htmlString = await htmlResponse.text();
+        let htmlString = memoryCache.shopRawHtml;
+        if (!htmlString) {
+            const htmlResponse = await fetch(rawHtmlUrl);
+            if (!htmlResponse.ok) throw new Error('Failed to fetch shop template');
+            htmlString = await htmlResponse.text();
+            memoryCache.shopRawHtml = htmlString;
+        }
 
         const injectionScript = `<script>window.__INJECTED_SHOP_DATA__ = ${JSON.stringify(responseData)};</script>`;
 
@@ -358,79 +407,93 @@ exports.renderShop = onRequest(async (req, res) => {
 exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
     try {
         const appId = req.query.appId || 'speed-catalogue';
-        const today = new Date().toISOString().split('T')[0];
-        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+        const now = Date.now();
+        let responseData = null;
 
-        const prodCol = dataRef.collection('products');
-        const catCol = dataRef.collection('categories');
-        const megaCol = dataRef.collection('mega_menus');
-        const sliderCol = dataRef.collection('sliders');
-        const popupCol = dataRef.collection('popup_settings');
-        const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
+        // Use memory cache if valid
+        if (memoryCache.getHomeData && (now - memoryCache.getHomeDataTime < CACHE_TTL_MS)) {
+            responseData = memoryCache.getHomeData;
+            console.log('[getHomeData] Using memory cache (fast path)');
+        } else {
+            console.log('[getHomeData] Fetching from Firestore (cache miss)');
+            const today = new Date().toISOString().split('T')[0];
+            const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
 
-        const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
+            const prodCol = dataRef.collection('products');
+            const catCol = dataRef.collection('categories');
+            const megaCol = dataRef.collection('mega_menus');
+            const sliderCol = dataRef.collection('sliders');
+            const popupCol = dataRef.collection('popup_settings');
+            const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
 
-        const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
-            prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
-            prodCol.where('isFeatured', '==', true).get(),
-            prodCol.limit(30).get(),
-            catCol.get(),
-            megaCol.get(),
-            sliderCol.get(),
-            popupCol.limit(1).get(),
-            dailyStatsRef.get().catch(() => null)
-        ]);
+            const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
 
-        const uniqueMap = new Map();
-        [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs].forEach(d => {
-            if (!uniqueMap.has(d.id)) {
-                uniqueMap.set(d.id, { id: d.id, ...d.data() });
+            const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
+                prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
+                prodCol.where('isFeatured', '==', true).get(),
+                prodCol.limit(30).get(),
+                catCol.get(),
+                megaCol.get(),
+                sliderCol.get(),
+                popupCol.limit(1).get(),
+                dailyStatsRef.get().catch(() => null)
+            ]);
+
+            const uniqueMap = new Map();
+            [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs].forEach(d => {
+                if (!uniqueMap.has(d.id)) {
+                    uniqueMap.set(d.id, { id: d.id, ...d.data() });
+                }
+            });
+
+            const rawProducts = Array.from(uniqueMap.values());
+            const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const sliders = sliderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            const announcementsDoc = rawProducts.find(p => p.id === '_announcements_');
+            const announcements = announcementsDoc ? (announcementsDoc.messages || []) : [];
+
+            const popupSettings = (!popupSnap.empty) ? popupSnap.docs[0].data() : null;
+
+            const landingDoc = rawProducts.find(p => p.id === '_landing_settings_');
+            const landingSettings = landingDoc ? { ...landingDoc } : null;
+
+            const homeDoc = rawProducts.find(p => p.id === '_home_settings_');
+            const homeSettings = homeDoc ? { ...homeDoc } : null;
+
+            const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
+            const statsDoc = rawProducts.find(p => p.id === '_ad_stats_');
+            const stats = statsDoc ? { ...defaultStats, ...statsDoc } : { ...defaultStats };
+
+            if (todaySnap && todaySnap.exists) {
+                const td = todaySnap.data();
+                stats.adVisits += (td.adVisits || 0) + (td.landingAdVisits || 0);
+                stats.normalVisits += (td.normalVisits || 0);
+                stats.adProductClicks = (stats.adProductClicks || 0) + (td.adProductClicks || 0);
+                stats.normalProductClicks = (stats.normalProductClicks || 0) + (td.normalProductClicks || 0);
+                stats.adInquiries += (td.adInquiries || 0);
+                stats.imageLoadFail += (td.imageLoadFail || 0);
             }
-        });
 
-        const rawProducts = Array.from(uniqueMap.values());
-        const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
-        const sliders = sliderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const products = rawProducts.filter(p => !configDocIds.includes(p.id));
 
-        const announcementsDoc = rawProducts.find(p => p.id === '_announcements_');
-        const announcements = announcementsDoc ? (announcementsDoc.messages || []) : [];
-
-        const popupSettings = (!popupSnap.empty) ? popupSnap.docs[0].data() : null;
-
-        const landingDoc = rawProducts.find(p => p.id === '_landing_settings_');
-        const landingSettings = landingDoc ? { ...landingDoc } : null;
-
-        const homeDoc = rawProducts.find(p => p.id === '_home_settings_');
-        const homeSettings = homeDoc ? { ...homeDoc } : null;
-
-        const defaultStats = { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0, normalVisits: 0, adProductClicks: 0, normalProductClicks: 0, imageLoadFail: 0 };
-        const statsDoc = rawProducts.find(p => p.id === '_ad_stats_');
-        const stats = statsDoc ? { ...defaultStats, ...statsDoc } : { ...defaultStats };
-
-        if (todaySnap && todaySnap.exists) {
-            const td = todaySnap.data();
-            stats.adVisits += (td.adVisits || 0) + (td.landingAdVisits || 0);
-            stats.normalVisits += (td.normalVisits || 0);
-            stats.adProductClicks = (stats.adProductClicks || 0) + (td.adProductClicks || 0);
-            stats.normalProductClicks = (stats.normalProductClicks || 0) + (td.normalProductClicks || 0);
-            stats.adInquiries += (td.adInquiries || 0);
-            stats.imageLoadFail += (td.imageLoadFail || 0);
+            responseData = {
+                products,
+                categories,
+                megaMenus,
+                sliders,
+                announcements,
+                popupSettings,
+                landingSettings,
+                homeSettings,
+                stats
+            };
+            
+            // Save to memory cache
+            memoryCache.getHomeData = responseData;
+            memoryCache.getHomeDataTime = now;
         }
-
-        const products = rawProducts.filter(p => !configDocIds.includes(p.id));
-
-        const responseData = {
-            products,
-            categories,
-            megaMenus,
-            sliders,
-            announcements,
-            popupSettings,
-            landingSettings,
-            homeSettings,
-            stats
-        };
 
         res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
         res.status(200).json(responseData);

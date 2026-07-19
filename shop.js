@@ -129,6 +129,9 @@ function refreshAuthUI() {
 }
 
 // ─── Boot ────────────────────────────────────────────────────────
+// Execute data fetching immediately for instant SSR render
+fetchData();
+
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         await signInAnonymously(auth).catch(() => { });
@@ -145,7 +148,6 @@ onAuthStateChanged(auth, async (user) => {
         // Sync wishlist with cloud now that user is authenticated
         loadWishlist();
     }
-    await fetchData();
 });
 
 async function fetchData() {
