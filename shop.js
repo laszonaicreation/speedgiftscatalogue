@@ -152,12 +152,21 @@ onAuthStateChanged(auth, async (user) => {
 
 async function fetchData() {
     try {
+        let hasInjected = false;
         if (window.__INJECTED_SHOP_DATA__) {
+            hasInjected = true;
             const injected = window.__INJECTED_SHOP_DATA__;
             DATA.products = injected.products || [];
             DATA.categories = injected.categories || [];
             DATA.megaMenus = injected.megaMenus || [];
-        } else {
+            // We will render this below, then fetch in the background
+        }
+
+        // We run a background fetch, but we don't await it if we already have injected data.
+        // Wait, if we don't await it, we can't update the UI right after. 
+        // We SHOULD render the UI first with injected data, THEN fetch and re-render.
+        // It's easier to just do it inline here:
+        const fetchAndUpdate = async () => {
             const [pSnap, cSnap, mSnap] = await Promise.all([
                 getDocs(prodCol),
                 getDocs(catCol),
@@ -172,6 +181,24 @@ async function fetchData() {
             DATA.megaMenus = mSnap.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
+                
+            if (hasInjected) {
+                // Re-render
+                renderCategoryChips();
+                renderMobileVisualCategories();
+                renderMobCatList();
+                renderDesktopMegaMenu();
+                renderFilterBanner();
+                renderProducts();
+            }
+        };
+
+        if (hasInjected) {
+            // Do the background fetch without awaiting it here
+            fetchAndUpdate().catch(console.error);
+        } else {
+            // Must wait if no injected data
+            await fetchAndUpdate();
         }
 
         // Read URL params for deep linking
