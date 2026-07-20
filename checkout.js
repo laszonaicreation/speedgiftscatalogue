@@ -8,7 +8,7 @@ import {
     createUserWithEmailAndPassword, updateProfile, sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-import { mountSharedShell } from './shared-shell.js?v=4';
+import { mountSharedShell } from './shared-shell.js?v=1784522732319';
 import { getCartItems, getCartTotal, clearCart, loadCart } from './cart.js';
 
 // ── Firebase Initialization ───────────────────────────────────────────────────

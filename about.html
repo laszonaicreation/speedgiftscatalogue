@@ -45,9 +45,113 @@
     <meta name="twitter:title" content="About Us â€“ Speed Gifts Abu Dhabi">
     <meta name="twitter:description" content="Learn about Speed Gifts â€“ Abu Dhabi's leading personalized gift shop. Discover our story, our commitment to quality, and why thousands of customers trust us for custom gifts.">
     <meta name="twitter:image" content="https://res.cloudinary.com/dxkcvm2yh/image/upload/v1769084529/speed_logo_5552_zuu2n7.png">
+
+<meta name="view-transition" content="same-origin">
 </head>
 
 <body class="bg-white text-brand-dark antialiased selection:bg-black selection:text-white">
+
+<!-- INITIAL LOADER (Prevents White Flash) -->
+<style>
+    #initial-loader {
+        all: initial;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff;
+        z-index: 9999999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        transition: opacity 0.2s ease-out;
+        box-sizing: border-box;
+    }
+    #initial-loader-spinner {
+        display: flex; flex-direction: column; align-items: center;
+        opacity: 0; transition: opacity 0.3s ease-in;
+    }
+    #initial-loader svg {
+        all: initial;
+        width: 42px; height: 42px;
+        animation: spin 0.8s linear infinite;
+        stroke: #6b7280;
+        display: block;
+        box-sizing: border-box;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+<div id="initial-loader">
+    <div id="initial-loader-spinner">
+        <svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="90, 150" stroke-dashoffset="0"></circle></svg>
+    </div>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+<script>
+    // Hide initial loader when JS is ready and content is rendered
+    const hideInitialLoader = () => {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 300);
+        }
+    };
+    
+    // Fallback: maximum 5 seconds
+    const fallbackTimer = setTimeout(hideInitialLoader, 5000);
+
+    // Poll for content rendering
+    const pollTimer = setInterval(() => {
+        const hasContent = document.querySelector('.product-card:not(.skeleton-card)') || 
+                           (document.querySelector('.category-item') && !document.querySelector('.product-card.skeleton-card')) || 
+                           document.querySelector('.admin-container') ||
+                           document.querySelector('.cart-item') ||
+                           document.querySelector('.auth-container');
+                           
+        if (hasContent) {
+            clearInterval(pollTimer);
+            clearTimeout(fallbackTimer);
+            hideInitialLoader();
+        }
+    }, 100);
+</script>
+<!-- /INITIAL LOADER -->
+
     
     <!-- Navigation -->
     <nav class="sticky top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.02)]">

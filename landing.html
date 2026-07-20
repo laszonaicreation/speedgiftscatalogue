@@ -32,12 +32,12 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Main Style CSS -->
-    <link rel="stylesheet" href="/style.min.css?v=1784470635542">
+    <link rel="stylesheet" href="/style.min.css?v=1784551140030">
     <!-- Responsive Helpers (Mirrored from Main Site) -->
     <style>
         @media (max-width: 767px) { .hidden-mobile { display: none !important; } }
     </style>
-    <link rel="stylesheet" href="/landing.min.css?v=1784470635542">
+    <link rel="stylesheet" href="/landing.min.css?v=1784551140030">
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -114,9 +114,113 @@
             }, 1000);
         });
     </script>
+
+<meta name="view-transition" content="same-origin">
 </head>
 
 <body class="bg-white text-brand-dark antialiased">
+
+<!-- INITIAL LOADER (Prevents White Flash) -->
+<style>
+    #initial-loader {
+        all: initial;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff;
+        z-index: 9999999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        transition: opacity 0.2s ease-out;
+        box-sizing: border-box;
+    }
+    #initial-loader-spinner {
+        display: flex; flex-direction: column; align-items: center;
+        opacity: 0; transition: opacity 0.3s ease-in;
+    }
+    #initial-loader svg {
+        all: initial;
+        width: 42px; height: 42px;
+        animation: spin 0.8s linear infinite;
+        stroke: #6b7280;
+        display: block;
+        box-sizing: border-box;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+<div id="initial-loader">
+    <div id="initial-loader-spinner">
+        <svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="90, 150" stroke-dashoffset="0"></circle></svg>
+    </div>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+</div>
+<script>
+    (function(){
+        var st = setTimeout(function(){
+            var el = document.getElementById('initial-loader-spinner');
+            if(el) el.style.opacity = '1';
+        }, 300);
+        window.__loaderTimeout = st;
+    })();
+</script>
+<script>
+    // Hide initial loader when JS is ready and content is rendered
+    const hideInitialLoader = () => {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 300);
+        }
+    };
+    
+    // Fallback: maximum 5 seconds
+    const fallbackTimer = setTimeout(hideInitialLoader, 5000);
+
+    // Poll for content rendering
+    const pollTimer = setInterval(() => {
+        const hasContent = document.querySelector('.product-card:not(.skeleton-card)') || 
+                           (document.querySelector('.category-item') && !document.querySelector('.product-card.skeleton-card')) || 
+                           document.querySelector('.admin-container') ||
+                           document.querySelector('.cart-item') ||
+                           document.querySelector('.auth-container');
+                           
+        if (hasContent) {
+            clearInterval(pollTimer);
+            clearTimeout(fallbackTimer);
+            hideInitialLoader();
+        }
+    }, 100);
+</script>
+<!-- /INITIAL LOADER -->
+
     <!-- Navigation -->
     <nav class="sticky top-0 w-full bg-white z-50 border-b border-gray-100 shadow-sm" id="navbar">
         <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10">
@@ -350,7 +454,7 @@ viewBox="0 0 2.72 2.72"
     </a>
 
     <!-- Application Script -->
-    <script src="/landing-logic.min.js?v=1784470635542" type="module"></script>
+    <script src="/landing-logic.min.js?v=1784551140030" type="module"></script>
     <script> document.getElementById('year').innerText = new Date().getFullYear(); </script>
     <style>
         /* Robust Typography Isolation for Trust Badges */

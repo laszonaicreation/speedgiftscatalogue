@@ -4,7 +4,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassw
 import { renderProductDetailView } from "./product-detail-renderer.js?v=2";
 import { registerProductDetailInteractions } from "./product-detail-interactions.js";
 import { getProductIdFromSearch, getProductDetailUrl, getShortShareUrl } from "./product-detail-utils.js";
-import { mountSharedShell } from "./shared-shell.js?v=3";
+import { mountSharedShell } from "./shared-shell.js?v=1784522732325";
 import { renderCategoriesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initCart, openCartSidebar, closeCartSidebar, addToCart, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
 import { initSharedAuth } from "./shared-auth.js";

@@ -11,7 +11,7 @@ import {
 import { getProductDetailUrl } from "./product-detail-utils.js";
 import { initSharedNavbar } from "./shared-navbar.js";
 import { initSharedAuth } from "./shared-auth.js";
-import { mountSharedShell } from "./shared-shell.js?v=3";
+import { mountSharedShell } from "./shared-shell.js?v=1784522732318";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
 import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";

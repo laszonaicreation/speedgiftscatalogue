@@ -10,7 +10,7 @@ import { getAuth, onAuthStateChanged, signInAnonymously,
 import { getFirestore, collection, query, where, getDocs, documentId, doc, setDoc }
     from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-import { mountSharedShell } from './shared-shell.js?v=4';
+import { mountSharedShell } from './shared-shell.js?v=1784522732321';
 import { initSharedAuth } from './shared-auth.js';
 import { addToCart, openCartSidebar, clearCart } from './cart.js';
 import { getWishlistItems, initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout } from './wishlist.js';

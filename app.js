@@ -4,7 +4,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassw
 import { isStandaloneDetailPage, getProductDetailUrl } from "./product-detail-utils.js";
 import { initSharedNavbar } from "./shared-navbar.js";
 import { initSharedAuth } from "./shared-auth.js";
-import { mountSharedShell } from "./shared-shell.js?v=2";
+import { mountSharedShell } from "./shared-shell.js?v=1784522732311";
 import { renderCategoriesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { initWishlist, loadWishlist, getWishlistItems, clearWishlistOnLogout } from "./wishlist.js";
 import { fetchHomeDataBundle } from "./home-data.js";
@@ -826,6 +826,12 @@ async function refreshData(isNavigationOnly = false) {
         let visualDataChanged = false;
 
         if (!isNavigationOnly || DATA.p.length === 0) {
+            if (window.__INJECTED_HOME_DATA__ && !window._sgHomeDelayed) {
+                window._sgHomeDelayed = true;
+                // Delay background fetch to prioritize image loading
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
             const buildSig = (p, c, m, s) => {
                 const ps = (p || []).map(x => `${x.id}-${x.price}`).sort().join('|');
                 const cs = (c || []).map(x => `${x.id}`).sort().join('|');
@@ -1310,6 +1316,7 @@ window.viewDetail = (id, skipHistory = false, preSelect = null, skipTracking = f
         cacheHomeSnapshot();
         cacheDetailPayload(id);
         window.preloadProductImage(id, 'high');
+        if (window.showGlobalLoading) window.showGlobalLoading();
         window.location.href = getProductDetailUrl(id);
     }
 };
@@ -1399,6 +1406,7 @@ window.applyFilter = (id, e) => {
     const params = new URLSearchParams();
     if (id && id !== 'all') params.set('c', id);
     const target = `/shop${params.toString() ? `?${params.toString()}` : ''}`;
+    if (window.showGlobalLoading) window.showGlobalLoading();
     window.location.href = target;
 };
 
@@ -1406,6 +1414,7 @@ function openShopWithSearch(query) {
     const q = (query || '').trim();
     const params = new URLSearchParams();
     if (q) params.set('q', q);
+    if (window.showGlobalLoading) window.showGlobalLoading();
     window.location.href = `/shop${params.toString() ? `?${params.toString()}` : ''}`;
 }
 window.showSearchSuggestions = (show) => {

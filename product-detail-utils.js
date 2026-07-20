@@ -13,6 +13,10 @@ export function isStandaloneDetailPage(pathname = window.location.pathname) {
 
 export function getProductDetailUrl(id, origin = window.location.origin, pathname = window.location.pathname) {
     const basePath = getBasePath(pathname);
+    // If running on localhost or 127.0.0.1, use the static HTML fallback for easier local testing without functions emulator
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return `${origin}${basePath}/product-detail-static.html?id=${encodeURIComponent(id)}`;
+    }
     return `${origin}${basePath}/p/${encodeURIComponent(id)}`;
 }
 

@@ -4,7 +4,7 @@ import {
     collection, query, where, getDocs, limit
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { mountSharedShell } from './shared-shell.js?v=4';
+import { mountSharedShell } from './shared-shell.js?v=1784522732324';
 
 // ── Firebase ─────────────────────────────────────────────────────────────────
 const firebaseConfig = {

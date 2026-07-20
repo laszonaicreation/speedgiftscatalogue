@@ -169,3 +169,75 @@ window.addEventListener('scroll', () => {
         if (nav) nav.classList.remove('nav-hidden');
     }, 1000);
 }, { passive: true });
+
+// --- GLOBAL LOADING SPINNER ---
+// Fallback to prevent crash if not defined
+window.preloadProductImage = window.preloadProductImage || function() {};
+
+window.showGlobalLoading = () => {
+    if(document.getElementById('global-loader')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'global-loader';
+    overlay.style.cssText = 'all:initial;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.4);z-index:999999;display:flex;align-items:center;justify-content:center;flex-direction:column;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:opacity 0.2s;box-sizing:border-box;';
+    
+    overlay.innerHTML = '<svg viewBox="0 0 50 50" style="all:initial;width:42px;height:42px;animation:custom-spin 0.8s linear infinite;stroke:#6b7280;display:block;box-sizing:border-box;"><circle cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="90, 150" stroke-dashoffset="0"></circle></svg>';
+    
+    if (!document.getElementById('custom-spin-style')) {
+        const style = document.createElement('style');
+        style.id = 'custom-spin-style';
+        style.innerHTML = '@keyframes custom-spin { 100% { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(overlay);
+};
+
+window.hideGlobalLoading = () => {
+    const loader = document.getElementById('global-loader');
+    if(loader) loader.remove();
+};
+
+document.addEventListener('click', (e) => {
+    // If it's an action button inside the card, ignore
+    if (e.target.closest('.wish-btn') || e.target.closest('.select-btn') || e.target.closest('.color-swatch') || e.target.closest('button')) return;
+
+    const card = e.target.closest('.product-card');
+    const link = e.target.closest('a');
+    const categoryItem = e.target.closest('.category-item');
+    
+    // Check if we are currently on the shop page
+    const isShopPage = window.location.pathname.includes('/shop') || window.location.pathname.includes('shop.html');
+
+    let shouldShowLoader = false;
+
+    // 1. Product cards
+    if (card) shouldShowLoader = true;
+    
+    // 2. Links to products, shop, or home
+    if (link && link.href) {
+        const href = link.href;
+        if (href.includes('/product/') || href.includes('/shop') || href.endsWith('index.html') || href === window.location.origin + '/') {
+            // Only show loader for Home link if we are not already on the Home page
+            if ((href.endsWith('index.html') || href === window.location.origin + '/') && 
+                (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
+                shouldShowLoader = false;
+            } else {
+                shouldShowLoader = true;
+            }
+        }
+    }
+
+    // 3. Category items (only if we are NOT on the shop page, because shop page filters in place)
+    if (categoryItem && !isShopPage) {
+        shouldShowLoader = true;
+    }
+
+    if (shouldShowLoader) {
+        window.showGlobalLoading();
+    }
+});
+
+window.addEventListener('pageshow', (e) => {
+    // Remove loader if user navigated back via bfcache
+    window.hideGlobalLoading();
+});

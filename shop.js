@@ -11,7 +11,7 @@ import {
 import { getProductDetailUrl } from "./product-detail-utils.js";
 import { initSharedNavbar } from "./shared-navbar.js";
 import { initSharedAuth } from "./shared-auth.js";
-import { mountSharedShell } from "./shared-shell.js?v=3";
+import { mountSharedShell } from "./shared-shell.js?v=1784522732328";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
 import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
@@ -173,6 +173,14 @@ async function fetchData() {
                 getDocs(megaCol).catch(() => ({ docs: [] }))
             ]);
 
+            const buildSig = (p, c, m) => {
+                const ps = (p || []).map(x => `${x.id}-${x.price}`).sort().join('|');
+                const cs = (c || []).map(x => `${x.id}`).sort().join('|');
+                const ms = (m || []).map(x => `${x.id}`).sort().join('|');
+                return `${ps}::${cs}::${ms}`;
+            };
+            const oldSig = buildSig(DATA.products, DATA.categories, DATA.megaMenus);
+
             DATA.products = pSnap.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .filter(p => !INTERNAL_IDS.includes(p.id));
@@ -182,7 +190,10 @@ async function fetchData() {
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
                 
-            if (hasInjected) {
+            const newSig = buildSig(DATA.products, DATA.categories, DATA.megaMenus);
+            const dataChanged = oldSig !== newSig;
+
+            if (hasInjected && dataChanged) {
                 const scrollPos = window.scrollY || document.documentElement.scrollTop;
                 const minHeight = document.body.scrollHeight;
                 document.body.style.minHeight = minHeight + 'px';
@@ -203,8 +214,10 @@ async function fetchData() {
         };
 
         if (hasInjected) {
-            // Do the background fetch without awaiting it here
-            fetchAndUpdate().catch(console.error);
+            // Delay the background fetch to prioritize image loading and prevent network contention
+            setTimeout(() => {
+                fetchAndUpdate().catch(console.error);
+            }, 1000);
         } else {
             // Must wait if no injected data
             await fetchAndUpdate();
@@ -667,6 +680,7 @@ window.goToProduct = (id) => {
         sessionStorage.setItem('speedgifts_shop_return_product', id || '');
         sessionStorage.setItem('speedgifts_shop_return_page', String(state.page || 1));
     } catch (e) {}
+    if (window.showGlobalLoading) window.showGlobalLoading();
     window.location.href = getProductDetailUrl(id);
 };
 
