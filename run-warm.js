@@ -41,7 +41,7 @@ async function run() {
         for (let i = 0; i < products.length; i += BATCH_SIZE) {
             const batch = products.slice(i, i + BATCH_SIZE);
             const promises = batch.map(async (id) => {
-                const url = `https://speedgifts.net/product/${encodeURIComponent(id)}`;
+                const url = `https://speedgifts.net/p/${encodeURIComponent(id)}`;
                 try {
                     const res = await fetch(url);
                     if (res.ok) successCount++;
