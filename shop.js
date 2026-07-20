@@ -215,8 +215,22 @@ async function fetchData() {
 
         if (hasInjected) {
             // Delay the background fetch to prioritize image loading and prevent network contention
-            setTimeout(() => {
-                fetchAndUpdate().catch(console.error);
+            setTimeout(async () => {
+                try {
+                    const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
+                    const liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
+                    const ssrSyncTime = window.__INJECTED_SHOP_DATA__.serverSyncTime;
+
+                    if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
+                        console.log('[Sync] SSR Shop data matches live database exactly, skipping full data fetch.');
+                        return;
+                    }
+                    console.log('[Sync] SSR data is stale or sync time missing, fetching full updates...');
+                    await fetchAndUpdate();
+                } catch (e) {
+                    console.error('[Sync Check Error]', e);
+                    fetchAndUpdate().catch(console.error);
+                }
             }, 1000);
         } else {
             // Must wait if no injected data

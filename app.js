@@ -828,6 +828,24 @@ async function refreshData(isNavigationOnly = false) {
         if (!isNavigationOnly || DATA.p.length === 0) {
             if (window.__INJECTED_HOME_DATA__ && !window._sgHomeDelayed) {
                 window._sgHomeDelayed = true;
+                
+                try {
+                    const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
+                    const liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
+                    const ssrSyncTime = window.__INJECTED_HOME_DATA__.serverSyncTime;
+
+                    if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
+                        console.log('[Sync] SSR Home data matches live database exactly, skipping full data fetch.');
+                        try {
+                            localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
+                        } catch(e){}
+                        return; // Skip fetch entirely
+                    }
+                    console.log('[Sync] SSR Home data is stale or sync time missing, fetching full updates...');
+                } catch (e) {
+                    console.error('[Sync Check Error]', e);
+                }
+
                 // Delay background fetch to prioritize image loading
                 await new Promise(r => setTimeout(r, 1000));
             }

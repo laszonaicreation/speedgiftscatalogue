@@ -581,18 +581,27 @@ async function bootstrap() {
     // Always fetch the live product in the background for "Stale-While-Revalidate"
     let liveProduct = null;
     try {
-        const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-        const productSnap = await getDoc(productRef);
-        if (productSnap.exists()) {
-            liveProduct = { id: productSnap.id, ...productSnap.data() };
-            // Replace the cached product with the live one
-            const pIdx = DATA.p.findIndex(p => p.id === id);
-            if (pIdx > -1) DATA.p[pIdx] = liveProduct;
-            else DATA.p.push(liveProduct);
-            
-            if (!initialRenderDone) {
-                await renderById(id);
-                initialRenderDone = true;
+        const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
+        const liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
+        const ssrSyncTime = window.__INJECTED_SYNC_TIME__;
+
+        if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString() && window.__INJECTED_PRODUCT__) {
+            console.log('[Sync] SSR Product data matches live database exactly, skipping fetch.');
+            liveProduct = window.__INJECTED_PRODUCT__;
+        } else {
+            const productRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
+            const productSnap = await getDoc(productRef);
+            if (productSnap.exists()) {
+                liveProduct = { id: productSnap.id, ...productSnap.data() };
+                // Replace the cached product with the live one
+                const pIdx = DATA.p.findIndex(p => p.id === id);
+                if (pIdx > -1) DATA.p[pIdx] = liveProduct;
+                else DATA.p.push(liveProduct);
+                
+                if (!initialRenderDone) {
+                    await renderById(id);
+                    initialRenderDone = true;
+                }
             }
         }
     } catch (e) { console.warn("Single fetch failed:", e); }

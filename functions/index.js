@@ -1,5 +1,5 @@
 const { onRequest } = require('firebase-functions/v2/https');
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
@@ -748,3 +748,13 @@ exports.warmCache = onSchedule({
 // Force restart 2
 // Force restart 3
 // Force restart 4
+
+exports.updateGlobalSync = onDocumentWritten('artifacts/{appId}/public/data/{collectionId}/{docId}', async (event) => {
+    const { collectionId, docId, appId } = event.params;
+    if (collectionId !== 'products' && collectionId !== 'categories' && collectionId !== 'mega_menus') return;
+    if (docId.startsWith('_') || docId.startsWith('--')) return;
+    const db = admin.firestore();
+    await db.doc(`artifacts/${appId}/public/data/config/sync_status`).set({
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+});
