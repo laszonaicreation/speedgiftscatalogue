@@ -212,7 +212,8 @@ exports.renderHome = onRequest(async (req, res) => {
                 popupSettings,
                 landingSettings,
                 homeSettings,
-                stats
+                stats,
+                serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
             };
             
             // Save to memory cache
@@ -361,7 +362,8 @@ exports.renderShop = onRequest(async (req, res) => {
             responseData = {
                 products,
                 categories,
-                megaMenus
+                megaMenus,
+                serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
             };
             
             // Save to memory cache
