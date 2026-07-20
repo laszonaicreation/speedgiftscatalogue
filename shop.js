@@ -213,6 +213,7 @@ async function fetchData() {
             }
         };
 
+        let liveSyncTime = null;
         if (hasInjected) {
             // Delay the background fetch to prioritize image loading and prevent network contention
             setTimeout(async () => {
