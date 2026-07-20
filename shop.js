@@ -218,11 +218,14 @@ async function fetchData() {
             setTimeout(async () => {
                 try {
                     const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
-                    const liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
-                    const ssrSyncTime = window.__INJECTED_SHOP_DATA__.serverSyncTime;
+                    liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
+                    const ssrSyncTime = DATA.serverSyncTime || (window.__INJECTED_SHOP_DATA__ ? window.__INJECTED_SHOP_DATA__.serverSyncTime : 0);
 
                     if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
                         console.log('[Sync] SSR Shop data matches live database exactly, skipping full data fetch.');
+                        try {
+                            localStorage.setItem('speedgifts_shop_cache', JSON.stringify(DATA));
+                        } catch(e){}
                         return;
                     }
                     console.log('[Sync] SSR data is stale or sync time missing, fetching full updates...');

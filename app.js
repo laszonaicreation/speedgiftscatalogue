@@ -170,24 +170,29 @@ window._sgTryInstantCacheRender = function () {
     try {
         if (DATA.p && DATA.p.length > 0) return; // Firebase already loaded — skip
         let cache = null;
-        if (window.__INJECTED_HOME_DATA__) {
-            cache = {
-                p: window.__INJECTED_HOME_DATA__.products || [],
-                c: window.__INJECTED_HOME_DATA__.categories || [],
-                m: window.__INJECTED_HOME_DATA__.megaMenus || [],
-                s: window.__INJECTED_HOME_DATA__.sliders || [],
-                announcements: window.__INJECTED_HOME_DATA__.announcements || [],
-                popupSettings: window.__INJECTED_HOME_DATA__.popupSettings || { title: '', msg: '', img: '' },
-                landingSettings: window.__INJECTED_HOME_DATA__.landingSettings || null,
-                homeSettings: window.__INJECTED_HOME_DATA__.homeSettings || null,
-                stats: window.__INJECTED_HOME_DATA__.stats || { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 }
-            };
-            console.log('[Cache] Instant render from INJECTED SSR DATA — products:', cache.p.length);
-        } else {
-            const raw = localStorage.getItem('speedgifts_home_cache');
-            if (raw) cache = JSON.parse(raw);
-            if (cache) console.log('[Cache] Instant render from cache — products:', cache.p ? cache.p.length : 0);
-        }
+        const rawLocal = localStorage.getItem('speedgifts_home_cache');
+          let localCache = rawLocal ? JSON.parse(rawLocal) : null;
+          let ssrTime = window.__INJECTED_HOME_DATA__ ? (window.__INJECTED_HOME_DATA__.serverSyncTime || 0) : 0;
+          let localTime = localCache ? (localCache.serverSyncTime || 0) : 0;
+
+          if (localTime >= ssrTime && localTime > 0) {
+              cache = localCache;
+              console.log('[Cache] Instant render from local cache (newer/equal) — products:', cache.p ? cache.p.length : 0);
+          } else if (window.__INJECTED_HOME_DATA__) {
+              cache = {
+                  p: window.__INJECTED_HOME_DATA__.products || [],
+                  c: window.__INJECTED_HOME_DATA__.categories || [],
+                  m: window.__INJECTED_HOME_DATA__.megaMenus || [],
+                  s: window.__INJECTED_HOME_DATA__.sliders || [],
+                  announcements: window.__INJECTED_HOME_DATA__.announcements || [],
+                  popupSettings: window.__INJECTED_HOME_DATA__.popupSettings || { title: '', msg: '', img: '' },
+                  landingSettings: window.__INJECTED_HOME_DATA__.landingSettings || null,
+                  homeSettings: window.__INJECTED_HOME_DATA__.homeSettings || null,
+                  stats: window.__INJECTED_HOME_DATA__.stats || { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 },
+                  serverSyncTime: ssrTime
+              };
+              console.log('[Cache] Instant render from INJECTED SSR DATA — products:', cache.p.length);
+          }
         
         if (!cache || !Array.isArray(cache.p) || cache.p.length === 0) return;
         DATA = cache;
@@ -824,15 +829,16 @@ window.renderDesktopMegaMenu = () => {
 async function refreshData(isNavigationOnly = false) {
     try {
         let visualDataChanged = false;
-
-        if (!isNavigationOnly || DATA.p.length === 0) {
+          let liveSyncTime = null;
+  
+          if (!isNavigationOnly || DATA.p.length === 0) {
             if (window.__INJECTED_HOME_DATA__ && !window._sgHomeDelayed) {
                 window._sgHomeDelayed = true;
                 
                 try {
                     const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
-                    const liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
-                    const ssrSyncTime = window.__INJECTED_HOME_DATA__.serverSyncTime;
+                    liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
+                    const ssrSyncTime = DATA.serverSyncTime || (window.__INJECTED_HOME_DATA__ ? window.__INJECTED_HOME_DATA__.serverSyncTime : 0);
 
                     if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
                         console.log('[Sync] SSR Home data matches live database exactly, skipping full data fetch.');
@@ -884,7 +890,8 @@ async function refreshData(isNavigationOnly = false) {
             DATA.landingSettings = bundle.landingSettings;
             DATA.homeSettings = bundle.homeSettings;
             DATA.stats = bundle.stats;
-
+            DATA.serverSyncTime = liveSyncTime || Date.now();
+            
             const newVisualSig = buildSig(DATA.p, DATA.c, DATA.m, DATA.s);
             visualDataChanged = (oldVisualSig !== newVisualSig);
 

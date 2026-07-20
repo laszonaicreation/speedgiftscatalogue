@@ -30,6 +30,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /artifacts/{anyAppId}/public/data/config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /artifacts/{anyAppId}/public/data/popupSettings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();

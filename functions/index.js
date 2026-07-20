@@ -161,7 +161,8 @@ exports.renderHome = onRequest(async (req, res) => {
 
             const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
 
-            const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
+            const [syncSnap, configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
+                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get(),
                 prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
                 prodCol.where('isFeatured', '==', true).get(),
                 prodCol.limit(30).get(),
@@ -345,7 +346,8 @@ exports.renderShop = onRequest(async (req, res) => {
             // We only need basic configs to exclude them from the product list
             const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats_', '_hero_config_'];
 
-            const [prodSnap, catSnap, megaSnap] = await Promise.all([
+            const [syncSnap, prodSnap, catSnap, megaSnap] = await Promise.all([
+                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get(),
                 prodCol.get(),
                 catCol.get(),
                 megaCol.get()
@@ -428,7 +430,8 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
 
             const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
 
-            const [configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
+            const [syncSnap, configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
+                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get(),
                 prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
                 prodCol.where('isFeatured', '==', true).get(),
                 prodCol.limit(30).get(),
