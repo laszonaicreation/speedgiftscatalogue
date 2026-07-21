@@ -1,4 +1,9 @@
 const fs = require('fs');
+process.on('uncaughtException', (err) => {
+    if (err.code !== 'ECONNRESET') {
+        console.error(err);
+    }
+});
 
 async function run() {
     console.log("Fetching products from Firestore...");

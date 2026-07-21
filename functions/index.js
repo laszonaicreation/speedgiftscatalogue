@@ -86,6 +86,11 @@ exports.renderProduct = onRequest(async (req, res) => {
                 }
             }
 
+            if (req.query.warmup === 'true') {
+                res.set('Cache-Control', 'no-store');
+                return res.status(200).send('OK');
+            }
+
             if (productData) {
                 const product = productData;
                 const title = `${product.name} | Speed Gifts`;
@@ -183,21 +188,22 @@ exports.renderHome = onRequest(async (req, res) => {
                 (async () => {
                     try {
                         const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+                        const today = new Date().toISOString().split('T')[0];
                         const [prodSnap, catSnap, megaSnap, sliderSnap, homeSettingsDoc, todaySnap, syncSnap] = await Promise.all([
                             dataRef.collection('products').get(),
                             dataRef.collection('categories').get(),
                             dataRef.collection('mega_menus').get(),
                             dataRef.collection('sliders').get(),
                             db.collection('artifacts').doc(appId).collection('public').doc('settings').collection('home').doc('layout').get().then(doc => doc.exists ? doc.data() : null),
-                            db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(new Date().toISOString().split('T')[0]).get(),
+                            db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get(),
                             dataRef.get()
                         ]);
                         const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         const newData = {
-                            products: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')),
-                            categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            sliders: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            p: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')),
+                            c: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            m: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            s: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                             homeSettings: homeSettingsDoc,
                             stats: todaySnap.exists ? todaySnap.data() : null,
                             serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
@@ -238,10 +244,10 @@ exports.renderHome = onRequest(async (req, res) => {
             }
 
             responseData = {
-                products,
-                categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                sliders: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                p: products,
+                c: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                m: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                s: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                 homeSettings,
                 stats,
                 serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
@@ -250,6 +256,11 @@ exports.renderHome = onRequest(async (req, res) => {
             // Save to memory cache
             memoryCache.homeData = responseData;
             memoryCache.homeDataTime = now;
+        }
+
+        if (req.query.warmup === 'true') {
+            res.set('Cache-Control', 'no-store');
+            return res.status(200).send('OK');
         }
 
         const rawHtmlUrl = 'https://speed-catalogue.web.app/index-static.html';
@@ -261,10 +272,11 @@ exports.renderHome = onRequest(async (req, res) => {
             memoryCache.homeRawHtml = htmlString;
         }
 
-        const sliders = responseData.sliders;
+        const sliders = responseData.s || [];
         let preloadTag = '';
         let ssrSliderKey = null; // Will be set if sliders exist — used to prevent re-render after Firebase fetch
-        if (sliders && sliders.length > 0) {
+        
+        if (sliders.length > 0) {
             const sortedSliders = [...sliders].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
             const firstMobile = sortedSliders.find(s => s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img');
             const firstDesktop = sortedSliders.find(s => s.img && s.img !== 'img/' && s.img !== 'img');
@@ -389,7 +401,7 @@ exports.renderShop = onRequest(async (req, res) => {
                         memoryCache.shopData = {
                             products: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')).map(p => ({
                                 id: p.id, name: p.name, desc: p.desc, details: p.details, price: p.price, oldPrice: p.oldPrice,
-                                images: p.images, img: p.img, badge: p.badge, category: p.category, brand: p.brand, 
+                                images: p.images, img: p.img, badge: p.badge, category: p.category, catId: p.catId, brand: p.brand, 
                                 isNew: p.isNew, options: p.options, sku: p.sku
                             })),
                             categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
@@ -436,6 +448,7 @@ exports.renderShop = onRequest(async (req, res) => {
                     img: p.img,
                     badge: p.badge,
                     category: p.category,
+                    catId: p.catId,
                     brand: p.brand,
                     isNew: p.isNew,
                     options: p.options,
@@ -456,6 +469,11 @@ exports.renderShop = onRequest(async (req, res) => {
             // Save to memory cache
             memoryCache.shopData = responseData;
             memoryCache.shopDataTime = now;
+        }
+
+        if (req.query.warmup === 'true') {
+            res.set('Cache-Control', 'no-store');
+            return res.status(200).send('OK');
         }
 
         const rawHtmlUrl = `https://${process.env.GCLOUD_PROJECT}.web.app/shop-static.html`;
@@ -760,13 +778,13 @@ exports.warmCache = onSchedule({
         // 1. Warm up Main Page and Shop Page first
         try {
             console.log('Warming up main home page...');
-            const homeRes = await fetch("https://speedgifts.net/");
+            const homeRes = await fetch("https://speedgifts.net/?warmup=true");
             if (homeRes.ok) successCount++; else failCount++;
         } catch (e) { failCount++; }
 
         try {
             console.log('Warming up shop page...');
-            const shopRes = await fetch("https://speedgifts.net/shop");
+            const shopRes = await fetch("https://speedgifts.net/shop?warmup=true");
             if (shopRes.ok) successCount++; else failCount++;
         } catch (e) { failCount++; }
 
@@ -788,7 +806,7 @@ exports.warmCache = onSchedule({
             for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
                 const batch = productIds.slice(i, i + BATCH_SIZE);
                 const promises = batch.map(async (id) => {
-                    const url = `https://speedgifts.net/product/${encodeURIComponent(id)}`;
+                    const url = `https://speedgifts.net/product/${encodeURIComponent(id)}?warmup=true`;
                     try {
                         const res = await fetch(url);
                         if (res.ok) successCount++;
@@ -818,7 +836,7 @@ exports.warmCache = onSchedule({
             console.log(`Found ${categoryIds.length} categories to warm up.`);
 
             for (const catId of categoryIds) {
-                const url = `https://speedgifts.net/shop?c=${encodeURIComponent(catId)}`;
+                const url = `https://speedgifts.net/shop?c=${encodeURIComponent(catId)}&warmup=true`;
                 try {
                     const res = await fetch(url);
                     if (res.ok) successCount++;
