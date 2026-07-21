@@ -137,8 +137,11 @@ export function initSlider({ db, appId, doc, setDoc }) {
                         </div>
                     ` : '';
 
-                    const mUrl = getOptUrl(s.mobileImg, 1200);
-                    const dUrl = getOptUrl(s.img, null);
+                    const checkUrl = (u) => (u && u !== 'img/' && u !== 'img') ? u : null;
+                    const rawMUrl = checkUrl(s.mobileImg);
+                    const rawDUrl = checkUrl(s.img);
+                    const mUrl = rawMUrl ? getOptUrl(rawMUrl, 1200) : null;
+                    const dUrl = rawDUrl ? getOptUrl(rawDUrl, null) : null;
                     let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                     let validSrcMobile = mUrl || dUrl || validSrcDesktop;
 
@@ -184,8 +187,11 @@ export function initSlider({ db, appId, doc, setDoc }) {
                     </div>
                 ` : '';
 
-                const mUrl = getOptUrl(s.mobileImg, 1200);
-                const dUrl = getOptUrl(s.img, null);
+                const checkUrl = (u) => (u && u !== 'img/' && u !== 'img') ? u : null;
+                const rawMUrl = checkUrl(s.mobileImg);
+                const rawDUrl = checkUrl(s.img);
+                const mUrl = rawMUrl ? getOptUrl(rawMUrl, 1200) : null;
+                const dUrl = rawDUrl ? getOptUrl(rawDUrl, null) : null;
                 let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                 let validSrcMobile = mUrl || dUrl || validSrcDesktop;
 

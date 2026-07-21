@@ -235,11 +235,13 @@ exports.renderHome = onRequest(async (req, res) => {
         let ssrSliderKey = null; // Will be set if sliders exist — used to prevent re-render after Firebase fetch
         if (sliders && sliders.length > 0) {
             const sortedSliders = [...sliders].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
-            const firstMobile = sortedSliders.find(s => s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img');
-            const firstDesktop = sortedSliders.find(s => s.img && s.img !== 'img/' && s.img !== 'img');
-
-            const mUrl = firstMobile ? firstMobile.mobileImg : null;
-            const dUrl = firstDesktop ? firstDesktop.img : null;
+            const firstSlide = sortedSliders[0];
+            const checkUrl = (u) => (u && u !== 'img/' && u !== 'img') ? u : null;
+            
+            const mUrl = checkUrl(firstSlide.mobileImg);
+            const dUrl = checkUrl(firstSlide.img);
+            const firstDesktop = dUrl ? firstSlide : null;
+            const firstMobile = mUrl ? firstSlide : null;
 
             if (mUrl && dUrl && mUrl !== dUrl) {
                 preloadTag = `<link rel="preload" as="image" href="${mUrl}" media="(max-width: 767px)" fetchpriority="high">\n<link rel="preload" as="image" href="${dUrl}" media="(min-width: 768px)" fetchpriority="high">\n`;
@@ -252,13 +254,12 @@ exports.renderHome = onRequest(async (req, res) => {
 
             // Generate SSR HTML for the first slide to eliminate JS-induced LCP delay
             let firstSlideHtml = '';
-            if (firstDesktop || firstMobile) {
+            if (firstSlide && (mUrl || dUrl)) {
                 let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                 let validSrcMobile = mUrl || dUrl || validSrcDesktop;
                 
-                const altText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
-                
-                const titleText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
+                const altText = firstSlide.title || '';
+                const titleText = firstSlide.title || '';
                 const overlayHTML = titleText ? `
                     <div class="absolute inset-0 hidden md:flex bg-gradient-to-t from-black/60 via-black/10 to-transparent items-end pb-14 pl-16 z-20 pointer-events-none">
                          <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${titleText}</h2>
@@ -272,10 +273,10 @@ exports.renderHome = onRequest(async (req, res) => {
                 firstSlideHtml = `
                 <div class="slider-slide relative" data-index="0" data-ssr-slide="1">
                     <picture>
-                        ${mUrl && dUrl && mUrl !== dUrl ? \`<source media="(max-width: 767px)" srcset="\${validSrcMobile}">
-                        <source media="(min-width: 768px)" srcset="\${validSrcDesktop}">
-                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="\${altText}">\` : \`
-                        <img src="\${validSrcDesktop}" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="\${altText}">\`}
+                        ${mUrl && dUrl && mUrl !== dUrl ? `<source media="(max-width: 767px)" srcset="${validSrcMobile}">
+                        <source media="(min-width: 768px)" srcset="${validSrcDesktop}">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="${altText}">` : `
+                        <img src="${validSrcDesktop}" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="${altText}">`}
                     </picture>
                     ${overlayHTML}
                 </div>`;
