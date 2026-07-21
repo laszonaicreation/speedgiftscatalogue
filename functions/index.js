@@ -17,8 +17,12 @@ const memoryCache = {
     homeDataTime: 0,
     shopData: null,
     shopDataTime: 0,
+    getHomeData: null,
+    getHomeDataTime: 0,
     homeRawHtml: null,
-    shopRawHtml: null
+    shopRawHtml: null,
+    productRawHtml: null,
+    products: {}
 };
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -37,28 +41,53 @@ exports.renderProduct = onRequest(async (req, res) => {
             }
         }
 
-        // Fetch the raw HTML template
-        // We fetch the static file from the hosting domain
-        const hostUrl = `https://${process.env.GCLOUD_PROJECT}.web.app`;
-        const rawHtmlUrl = `${hostUrl}/product-detail-static.html`;
+        let htmlString = memoryCache.productRawHtml;
+        if (!htmlString) {
+            // Fetch the raw HTML template from hosting
+            const hostUrl = `https://${process.env.GCLOUD_PROJECT}.web.app`;
+            const rawHtmlUrl = `${hostUrl}/product-detail-static.html`;
 
-        const htmlResponse = await fetch(rawHtmlUrl);
-        let htmlString = await htmlResponse.text();
+            const htmlResponse = await fetch(rawHtmlUrl);
+            htmlString = await htmlResponse.text();
+            memoryCache.productRawHtml = htmlString;
+        }
 
         if (productId) {
             console.log("Fetching product ID:", productId);
-            // Fetch product data from Firestore
-            const productDoc = await db.collection('artifacts')
-                .doc('speed-catalogue') // The projectId from frontend
-                .collection('public')
-                .doc('data')
-                .collection('products')
-                .doc(productId)
-                .get();
+            let productData = null;
+            const now = Date.now();
 
-            console.log("Product exists?", productDoc.exists);
-            if (productDoc.exists) {
-                const product = productDoc.data();
+            if (memoryCache.products[productId]) {
+                productData = memoryCache.products[productId].data;
+                console.log('[renderProduct] Using memory cache (fast path) for', productId);
+                
+                // Stale-While-Revalidate: If cache is older than TTL, fetch in background
+                if (now - memoryCache.products[productId].time > CACHE_TTL_MS) {
+                    console.log('[renderProduct] Cache stale, fetching in background for', productId);
+                    db.collection('artifacts').doc('speed-catalogue').collection('public').doc('data').collection('products').doc(productId).get().then(doc => {
+                        if (doc.exists) {
+                            memoryCache.products[productId] = { data: { id: doc.id, ...doc.data() }, time: Date.now() };
+                        }
+                    }).catch(err => console.error("Background product fetch failed:", err));
+                }
+            } else {
+                console.log('[renderProduct] Fetching from Firestore (cache miss) for', productId);
+                const productDoc = await db.collection('artifacts')
+                    .doc('speed-catalogue') // The projectId from frontend
+                    .collection('public')
+                    .doc('data')
+                    .collection('products')
+                    .doc(productId)
+                    .get();
+
+                if (productDoc.exists) {
+                    productData = { id: productDoc.id, ...productDoc.data() };
+                    memoryCache.products[productId] = { data: productData, time: now };
+                }
+            }
+
+            if (productData) {
+                const product = productData;
                 const title = `${product.name} | Speed Gifts`;
 
                 // Clean description
@@ -110,7 +139,7 @@ exports.renderProduct = onRequest(async (req, res) => {
     <meta property="og:url" content="${finalUrl}">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="preload" as="image" href="${lcpImageUrl}" fetchpriority="high">
-    <script>window.__INJECTED_PRODUCT__ = ${JSON.stringify({ id: productDoc.id, ...product }).replace(/</g, '\\u003c')};</script>
+    <script>window.__INJECTED_PRODUCT__ = ${JSON.stringify(product).replace(/</g, '\\u003c')};</script>
                 `;
 
                 htmlString = htmlString.replace('</head>', `${ogTags}\n</head>`);
@@ -143,10 +172,41 @@ exports.renderHome = onRequest(async (req, res) => {
         const now = Date.now();
         let responseData = null;
 
-        // Use memory cache if valid
-        if (memoryCache.homeData && (now - memoryCache.homeDataTime < CACHE_TTL_MS)) {
+        // Use memory cache if available (Stale-While-Revalidate)
+        if (memoryCache.homeData) {
             responseData = memoryCache.homeData;
             console.log('[renderHome] Using memory cache (fast path)');
+            
+            if (now - memoryCache.homeDataTime > CACHE_TTL_MS) {
+                console.log('[renderHome] Cache stale, updating in background');
+                // Background update logic
+                (async () => {
+                    try {
+                        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+                        const [prodSnap, catSnap, megaSnap, sliderSnap, homeSettingsDoc, todaySnap, syncSnap] = await Promise.all([
+                            dataRef.collection('products').get(),
+                            dataRef.collection('categories').get(),
+                            dataRef.collection('mega_menus').get(),
+                            dataRef.collection('sliders').get(),
+                            db.collection('artifacts').doc(appId).collection('public').doc('settings').collection('home').doc('layout').get().then(doc => doc.exists ? doc.data() : null),
+                            db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(new Date().toISOString().split('T')[0]).get(),
+                            dataRef.get()
+                        ]);
+                        const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        const newData = {
+                            products: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')),
+                            categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            sliders: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            homeSettings: homeSettingsDoc,
+                            stats: todaySnap.exists ? todaySnap.data() : null,
+                            serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
+                        };
+                        memoryCache.homeData = newData;
+                        memoryCache.homeDataTime = Date.now();
+                    } catch(e) { console.error('Background fetch failed:', e); }
+                })();
+            }
         } else {
             console.log('[renderHome] Fetching from Firestore (cache miss)');
             const today = new Date().toISOString().split('T')[0];
@@ -156,48 +216,22 @@ exports.renderHome = onRequest(async (req, res) => {
             const catCol = dataRef.collection('categories');
             const megaCol = dataRef.collection('mega_menus');
             const sliderCol = dataRef.collection('sliders');
-            const popupCol = dataRef.collection('popup_settings');
-            const dailyStatsRef = dataRef.collection('daily_stats').doc(today);
 
-            const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats--', '_hero_config_'];
-
-            const [syncSnap, configSnap, featuredSnap, fallbackSnap, catSnap, megaSnap, sliderSnap, popupSnap, todaySnap] = await Promise.all([
-                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get(),
-                prodCol.where(admin.firestore.FieldPath.documentId(), 'in', configDocIds).get(),
-                prodCol.where('isFeatured', '==', true).get(),
-                prodCol.limit(30).get(),
+            const [prodSnap, catSnap, megaSnap, sliderSnap, homeSettingsDoc, todaySnap, syncSnap] = await Promise.all([
+                prodCol.get(),
                 catCol.get(),
                 megaCol.get(),
                 sliderCol.get(),
-                popupCol.limit(1).get(),
-                dailyStatsRef.get().catch(() => null)
+                db.collection('artifacts').doc(appId).collection('public').doc('settings').collection('home').doc('layout').get().then(doc => doc.exists ? doc.data() : null),
+                db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get(),
+                dataRef.get()
             ]);
 
-            const uniqueMap = new Map();
-            [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs].forEach(d => {
-                if (!uniqueMap.has(d.id)) {
-                    uniqueMap.set(d.id, { id: d.id, ...d.data() });
-                }
-            });
-
-            const rawProducts = Array.from(uniqueMap.values());
-            const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
-            const sliders = sliderSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-            const announcementsDoc = rawProducts.find(p => p.id === '_announcements_');
-            const announcements = announcementsDoc ? (announcementsDoc.messages || []) : [];
-
-            const popupSettings = (!popupSnap.empty) ? popupSnap.docs[0].data() : null;
-
-            const landingDoc = rawProducts.find(p => p.id === '_landing_settings_');
-            const landingSettings = landingDoc ? { ...landingDoc } : null;
-
-            const homeSettingsDoc = rawProducts.find(p => p.id === '_home_settings_');
+            const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const homeSettings = homeSettingsDoc ? { ...homeSettingsDoc } : null;
 
             const products = rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--'));
-            
+
             let stats = null;
             if (todaySnap && todaySnap.exists) {
                 stats = todaySnap.data();
@@ -205,17 +239,14 @@ exports.renderHome = onRequest(async (req, res) => {
 
             responseData = {
                 products,
-                categories,
-                megaMenus,
-                sliders,
-                announcements,
-                popupSettings,
-                landingSettings,
+                categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                sliders: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                 homeSettings,
                 stats,
                 serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
             };
-            
+
             // Save to memory cache
             memoryCache.homeData = responseData;
             memoryCache.homeDataTime = now;
@@ -229,37 +260,36 @@ exports.renderHome = onRequest(async (req, res) => {
             htmlString = await htmlResponse.text();
             memoryCache.homeRawHtml = htmlString;
         }
-        
+
         const sliders = responseData.sliders;
         let preloadTag = '';
         let ssrSliderKey = null; // Will be set if sliders exist — used to prevent re-render after Firebase fetch
         if (sliders && sliders.length > 0) {
             const sortedSliders = [...sliders].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
-            const firstSlide = sortedSliders[0];
-            const checkUrl = (u) => (u && u !== 'img/' && u !== 'img') ? u : null;
-            
-            const mUrl = checkUrl(firstSlide.mobileImg);
-            const dUrl = checkUrl(firstSlide.img);
-            const firstDesktop = dUrl ? firstSlide : null;
-            const firstMobile = mUrl ? firstSlide : null;
+            const firstMobile = sortedSliders.find(s => s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img');
+            const firstDesktop = sortedSliders.find(s => s.img && s.img !== 'img/' && s.img !== 'img');
+
+            const mUrl = firstMobile ? firstMobile.mobileImg : null;
+            const dUrl = firstDesktop ? firstDesktop.img : null;
 
             if (mUrl && dUrl && mUrl !== dUrl) {
                 preloadTag = `<link rel="preload" as="image" href="${mUrl}" media="(max-width: 767px)" fetchpriority="high">\n<link rel="preload" as="image" href="${dUrl}" media="(min-width: 768px)" fetchpriority="high">\n`;
             } else if (mUrl || dUrl) {
                 preloadTag = `<link rel="preload" as="image" href="${mUrl || dUrl}" fetchpriority="high">\n`;
             }
-            
+
             // Hide the skeleton using CSS since we are injecting the actual image
             preloadTag += '<style>#slider-skeleton, #slider-skeleton-dots { display: none !important; }</style>\n';
 
             // Generate SSR HTML for the first slide to eliminate JS-induced LCP delay
             let firstSlideHtml = '';
-            if (firstSlide && (mUrl || dUrl)) {
+            if (firstDesktop || firstMobile) {
                 let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                 let validSrcMobile = mUrl || dUrl || validSrcDesktop;
-                
-                const altText = firstSlide.title || '';
-                const titleText = firstSlide.title || '';
+
+                const altText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
+
+                const titleText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
                 const overlayHTML = titleText ? `
                     <div class="absolute inset-0 hidden md:flex bg-gradient-to-t from-black/60 via-black/10 to-transparent items-end pb-14 pl-16 z-20 pointer-events-none">
                          <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${titleText}</h2>
@@ -280,17 +310,17 @@ exports.renderHome = onRequest(async (req, res) => {
                     </picture>
                     ${overlayHTML}
                 </div>`;
-                
+
                 // Pre-compute the sliderMarkupKey for BOTH mobile and desktop universally.
                 // Key format: "id|mobileImg|img|title|link" for each slide
                 const computeKey = () => {
                     const parts = sortedSliders
                         .filter(s => (s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img') || (s.img && s.img !== 'img/' && s.img !== 'img'))
-                        .map(s => `${s.id||''}|${s.mobileImg||''}|${s.img||''}|${s.title||''}|${s.link||''}`);
+                        .map(s => `${s.id || ''}|${s.mobileImg || ''}|${s.img || ''}|${s.title || ''}|${s.link || ''}`);
                     return parts.join('::');
                 };
                 ssrSliderKey = { u: computeKey() };
-                
+
                 // Inject into the HTML string directly inside home-slider
                 // IMPORTANT: Use function form of replace() to prevent $ chars in Firebase URLs from being
                 // interpreted as regex replacement patterns ($1, $&, etc.)
@@ -339,10 +369,37 @@ exports.renderShop = onRequest(async (req, res) => {
         const now = Date.now();
         let responseData = null;
 
-        // Use memory cache if valid
-        if (memoryCache.shopData && (now - memoryCache.shopDataTime < CACHE_TTL_MS)) {
+        // Use memory cache if available (Stale-While-Revalidate)
+        if (memoryCache.shopData) {
             responseData = memoryCache.shopData;
             console.log('[renderShop] Using memory cache (fast path)');
+            
+            if (now - memoryCache.shopDataTime > CACHE_TTL_MS) {
+                console.log('[renderShop] Cache stale, updating in background');
+                (async () => {
+                    try {
+                        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
+                        const [prodSnap, catSnap, megaSnap, syncSnap] = await Promise.all([
+                            dataRef.collection('products').get(),
+                            dataRef.collection('categories').get(),
+                            dataRef.collection('mega_menus').get(),
+                            dataRef.get()
+                        ]);
+                        const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        memoryCache.shopData = {
+                            products: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')).map(p => ({
+                                id: p.id, name: p.name, desc: p.desc, details: p.details, price: p.price, oldPrice: p.oldPrice,
+                                images: p.images, img: p.img, badge: p.badge, category: p.category, brand: p.brand, 
+                                isNew: p.isNew, options: p.options, sku: p.sku
+                            })),
+                            categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                            serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
+                        };
+                        memoryCache.shopDataTime = Date.now();
+                    } catch(e) { console.error('Background fetch failed:', e); }
+                })();
+            }
         } else {
             console.log('[renderShop] Fetching from Firestore (cache miss)');
             const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
@@ -351,28 +408,51 @@ exports.renderShop = onRequest(async (req, res) => {
             const catCol = dataRef.collection('categories');
             const megaCol = dataRef.collection('mega_menus');
 
+            const [prodSnap, catSnap, megaSnap, syncSnap] = await Promise.all([
+                prodCol.get(),
+                catCol.get(),
+                megaCol.get(),
+                dataRef.get()
+            ]);
+
+            const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
             // We only need basic configs to exclude them from the product list
             const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats_', '_hero_config_'];
 
-            const [syncSnap, prodSnap, catSnap, megaSnap] = await Promise.all([
-                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get(),
-                prodCol.get(),
-                catCol.get(),
-                megaCol.get()
-            ]);
+            const rawProducts2 = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const products = rawProducts2.filter(p => !configDocIds.includes(p.id) && !p.id.startsWith('--'));
+            
+            // Further strip down the product data for the shop page to reduce HTML size
+            const lightweightProducts = products.map(p => {
+                return {
+                    id: p.id,
+                    name: p.name,
+                    desc: p.desc,
+                    details: p.details,
+                    price: p.price,
+                    oldPrice: p.oldPrice,
+                    images: p.images,
+                    img: p.img,
+                    badge: p.badge,
+                    category: p.category,
+                    brand: p.brand,
+                    isNew: p.isNew,
+                    options: p.options,
+                    sku: p.sku
+                };
+            });
 
-            const rawProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const products = rawProducts.filter(p => !configDocIds.includes(p.id) && !p.id.startsWith('--'));
             const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
 
             responseData = {
-                products,
+                products: lightweightProducts,
                 categories,
                 megaMenus,
                 serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
             };
-            
+
             // Save to memory cache
             memoryCache.shopData = responseData;
             memoryCache.shopDataTime = now;
@@ -501,7 +581,7 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
                 homeSettings,
                 stats
             };
-            
+
             // Save to memory cache
             memoryCache.getHomeData = responseData;
             memoryCache.getHomeDataTime = now;
@@ -664,16 +744,16 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event
     }
 });
 
-// Cache Warmer: Runs every 30 minutes to ping home, shop, and category pages to ensure the CDN cache is hot.
+// Cache Warmer: Runs every 10 minutes to ping home, shop, and category pages to ensure the CDN cache is hot.
 exports.warmCache = onSchedule({
-    schedule: "every 30 minutes",
+    schedule: "every 10 minutes",
     timeZone: "Asia/Dubai",
     timeoutSeconds: 300,
     memory: "256MiB"
 }, async (event) => {
     try {
         console.log('Starting Cache Warming...');
-        
+
         let successCount = 0;
         let failCount = 0;
 
@@ -694,7 +774,7 @@ exports.warmCache = onSchedule({
         const prodSnapshot = await db.collection('artifacts').doc('speed-catalogue')
             .collection('public').doc('data')
             .collection('products').get();
-        
+
         if (!prodSnapshot.empty) {
             const productIds = [];
             prodSnapshot.forEach(doc => {

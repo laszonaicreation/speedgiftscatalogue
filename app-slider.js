@@ -127,7 +127,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
                 const restOfSlidesHtml = visibleSliders.slice(1).map((slide, index) => {
                     const s = slide;
                     const i = index + 1; // start from 1
-                    
+
                     const overlayHTML = s.title ? `
                         <div class="absolute inset-0 hidden md:flex bg-gradient-to-t from-black/60 via-black/10 to-transparent items-end pb-14 pl-16 z-20 pointer-events-none">
                              <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
@@ -137,11 +137,8 @@ export function initSlider({ db, appId, doc, setDoc }) {
                         </div>
                     ` : '';
 
-                    const checkUrl = (u) => (u && u !== 'img/' && u !== 'img') ? u : null;
-                    const rawMUrl = checkUrl(s.mobileImg);
-                    const rawDUrl = checkUrl(s.img);
-                    const mUrl = rawMUrl ? getOptUrl(rawMUrl, 1200) : null;
-                    const dUrl = rawDUrl ? getOptUrl(rawDUrl, null) : null;
+                    const mUrl = getOptUrl(s.mobileImg, 1200);
+                    const dUrl = getOptUrl(s.img, null);
                     let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                     let validSrcMobile = mUrl || dUrl || validSrcDesktop;
 
@@ -187,11 +184,8 @@ export function initSlider({ db, appId, doc, setDoc }) {
                     </div>
                 ` : '';
 
-                const checkUrl = (u) => (u && u !== 'img/' && u !== 'img') ? u : null;
-                const rawMUrl = checkUrl(s.mobileImg);
-                const rawDUrl = checkUrl(s.img);
-                const mUrl = rawMUrl ? getOptUrl(rawMUrl, 1200) : null;
-                const dUrl = rawDUrl ? getOptUrl(rawDUrl, null) : null;
+                const mUrl = getOptUrl(s.mobileImg, 1200);
+                const dUrl = getOptUrl(s.img, null);
                 let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                 let validSrcMobile = mUrl || dUrl || validSrcDesktop;
 
@@ -219,7 +213,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
                     </div>
                 `;
             }).join('');
-            
+
             sliderMarkupKey = nextMarkupKey;
         }
 
