@@ -1,3 +1,5 @@
+import { applyActionCode } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
 export function initSharedAuth(config) {
     window._sgGetFriendlyError = function(err) {
         if (!err) return 'An error occurred';
@@ -212,4 +214,37 @@ export function initSharedAuth(config) {
             showToast?.('Error signing out');
         }
     };
+
+    // --- Global Auth Action Handlers (Email Verify) ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
+
+    if (mode === 'verifyEmail' && oobCode) {
+        window.history.replaceState(null, '', window.location.pathname);
+        applyActionCode(auth, oobCode).then(() => {
+            showBeautifulSuccessModal('Email Verified! 🎉', 'Your email address has been successfully verified. You can now access all features of your account.');
+        }).catch(err => {
+            showToast?.('Invalid or expired verification link.');
+        });
+    }
+
+    function showBeautifulSuccessModal(title, message) {
+        const modalHtml = `
+        <div id="sg-success-modal" class="fixed inset-0 z-[3000] flex items-center justify-center pointer-events-auto transition-opacity duration-300">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="this.parentElement.remove(); document.body.style.overflow='';"></div>
+            <div class="relative bg-white rounded-3xl p-8 max-w-sm w-[90%] mx-auto text-center shadow-2xl transform transition-all scale-100 flex flex-col items-center">
+                <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-5 border-4 border-green-100">
+                    <i class="fa-solid fa-check text-3xl text-green-500"></i>
+                </div>
+                <h3 class="text-2xl font-black text-black mb-2 tracking-tight">${title}</h3>
+                <p class="text-sm text-gray-500 mb-8 font-medium px-2">${message}</p>
+                <button onclick="this.closest('#sg-success-modal').remove(); document.body.style.overflow='';" class="w-full bg-black text-white font-bold uppercase tracking-widest text-xs py-4 rounded-2xl hover:bg-gray-800 transition-colors shadow-md">
+                    Continue
+                </button>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        document.body.style.overflow = 'hidden';
+    }
 }
