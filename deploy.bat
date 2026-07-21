@@ -47,7 +47,7 @@ echo.
 echo [4/5] Backing up code to GitHub...
 git add .
 git commit -m "Auto-backup before deployment"
-git push
+git push --force
 echo Done! Code saved to GitHub.
 echo.
 

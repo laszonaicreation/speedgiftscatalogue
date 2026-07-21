@@ -283,7 +283,9 @@ window.submitOrder = async () => {
     // 3. Loading State
     const btn = document.getElementById('place-order-btn');
     btn.classList.add('btn-loading');
-    btn.innerHTML = `<i class="fa-solid fa-spinner"></i> Processing...`;
+    btn.disabled = true;
+    btn.style.pointerEvents = 'none';
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing...`;
 
     try {
         let finalUid = auth.currentUser && !auth.currentUser.isAnonymous ? auth.currentUser.uid : null;
@@ -309,6 +311,8 @@ window.submitOrder = async () => {
                 
                 showToast(msg);
                 btn.classList.remove('btn-loading');
+                btn.disabled = false;
+                btn.style.pointerEvents = 'auto';
                 btn.innerHTML = `<i class="fa-solid fa-check"></i> Place Order`;
                 return;
             }
@@ -359,6 +363,8 @@ window.submitOrder = async () => {
         console.error('Order submission failed:', err);
         showToast('Error processing order. Please try again.');
         btn.classList.remove('btn-loading');
+        btn.disabled = false;
+        btn.style.pointerEvents = 'auto';
         btn.innerHTML = `<i class="fa-solid fa-check"></i> Place Order`;
     }
 };
