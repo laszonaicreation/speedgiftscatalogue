@@ -106,13 +106,10 @@ export function initSlider({ db, appId, doc, setDoc }) {
         } catch (_e) { /* localStorage unavailable — ignore */ }
 
         // Avoid rebuilding markup when data/layout is unchanged
-        const nextMarkupKey = [
-            isMobile ? 'm' : 'd',
-            ...visibleSliders.map((s) => `${s.id || ''}|${isMobile ? (s.mobileImg || '') : (s.img || '')}|${s.title || ''}|${s.link || ''}`)
-        ].join('::');
+        const nextMarkupKey = visibleSliders.map((s) => `${s.id || ''}|${s.mobileImg || ''}|${s.img || ''}|${s.title || ''}|${s.link || ''}`).join('::');
 
         if (sliderMarkupKey === null) {
-            sliderMarkupKey = (isMobile ? _ssrKeys.m : _ssrKeys.d) || '';
+            sliderMarkupKey = _ssrKeys.u || '';
         }
 
         const ssrSlidePresent = !!slider.querySelector('[data-ssr-slide]');
@@ -130,28 +127,41 @@ export function initSlider({ db, appId, doc, setDoc }) {
                 const restOfSlidesHtml = visibleSliders.slice(1).map((slide, index) => {
                     const s = slide;
                     const i = index + 1; // start from 1
-                    const displayImg = isMobile ? s.mobileImg : s.img;
-                    const overlayHTML = s.title ? (isMobile
-                        ? `<div class="absolute bottom-12 left-8 text-white z-20">
-                             <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
-                           </div>`
-                        : `<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end pb-14 pl-16 z-20 pointer-events-none">
+                    
+                    const overlayHTML = s.title ? `
+                        <div class="absolute inset-0 hidden md:flex bg-gradient-to-t from-black/60 via-black/10 to-transparent items-end pb-14 pl-16 z-20 pointer-events-none">
                              <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
-                           </div>`
-                    ) : '';
+                        </div>
+                        <div class="absolute bottom-12 left-8 text-white z-20 md:hidden">
+                             <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
+                        </div>
+                    ` : '';
 
-                    const imgUrl = getOptUrl(displayImg, isMobile ? 1200 : null);
-                    const validSrc = imgUrl ? imgUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                    const mUrl = getOptUrl(s.mobileImg, 1200);
+                    const dUrl = getOptUrl(s.img, null);
+                    let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                    let validSrcMobile = mUrl || dUrl || validSrcDesktop;
 
                     return `
                         <div class="slider-slide relative" data-index="${i}">
-                            <img src="${validSrc}" 
-                                 class="w-full h-full object-cover"
-                                 alt="${s.title || ''}" 
-                                 fetchpriority="auto" loading="lazy"
-                                 onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
-                                 style="${s.link ? 'cursor:pointer' : ''}"
-                                 draggable="false">
+                            <picture>
+                                ${mUrl && dUrl && mUrl !== dUrl ? `<source media="(max-width: 767px)" srcset="${validSrcMobile}">
+                                <source media="(min-width: 768px)" srcset="${validSrcDesktop}">
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+                                     class="w-full h-full object-cover"
+                                     alt="${s.title || ''}" 
+                                     fetchpriority="auto" loading="lazy"
+                                     onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
+                                     style="${s.link ? 'cursor:pointer' : ''}"
+                                     draggable="false">` : `
+                                <img src="${validSrcDesktop}" 
+                                     class="w-full h-full object-cover"
+                                     alt="${s.title || ''}" 
+                                     fetchpriority="auto" loading="lazy"
+                                     onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
+                                     style="${s.link ? 'cursor:pointer' : ''}"
+                                     draggable="false">`}
+                            </picture>
                             ${overlayHTML}
                         </div>
                     `;
@@ -165,28 +175,40 @@ export function initSlider({ db, appId, doc, setDoc }) {
             slider.innerHTML = visibleSliders.map((slide, index) => {
                 const s = slide;
                 const i = index;
-                const displayImg = isMobile ? s.mobileImg : s.img;
-                const overlayHTML = s.title ? (isMobile
-                    ? `<div class="absolute bottom-12 left-8 text-white z-20">
-                         <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
-                       </div>`
-                    : `<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end pb-14 pl-16 z-20 pointer-events-none">
+                const overlayHTML = s.title ? `
+                    <div class="absolute inset-0 hidden md:flex bg-gradient-to-t from-black/60 via-black/10 to-transparent items-end pb-14 pl-16 z-20 pointer-events-none">
                          <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${s.title}</h2>
-                       </div>`
-                ) : '';
+                    </div>
+                    <div class="absolute bottom-12 left-8 text-white z-20 md:hidden">
+                         <h2 class="text-2xl font-black uppercase tracking-tighter">${s.title}</h2>
+                    </div>
+                ` : '';
 
-                const imgUrl = getOptUrl(displayImg, isMobile ? 1200 : null);
-                const validSrc = imgUrl ? imgUrl : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                const mUrl = getOptUrl(s.mobileImg, 1200);
+                const dUrl = getOptUrl(s.img, null);
+                let validSrcDesktop = dUrl || mUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                let validSrcMobile = mUrl || dUrl || validSrcDesktop;
 
                 return `
                     <div class="slider-slide relative" data-index="${i}">
-                        <img src="${validSrc}" 
-                             class="${index === 0 ? 'no-animation' : ''} w-full h-full object-cover"
-                             alt="${s.title || ''}" 
-                             ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="lazy"'}
-                             onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
-                             style="${s.link ? 'cursor:pointer' : ''}"
-                             draggable="false">
+                        <picture>
+                            ${mUrl && dUrl && mUrl !== dUrl ? `<source media="(max-width: 767px)" srcset="${validSrcMobile}">
+                            <source media="(min-width: 768px)" srcset="${validSrcDesktop}">
+                            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+                                 class="${index === 0 ? 'no-animation' : ''} w-full h-full object-cover"
+                                 alt="${s.title || ''}" 
+                                 ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="lazy"'}
+                                 onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
+                                 style="${s.link ? 'cursor:pointer' : ''}"
+                                 draggable="false">` : `
+                            <img src="${validSrcDesktop}" 
+                                 class="${index === 0 ? 'no-animation' : ''} w-full h-full object-cover"
+                                 alt="${s.title || ''}" 
+                                 ${i === 0 ? 'fetchpriority="high" loading="eager"' : 'fetchpriority="auto" loading="lazy"'}
+                                 onclick="${s.link ? `window.open('${s.link}', '_blank')` : ''}" 
+                                 style="${s.link ? 'cursor:pointer' : ''}"
+                                 draggable="false">`}
+                        </picture>
                         ${overlayHTML}
                     </div>
                 `;
@@ -336,13 +358,8 @@ export function initSlider({ db, appId, doc, setDoc }) {
     }
 
     // ─── RESPONSIVE REBUILD ───────────────────────────────────────────────────
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            if (document.getElementById('home-slider-container')) renderSlider();
-        }, 250);
-    });
+    // We no longer need to re-render the slider on resize because we use <picture> tags
+    // and responsive CSS for the overlays. The browser handles it natively.
 
     return { renderSlider, renderAnnouncementBar };
 }

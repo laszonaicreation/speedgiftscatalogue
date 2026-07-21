@@ -258,31 +258,37 @@ exports.renderHome = onRequest(async (req, res) => {
                 
                 const altText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
                 
+                const titleText = (firstDesktop && firstDesktop.title) || (firstMobile && firstMobile.title) || '';
+                const overlayHTML = titleText ? `
+                    <div class="absolute inset-0 hidden md:flex bg-gradient-to-t from-black/60 via-black/10 to-transparent items-end pb-14 pl-16 z-20 pointer-events-none">
+                         <h2 class="text-5xl lg:text-5xl font-black text-white uppercase tracking-[-0.03em] drop-shadow-md max-w-2xl leading-[1]">${titleText}</h2>
+                    </div>
+                    <div class="absolute bottom-12 left-8 text-white z-20 md:hidden">
+                         <h2 class="text-2xl font-black uppercase tracking-tighter">${titleText}</h2>
+                    </div>
+                ` : '';
+
                 // data-ssr-slide="1" lets app-slider.js detect this is SSR content
                 firstSlideHtml = `
                 <div class="slider-slide relative" data-index="0" data-ssr-slide="1">
                     <picture>
-                        ${mUrl && dUrl && mUrl !== dUrl ? `<source media="(max-width: 767px)" srcset="${validSrcMobile}">` : ''}
-                        <img src="${validSrcDesktop}" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="${altText}">
+                        ${mUrl && dUrl && mUrl !== dUrl ? \`<source media="(max-width: 767px)" srcset="\${validSrcMobile}">
+                        <source media="(min-width: 768px)" srcset="\${validSrcDesktop}">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="\${altText}">\` : \`
+                        <img src="\${validSrcDesktop}" class="no-animation w-full h-full object-cover" fetchpriority="high" loading="eager" alt="\${altText}">\`}
                     </picture>
+                    ${overlayHTML}
                 </div>`;
                 
-                // Pre-compute the sliderMarkupKey for BOTH mobile and desktop.
-                // app-slider.js will compare against this to skip the re-render
-                // when Firebase Firestore data (fetched at ~7s on slow 4G) matches SSR data.
-                // Key format: "m" or "d" + "::id|img|title|link" for each slide
-                const computeKey = (isMob) => {
-                    const devicePrefix = isMob ? 'm' : 'd';
+                // Pre-compute the sliderMarkupKey for BOTH mobile and desktop universally.
+                // Key format: "id|mobileImg|img|title|link" for each slide
+                const computeKey = () => {
                     const parts = sortedSliders
-                        .filter(s => isMob
-                            ? (s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img')
-                            : (s.img && s.img !== 'img/' && s.img !== 'img'))
-                        .map(s => `${s.id||''}|${isMob ? (s.mobileImg||'') : (s.img||'')}|${s.title||''}|${s.link||''}`);
-                    return [devicePrefix, ...parts].join('::');
+                        .filter(s => (s.mobileImg && s.mobileImg !== 'img/' && s.mobileImg !== 'img') || (s.img && s.img !== 'img/' && s.img !== 'img'))
+                        .map(s => `${s.id||''}|${s.mobileImg||''}|${s.img||''}|${s.title||''}|${s.link||''}`);
+                    return parts.join('::');
                 };
-                const mobileKey = computeKey(true);
-                const desktopKey = computeKey(false);
-                ssrSliderKey = { m: mobileKey, d: desktopKey };
+                ssrSliderKey = { u: computeKey() };
                 
                 // Inject into the HTML string directly inside home-slider
                 // IMPORTANT: Use function form of replace() to prevent $ chars in Firebase URLs from being
