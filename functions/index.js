@@ -178,55 +178,34 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
         const now = Date.now();
         let responseData = null;
 
-        // Use memory cache if available (Stale-While-Revalidate)
-        if (memoryCache.homeData && req.query.force_refresh !== 'true') {
-            responseData = memoryCache.homeData;
-            console.log('[renderHome] Using memory cache (fast path)');
-            
-            if (now - memoryCache.homeDataTime > CACHE_TTL_MS) {
-                console.log('[renderHome] Cache stale, updating in background');
-                // Background update logic
-                (async () => {
-                    try {
-                        const syncSnap = await db.doc(`artifacts/${appId}/public/data/config/sync_status`).get();
-                        const liveSyncTime = syncSnap.exists ? syncSnap.data().lastUpdated?.toMillis() : Date.now();
-                        const currentSyncTime = memoryCache.homeData.serverSyncTime || 0;
-                        
-                        if (liveSyncTime && currentSyncTime && liveSyncTime.toString() === currentSyncTime.toString()) {
-                            console.log('[renderHome] Live sync time matches cache sync time. Skipping full background fetch.');
-                            memoryCache.homeDataTime = Date.now(); // Reset TTL
-                            return; // <--- This prevents the 500+ reads!
-                        }
+        const syncSnap = await db.doc(`artifacts/${appId}/public/data/config/sync_status`).get();
+        const liveSyncTime = syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now();
 
-                        console.log('[renderHome] Sync time changed. Fetching full updates...');
-                        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
-                        const today = new Date().toISOString().split('T')[0];
-                        const [prodSnap, catSnap, megaSnap, sliderSnap, todaySnap] = await Promise.all([
-                            dataRef.collection('products').get(),
-                            dataRef.collection('categories').get(),
-                            dataRef.collection('mega_menus').get(),
-                            dataRef.collection('sliders').get(),
-                            db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get()
-                        ]);
-                        const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        const homeDoc = rawProducts.find(p => p.id === '_home_settings_');
-                        const homeSettings = homeDoc ? { ...homeDoc } : null;
-                        const newData = {
-                            p: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')),
-                            c: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            m: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            s: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            homeSettings: homeSettings,
-                            stats: todaySnap.exists ? todaySnap.data() : null,
-                            serverSyncTime: liveSyncTime
-                        };
-                        memoryCache.homeData = newData;
-                        memoryCache.homeDataTime = Date.now();
-                    } catch(e) { console.error('Background fetch failed:', e); }
-                })();
+        // Use memory cache if available AND perfectly in sync
+        if (memoryCache.homeData && req.query.force_refresh !== 'true') {
+            const currentSyncTime = memoryCache.homeData.serverSyncTime || 0;
+            
+            if (currentSyncTime >= liveSyncTime) {
+                responseData = memoryCache.homeData;
+                console.log('[renderHome] Using memory cache (fast path) - Sync time matches');
+                
+                // Still do background refresh if TTL expired, just in case
+                if (now - memoryCache.homeDataTime > CACHE_TTL_MS) {
+                    console.log('[renderHome] Cache stale TTL, updating in background');
+                    (async () => {
+                        try {
+                            memoryCache.homeDataTime = Date.now(); // Reset TTL
+                            console.log('[renderHome] Background update triggered but skipped because sync time matches');
+                        } catch(e) { console.error(e); }
+                    })();
+                }
+            } else {
+                console.log('[renderHome] Memory cache STALE (sync time changed). Forcing full fetch.');
             }
-        } else {
-            console.log('[renderHome] Fetching from Firestore (cache miss)');
+        }
+
+        if (!responseData) {
+            console.log('[renderHome] Fetching from Firestore (cache miss or stale)');
             const today = new Date().toISOString().split('T')[0];
             const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
 
@@ -235,13 +214,12 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
             const megaCol = dataRef.collection('mega_menus');
             const sliderCol = dataRef.collection('sliders');
 
-            const [prodSnap, catSnap, megaSnap, sliderSnap, todaySnap, syncSnap] = await Promise.all([
+            const [prodSnap, catSnap, megaSnap, sliderSnap, todaySnap] = await Promise.all([
                 prodCol.get(),
                 catCol.get(),
                 megaCol.get(),
                 sliderCol.get(),
-                db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get(),
-                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
+                db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get()
             ]);
 
             const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -262,7 +240,7 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
                 s: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                 homeSettings,
                 stats,
-                serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
+                serverSyncTime: liveSyncTime
             };
 
             // Save to memory cache
@@ -393,60 +371,43 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
         const now = Date.now();
         let responseData = null;
 
-        // Use memory cache if available (Stale-While-Revalidate)
-        if (memoryCache.shopData && req.query.force_refresh !== 'true') {
-            responseData = memoryCache.shopData;
-            console.log('[renderShop] Using memory cache (fast path)');
-            
-            if (now - memoryCache.shopDataTime > CACHE_TTL_MS) {
-                console.log('[renderShop] Cache stale, updating in background');
-                (async () => {
-                    try {
-                        const syncSnap = await db.doc(`artifacts/${appId}/public/data/config/sync_status`).get();
-                        const liveSyncTime = syncSnap.exists ? syncSnap.data().lastUpdated?.toMillis() : Date.now();
-                        const currentSyncTime = memoryCache.shopData.serverSyncTime || 0;
-                        
-                        if (liveSyncTime && currentSyncTime && liveSyncTime.toString() === currentSyncTime.toString()) {
-                            console.log('[renderShop] Live sync time matches cache sync time. Skipping full background fetch.');
-                            memoryCache.shopDataTime = Date.now(); // Reset TTL
-                            return; // <--- This prevents the 500+ reads!
-                        }
+        const syncSnap = await db.doc(`artifacts/${appId}/public/data/config/sync_status`).get();
+        const liveSyncTime = syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now();
 
-                        console.log('[renderShop] Sync time changed. Fetching full updates...');
-                        const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
-                        const [prodSnap, catSnap, megaSnap] = await Promise.all([
-                            dataRef.collection('products').get(),
-                            dataRef.collection('categories').get(),
-                            dataRef.collection('mega_menus').get()
-                        ]);
-                        const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        memoryCache.shopData = {
-                            products: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')).map(p => ({
-                                id: p.id, name: p.name, desc: p.desc, details: p.details, price: p.price, oldPrice: p.oldPrice,
-                                images: p.images, img: p.img, badge: p.badge, category: p.category, catId: p.catId, brand: p.brand, 
-                                isNew: p.isNew, options: p.options, sku: p.sku
-                            })),
-                            categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            serverSyncTime: liveSyncTime
-                        };
-                        memoryCache.shopDataTime = Date.now();
-                    } catch(e) { console.error('Background fetch failed:', e); }
-                })();
+        // Use memory cache if available AND perfectly in sync
+        if (memoryCache.shopData && req.query.force_refresh !== 'true') {
+            const currentSyncTime = memoryCache.shopData.serverSyncTime || 0;
+            
+            if (currentSyncTime >= liveSyncTime) {
+                responseData = memoryCache.shopData;
+                console.log('[renderShop] Using memory cache (fast path) - Sync time matches');
+                
+                if (now - memoryCache.shopDataTime > CACHE_TTL_MS) {
+                    console.log('[renderShop] Cache stale TTL, updating in background');
+                    (async () => {
+                        try {
+                            memoryCache.shopDataTime = Date.now(); // Reset TTL
+                            console.log('[renderShop] Background update triggered but skipped because sync time matches');
+                        } catch(e) { console.error('Background fetch failed:', e); }
+                    })();
+                }
+            } else {
+                console.log('[renderShop] Memory cache STALE (sync time changed). Forcing full fetch.');
             }
-        } else {
-            console.log('[renderShop] Fetching from Firestore (cache miss)');
+        }
+
+        if (!responseData) {
+            console.log('[renderShop] Fetching from Firestore (cache miss or stale)');
             const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
 
             const prodCol = dataRef.collection('products');
             const catCol = dataRef.collection('categories');
             const megaCol = dataRef.collection('mega_menus');
 
-            const [prodSnap, catSnap, megaSnap, syncSnap] = await Promise.all([
+            const [prodSnap, catSnap, megaSnap] = await Promise.all([
                 prodCol.get(),
                 catCol.get(),
-                megaCol.get(),
-                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
+                megaCol.get()
             ]);
 
             const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -454,8 +415,7 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
             // We only need basic configs to exclude them from the product list
             const configDocIds = ['_announcements_', '_landing_settings_', '_home_settings_', '_ad_stats_', '--global-stats_', '_hero_config_'];
 
-            const rawProducts2 = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const products = rawProducts2.filter(p => !configDocIds.includes(p.id) && !p.id.startsWith('--'));
+            const products = rawProducts.filter(p => !configDocIds.includes(p.id) && !p.id.startsWith('--'));
             
             // Further strip down the product data for the shop page to reduce HTML size
             const lightweightProducts = products.map(p => {
@@ -478,14 +438,11 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
                 };
             });
 
-            const categories = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const megaMenus = megaSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
-
             responseData = {
                 products: lightweightProducts,
-                categories,
-                megaMenus,
-                serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
+                categories: catSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+                megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+                serverSyncTime: liveSyncTime
             };
 
             // Save to memory cache
