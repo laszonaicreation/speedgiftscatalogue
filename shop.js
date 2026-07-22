@@ -242,7 +242,7 @@ async function fetchData() {
                     liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
                     const ssrSyncTime = DATA.serverSyncTime || (window.__INJECTED_SHOP_DATA__ ? window.__INJECTED_SHOP_DATA__.serverSyncTime : 0);
 
-                    if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
+                    if (DATA.products && DATA.products.length > 0 && liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
                         console.log('[Sync] SSR Shop data matches live database exactly, skipping full data fetch.');
                         try {
                             localStorage.setItem('speedgifts_shop_cache', JSON.stringify(DATA));

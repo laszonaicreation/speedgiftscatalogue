@@ -842,7 +842,7 @@ async function refreshData(isNavigationOnly = false) {
                 liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
                 const ssrSyncTime = DATA.serverSyncTime || (window.__INJECTED_HOME_DATA__ ? window.__INJECTED_HOME_DATA__.serverSyncTime : 0);
 
-                if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
+                if (DATA.p && DATA.p.length > 0 && liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
                     console.log('[Sync] Local data matches live database exactly, skipping full data fetch.');
                     try {
                         localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
