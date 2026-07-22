@@ -188,15 +188,25 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
                 // Background update logic
                 (async () => {
                     try {
+                        const syncSnap = await db.doc(`artifacts/${appId}/public/data/config/sync_status`).get();
+                        const liveSyncTime = syncSnap.exists ? syncSnap.data().lastUpdated?.toMillis() : Date.now();
+                        const currentSyncTime = memoryCache.homeData.serverSyncTime || 0;
+                        
+                        if (liveSyncTime && currentSyncTime && liveSyncTime.toString() === currentSyncTime.toString()) {
+                            console.log('[renderHome] Live sync time matches cache sync time. Skipping full background fetch.');
+                            memoryCache.homeDataTime = Date.now(); // Reset TTL
+                            return; // <--- This prevents the 500+ reads!
+                        }
+
+                        console.log('[renderHome] Sync time changed. Fetching full updates...');
                         const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
                         const today = new Date().toISOString().split('T')[0];
-                        const [prodSnap, catSnap, megaSnap, sliderSnap, todaySnap, syncSnap] = await Promise.all([
+                        const [prodSnap, catSnap, megaSnap, sliderSnap, todaySnap] = await Promise.all([
                             dataRef.collection('products').get(),
                             dataRef.collection('categories').get(),
                             dataRef.collection('mega_menus').get(),
                             dataRef.collection('sliders').get(),
-                            db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get(),
-                            db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
+                            db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get()
                         ]);
                         const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         const homeDoc = rawProducts.find(p => p.id === '_home_settings_');
@@ -208,7 +218,7 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
                             s: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                             homeSettings: homeSettings,
                             stats: todaySnap.exists ? todaySnap.data() : null,
-                            serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
+                            serverSyncTime: liveSyncTime
                         };
                         memoryCache.homeData = newData;
                         memoryCache.homeDataTime = Date.now();
@@ -392,12 +402,22 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
                 console.log('[renderShop] Cache stale, updating in background');
                 (async () => {
                     try {
+                        const syncSnap = await db.doc(`artifacts/${appId}/public/data/config/sync_status`).get();
+                        const liveSyncTime = syncSnap.exists ? syncSnap.data().lastUpdated?.toMillis() : Date.now();
+                        const currentSyncTime = memoryCache.shopData.serverSyncTime || 0;
+                        
+                        if (liveSyncTime && currentSyncTime && liveSyncTime.toString() === currentSyncTime.toString()) {
+                            console.log('[renderShop] Live sync time matches cache sync time. Skipping full background fetch.');
+                            memoryCache.shopDataTime = Date.now(); // Reset TTL
+                            return; // <--- This prevents the 500+ reads!
+                        }
+
+                        console.log('[renderShop] Sync time changed. Fetching full updates...');
                         const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
-                        const [prodSnap, catSnap, megaSnap, syncSnap] = await Promise.all([
+                        const [prodSnap, catSnap, megaSnap] = await Promise.all([
                             dataRef.collection('products').get(),
                             dataRef.collection('categories').get(),
-                            dataRef.collection('mega_menus').get(),
-                            db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
+                            dataRef.collection('mega_menus').get()
                         ]);
                         const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         memoryCache.shopData = {
@@ -408,7 +428,7 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
                             })),
                             categories: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                             megaMenus: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
+                            serverSyncTime: liveSyncTime
                         };
                         memoryCache.shopDataTime = Date.now();
                     } catch(e) { console.error('Background fetch failed:', e); }
@@ -774,99 +794,7 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB", maxInstances: 
     }
 });
 
-// Cache Warmer: Runs every 2 hours to ping home, shop, and category pages to ensure the CDN cache is hot.
-exports.warmCache = onSchedule({
-    schedule: "every 2 hours",
-    timeZone: "Asia/Dubai",
-    timeoutSeconds: 300,
-    memory: "256MiB",
-    maxInstances: 1
-}, async (event) => {
-    try {
-        console.log('Starting Cache Warming...');
 
-        let successCount = 0;
-        let failCount = 0;
-
-        // 1. Warm up Main Page and Shop Page first
-        try {
-            console.log('Warming up main home page...');
-            const homeRes = await fetch("https://speedgifts.net/?warmup=true");
-            if (homeRes.ok) successCount++; else failCount++;
-        } catch (e) { failCount++; }
-
-        try {
-            console.log('Warming up shop page...');
-            const shopRes = await fetch("https://speedgifts.net/shop?warmup=true");
-            if (shopRes.ok) successCount++; else failCount++;
-        } catch (e) { failCount++; }
-
-        // 2. Fetch products and warm them up
-        const prodSnapshot = await db.collection('artifacts').doc('speed-catalogue')
-            .collection('public').doc('data')
-            .collection('products').get();
-
-        if (!prodSnapshot.empty) {
-            const productIds = [];
-            prodSnapshot.forEach(doc => {
-                if (!doc.id.startsWith('_') && !doc.id.startsWith('--')) {
-                    productIds.push(doc.id);
-                }
-            });
-
-            console.log(`Found ${productIds.length} products to warm up.`);
-            const BATCH_SIZE = 10;
-            for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
-                const batch = productIds.slice(i, i + BATCH_SIZE);
-                const promises = batch.map(async (id) => {
-                    const url = `https://speedgifts.net/p/${encodeURIComponent(id)}?warmup=true`;
-                    try {
-                        const res = await fetch(url);
-                        if (res.ok) successCount++;
-                        else failCount++;
-                    } catch (e) {
-                        failCount++;
-                    }
-                });
-                await Promise.all(promises);
-                await new Promise(r => setTimeout(r, 200)); // slight delay
-            }
-        }
-
-        // 3. Fetch categories and warm them up
-        const catSnapshot = await db.collection('artifacts').doc('speed-catalogue')
-            .collection('public').doc('data')
-            .collection('categories').get();
-
-        if (catSnapshot.empty) {
-            console.log('No categories found for cache warming.');
-        } else {
-            const categoryIds = [];
-            catSnapshot.forEach(doc => {
-                categoryIds.push(doc.id);
-            });
-
-            console.log(`Found ${categoryIds.length} categories to warm up.`);
-
-            for (const catId of categoryIds) {
-                const url = `https://speedgifts.net/shop?c=${encodeURIComponent(catId)}&warmup=true`;
-                try {
-                    const res = await fetch(url);
-                    if (res.ok) successCount++;
-                    else failCount++;
-                } catch (e) {
-                    failCount++;
-                }
-                // Optional: slight delay
-                await new Promise(r => setTimeout(r, 200));
-            }
-        }
-
-        console.log(`Cache warming complete. Success: ${successCount}, Failed: ${failCount}`);
-    } catch (error) {
-        console.error('Error during cache warming:', error);
-    }
-});
 // Force restart
 // Force restart 2
 // Force restart 3
@@ -874,8 +802,11 @@ exports.warmCache = onSchedule({
 
 exports.updateGlobalSync = onDocumentWritten({ document: 'artifacts/{appId}/public/data/{collectionId}/{docId}', maxInstances: 1 }, async (event) => {
     const { collectionId, docId, appId } = event.params;
-    if (collectionId !== 'products' && collectionId !== 'categories' && collectionId !== 'mega_menus') return;
-    if (docId.startsWith('_') || docId.startsWith('--')) return;
+    if (collectionId !== 'products' && collectionId !== 'categories' && collectionId !== 'mega_menus' && collectionId !== 'sliders') return;
+    
+    // Ignore high-frequency statistical updates
+    if (docId === '_ad_stats_' || docId === '--global-stats--') return;
+    
     const db = admin.firestore();
     await db.doc(`artifacts/${appId}/public/data/config/sync_status`).set({
         lastUpdated: admin.firestore.FieldValue.serverTimestamp()
