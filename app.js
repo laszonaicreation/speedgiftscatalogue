@@ -82,9 +82,10 @@ let clicks = 0, lastClickTime = 0;
 // Slider module download starts immediately at page load time.
 // By the time Firebase returns data, the module is already in memory.
 const _isMinBuild = import.meta.url?.includes('.min.js');
-window._isMinBuild = _isMinBuild; // Exposed so lazily-loaded modules (bridge, admin) can detect build type
-const _sliderModulePromise = import(_isMinBuild ? './app-slider.min.js' : './app-slider.js');
-const _spotlightModulePromise = import(_isMinBuild ? './app-spotlight.min.js' : './app-spotlight.js');
+window._isMinBuild = _isMinBuild; 
+const cb = "?cb=" + Date.now();
+const _sliderModulePromise = import(_isMinBuild ? './app-slider.min.js' + cb : './app-slider.js' + cb);
+const _spotlightModulePromise = import(_isMinBuild ? './app-spotlight.min.js' + cb : './app-spotlight.js' + cb);
 
 // Legacy route support: old links used /?tab=shop.
 // Redirect them to the faster dedicated shop page while preserving filter/search/share params.
@@ -180,10 +181,10 @@ window._sgTryInstantCacheRender = function () {
               console.log('[Cache] Instant render from local cache (newer/equal) — products:', cache.p ? cache.p.length : 0);
           } else if (window.__INJECTED_HOME_DATA__) {
               cache = {
-                  p: window.__INJECTED_HOME_DATA__.products || [],
-                  c: window.__INJECTED_HOME_DATA__.categories || [],
-                  m: window.__INJECTED_HOME_DATA__.megaMenus || [],
-                  s: window.__INJECTED_HOME_DATA__.sliders || [],
+                  p: window.__INJECTED_HOME_DATA__.p || [],
+                  c: window.__INJECTED_HOME_DATA__.c || [],
+                  m: window.__INJECTED_HOME_DATA__.m || [],
+                  s: window.__INJECTED_HOME_DATA__.s || [],
                   announcements: window.__INJECTED_HOME_DATA__.announcements || [],
                   popupSettings: window.__INJECTED_HOME_DATA__.popupSettings || { title: '', msg: '', img: '' },
                   landingSettings: window.__INJECTED_HOME_DATA__.landingSettings || null,
@@ -543,9 +544,9 @@ function setupAdminOrderNotification(user) {
     if (_orderUnsubscribe) return; // Already listening
 
     console.log("[Admin] Setting up real-time order notifications...");
-    const ordersCol = collection(db, 'orders');
+    const q = query(collection(db, 'orders'), where('status', '==', 'Pending'));
 
-    _orderUnsubscribe = onSnapshot(ordersCol, (snapshot) => {
+    _orderUnsubscribe = onSnapshot(q, (snapshot) => {
         if (_isFirstLoadForOrders) {
             _isFirstLoadForOrders = false;
             return;
@@ -834,25 +835,27 @@ async function refreshData(isNavigationOnly = false) {
           if (!isNavigationOnly || DATA.p.length === 0) {
             if (window.__INJECTED_HOME_DATA__ && !window._sgHomeDelayed) {
                 window._sgHomeDelayed = true;
-                
-                try {
-                    const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
-                    liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
-                    const ssrSyncTime = DATA.serverSyncTime || (window.__INJECTED_HOME_DATA__ ? window.__INJECTED_HOME_DATA__.serverSyncTime : 0);
+            }
+            
+            try {
+                const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
+                liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
+                const ssrSyncTime = DATA.serverSyncTime || (window.__INJECTED_HOME_DATA__ ? window.__INJECTED_HOME_DATA__.serverSyncTime : 0);
 
-                    if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
-                        console.log('[Sync] SSR Home data matches live database exactly, skipping full data fetch.');
-                        try {
-                            localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
-                        } catch(e){}
-                        return; // Skip fetch entirely
-                    }
-                    console.log('[Sync] SSR Home data is stale or sync time missing, fetching full updates...');
-                } catch (e) {
-                    console.error('[Sync Check Error]', e);
+                if (liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
+                    console.log('[Sync] Local data matches live database exactly, skipping full data fetch.');
+                    try {
+                        localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
+                    } catch(e){}
+                    return; // Skip fetch entirely
                 }
+                console.log('[Sync] Local data is stale or sync time missing, fetching full updates...');
+            } catch (e) {
+                console.error('[Sync Check Error]', e);
+            }
 
-                // Delay background fetch to prioritize image loading
+            if (window.__INJECTED_HOME_DATA__ && window._sgHomeDelayed) {
+                // Delay background fetch to prioritize image loading for initial SSR load
                 await new Promise(r => setTimeout(r, 1000));
             }
 

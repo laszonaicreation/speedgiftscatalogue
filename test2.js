@@ -1,0 +1,11 @@
+const fs = require('fs');
+const jsdom = require('jsdom');
+const { JSDOM } = jsdom;
+const data = fs.readFileSync('index.html', 'utf8');
+const dom = new JSDOM(data);
+const appMain = dom.window.document.getElementById('app');
+const container = appMain ? appMain.querySelector('#spotlight-section') : null;
+console.log('App main exists:', !!appMain);
+console.log('Container inside app exists:', !!container);
+const globalContainer = dom.window.document.getElementById('spotlight-section');
+console.log('Container in global DOM exists:', !!globalContainer);

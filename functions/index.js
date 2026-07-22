@@ -1,4 +1,5 @@
 const { onRequest } = require('firebase-functions/v2/https');
+// Force Restart Cloud Function 3
 const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
@@ -26,7 +27,7 @@ const memoryCache = {
 };
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
-exports.renderProduct = onRequest(async (req, res) => {
+exports.renderProduct = onRequest({ maxInstances: 1 }, async (req, res) => {
     try {
         // The frontend sometimes uses ?id=... and sometimes ?p=...
         let productId = req.query.id || req.query.p;
@@ -171,7 +172,7 @@ exports.renderProduct = onRequest(async (req, res) => {
     }
 });
 
-exports.renderHome = onRequest(async (req, res) => {
+exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
     try {
         const appId = req.query.appId || 'speed-catalogue';
         const now = Date.now();
@@ -189,22 +190,23 @@ exports.renderHome = onRequest(async (req, res) => {
                     try {
                         const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
                         const today = new Date().toISOString().split('T')[0];
-                        const [prodSnap, catSnap, megaSnap, sliderSnap, homeSettingsDoc, todaySnap, syncSnap] = await Promise.all([
+                        const [prodSnap, catSnap, megaSnap, sliderSnap, todaySnap, syncSnap] = await Promise.all([
                             dataRef.collection('products').get(),
                             dataRef.collection('categories').get(),
                             dataRef.collection('mega_menus').get(),
                             dataRef.collection('sliders').get(),
-                            db.collection('artifacts').doc(appId).collection('public').doc('settings').collection('home').doc('layout').get().then(doc => doc.exists ? doc.data() : null),
                             db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get(),
-                            dataRef.get()
+                            db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
                         ]);
                         const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        const homeDoc = rawProducts.find(p => p.id === '_home_settings_');
+                        const homeSettings = homeDoc ? { ...homeDoc } : null;
                         const newData = {
                             p: rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--')),
                             c: catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                             m: megaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
                             s: sliderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-                            homeSettings: homeSettingsDoc,
+                            homeSettings: homeSettings,
                             stats: todaySnap.exists ? todaySnap.data() : null,
                             serverSyncTime: syncSnap.exists ? (syncSnap.data().lastUpdated?.toMillis() || Date.now()) : Date.now()
                         };
@@ -223,18 +225,18 @@ exports.renderHome = onRequest(async (req, res) => {
             const megaCol = dataRef.collection('mega_menus');
             const sliderCol = dataRef.collection('sliders');
 
-            const [prodSnap, catSnap, megaSnap, sliderSnap, homeSettingsDoc, todaySnap, syncSnap] = await Promise.all([
+            const [prodSnap, catSnap, megaSnap, sliderSnap, todaySnap, syncSnap] = await Promise.all([
                 prodCol.get(),
                 catCol.get(),
                 megaCol.get(),
                 sliderCol.get(),
-                db.collection('artifacts').doc(appId).collection('public').doc('settings').collection('home').doc('layout').get().then(doc => doc.exists ? doc.data() : null),
                 db.collection('artifacts').doc(appId).collection('public').doc('stats').collection('daily').doc(today).get(),
-                dataRef.get()
+                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
             ]);
 
             const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const homeSettings = homeSettingsDoc ? { ...homeSettingsDoc } : null;
+            const homeDoc = rawProducts.find(p => p.id === '_home_settings_');
+            const homeSettings = homeDoc ? { ...homeDoc } : null;
 
             const products = rawProducts.filter(p => !p.id.startsWith('_') && !p.id.startsWith('--'));
 
@@ -375,7 +377,7 @@ exports.renderHome = onRequest(async (req, res) => {
     }
 });
 
-exports.renderShop = onRequest(async (req, res) => {
+exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
     try {
         const appId = req.query.appId || 'speed-catalogue';
         const now = Date.now();
@@ -395,7 +397,7 @@ exports.renderShop = onRequest(async (req, res) => {
                             dataRef.collection('products').get(),
                             dataRef.collection('categories').get(),
                             dataRef.collection('mega_menus').get(),
-                            dataRef.get()
+                            db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
                         ]);
                         const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         memoryCache.shopData = {
@@ -424,7 +426,7 @@ exports.renderShop = onRequest(async (req, res) => {
                 prodCol.get(),
                 catCol.get(),
                 megaCol.get(),
-                dataRef.get()
+                db.doc(`artifacts/${appId}/public/data/config/sync_status`).get()
             ]);
 
             const rawProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -513,7 +515,7 @@ exports.renderShop = onRequest(async (req, res) => {
     }
 });
 
-exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
+exports.getHomeData = onRequest({ cors: true, maxInstances: 1 }, async (req, res) => {
     try {
         const appId = req.query.appId || 'speed-catalogue';
         const now = Date.now();
@@ -549,8 +551,18 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
                 dailyStatsRef.get().catch(() => null)
             ]);
 
+            const homeSettingsDoc = configSnap.docs.find(d => d.id === '_home_settings_');
+            const homeSettingsData = homeSettingsDoc ? homeSettingsDoc.data() : null;
+            let spotlightSnap = null;
+            if (homeSettingsData && homeSettingsData.spotlightProducts && homeSettingsData.spotlightProducts.length > 0) {
+                try {
+                    // Split into chunks of 10 for 'in' queries if needed, though usually spotlight is < 10 items
+                    spotlightSnap = await prodCol.where(admin.firestore.FieldPath.documentId(), 'in', homeSettingsData.spotlightProducts.slice(0, 10)).get();
+                } catch(e) { console.error('Failed to fetch spotlight products', e); }
+            }
+
             const uniqueMap = new Map();
-            [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs].forEach(d => {
+            [...configSnap.docs, ...featuredSnap.docs, ...fallbackSnap.docs, ...(spotlightSnap ? spotlightSnap.docs : [])].forEach(d => {
                 if (!uniqueMap.has(d.id)) {
                     uniqueMap.set(d.id, { id: d.id, ...d.data() });
                 }
@@ -614,7 +626,7 @@ exports.getHomeData = onRequest({ cors: true }, async (req, res) => {
 });
 
 // ── Order Email Notification ──────────────────────────────────────────────────
-exports.sendOrderEmailNotification = onDocumentCreated('orders/{orderId}', async (event) => {
+exports.sendOrderEmailNotification = onDocumentCreated({ document: 'orders/{orderId}', maxInstances: 1 }, async (event) => {
     const snapshot = event.data;
     if (!snapshot) return;
 
@@ -714,7 +726,7 @@ exports.sendOrderEmailNotification = onDocumentCreated('orders/{orderId}', async
     }
 });
 
-exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event) => {
+exports.generateThumbnail = onObjectFinalized({ memory: "512MiB", maxInstances: 1 }, async (event) => {
     const fileBucket = event.data.bucket;
     const filePath = event.data.name; // e.g. "uploads/product_123.webp"
     const contentType = event.data.contentType;
@@ -762,12 +774,13 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB" }, async (event
     }
 });
 
-// Cache Warmer: Runs every 10 minutes to ping home, shop, and category pages to ensure the CDN cache is hot.
+// Cache Warmer: Runs every 2 hours to ping home, shop, and category pages to ensure the CDN cache is hot.
 exports.warmCache = onSchedule({
-    schedule: "every 10 minutes",
+    schedule: "every 2 hours",
     timeZone: "Asia/Dubai",
     timeoutSeconds: 300,
-    memory: "256MiB"
+    memory: "256MiB",
+    maxInstances: 1
 }, async (event) => {
     try {
         console.log('Starting Cache Warming...');
@@ -806,7 +819,7 @@ exports.warmCache = onSchedule({
             for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
                 const batch = productIds.slice(i, i + BATCH_SIZE);
                 const promises = batch.map(async (id) => {
-                    const url = `https://speedgifts.net/product/${encodeURIComponent(id)}?warmup=true`;
+                    const url = `https://speedgifts.net/p/${encodeURIComponent(id)}?warmup=true`;
                     try {
                         const res = await fetch(url);
                         if (res.ok) successCount++;
@@ -859,7 +872,7 @@ exports.warmCache = onSchedule({
 // Force restart 3
 // Force restart 4
 
-exports.updateGlobalSync = onDocumentWritten('artifacts/{appId}/public/data/{collectionId}/{docId}', async (event) => {
+exports.updateGlobalSync = onDocumentWritten({ document: 'artifacts/{appId}/public/data/{collectionId}/{docId}', maxInstances: 1 }, async (event) => {
     const { collectionId, docId, appId } = event.params;
     if (collectionId !== 'products' && collectionId !== 'categories' && collectionId !== 'mega_menus') return;
     if (docId.startsWith('_') || docId.startsWith('--')) return;
@@ -868,3 +881,4 @@ exports.updateGlobalSync = onDocumentWritten('artifacts/{appId}/public/data/{col
         lastUpdated: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 });
+// RESTART INSTANCE 3

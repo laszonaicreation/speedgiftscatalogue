@@ -439,12 +439,11 @@ window.handleImgError = function (img) {
 // (same as app.js — required for CSS transition to show images)
 setInterval(() => {
     document.querySelectorAll('.img-container img:not(.loaded)').forEach(img => {
-        if (img.complete && img.naturalHeight > 0) {
+        if (img.complete) {
             img.classList.add('loaded');
-        } else if (img.complete && img.naturalHeight === 0 && img.src) {
-            const src = img.src;
-            img.src = '';
-            img.src = src;
+            if (img.naturalHeight === 0 && img.src && !img.src.includes('placehold.co')) {
+                img.src = 'https://placehold.co/800x800?text=Image';
+            }
         }
     });
 }, 400);

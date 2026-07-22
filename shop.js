@@ -153,13 +153,27 @@ onAuthStateChanged(auth, async (user) => {
 async function fetchData() {
     try {
         let hasInjected = false;
-        if (window.__INJECTED_SHOP_DATA__) {
+        
+        const rawLocal = localStorage.getItem('speedgifts_shop_cache');
+        const localCache = rawLocal ? JSON.parse(rawLocal) : null;
+        const localTime = localCache ? (localCache.serverSyncTime || 0) : 0;
+        const ssrTime = window.__INJECTED_SHOP_DATA__ ? (window.__INJECTED_SHOP_DATA__.serverSyncTime || 0) : 0;
+
+        if (localTime >= ssrTime && localTime > 0 && localCache.products && localCache.products.length > 0) {
+            hasInjected = true;
+            DATA.products = localCache.products || [];
+            DATA.categories = localCache.categories || [];
+            DATA.megaMenus = localCache.megaMenus || [];
+            DATA.serverSyncTime = localTime;
+            console.log('[Cache] Shop Instant render from local cache (newer/equal) — products:', DATA.products.length);
+        } else if (window.__INJECTED_SHOP_DATA__) {
             hasInjected = true;
             const injected = window.__INJECTED_SHOP_DATA__;
             DATA.products = injected.products || [];
             DATA.categories = injected.categories || [];
             DATA.megaMenus = injected.megaMenus || [];
-            // We will render this below, then fetch in the background
+            DATA.serverSyncTime = ssrTime;
+            console.log('[Cache] Shop Instant render from INJECTED SSR DATA — products:', DATA.products.length);
         }
 
         // We run a background fetch, but we don't await it if we already have injected data.
@@ -190,8 +204,14 @@ async function fetchData() {
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
                 
+            DATA.serverSyncTime = liveSyncTime || Date.now();
+                
             const newSig = buildSig(DATA.products, DATA.categories, DATA.megaMenus);
             const dataChanged = oldSig !== newSig;
+
+            try {
+                localStorage.setItem('speedgifts_shop_cache', JSON.stringify(DATA));
+            } catch (e) {}
 
             if (hasInjected && dataChanged) {
                 const scrollPos = window.scrollY || document.documentElement.scrollTop;
@@ -237,8 +257,14 @@ async function fetchData() {
                 }
             }, 1000);
         } else {
-            // Must wait if no injected data
-            await fetchAndUpdate();
+            // Unconditional sync check if no cache is available at all
+            try {
+                const syncDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'sync_status'));
+                liveSyncTime = syncDoc.exists() ? syncDoc.data().lastUpdated?.toMillis() : null;
+                await fetchAndUpdate();
+            } catch (e) {
+                await fetchAndUpdate();
+            }
         }
 
         // Read URL params for deep linking
