@@ -179,7 +179,7 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
         let responseData = null;
 
         // Use memory cache if available (Stale-While-Revalidate)
-        if (memoryCache.homeData) {
+        if (memoryCache.homeData && req.query.force_refresh !== 'true') {
             responseData = memoryCache.homeData;
             console.log('[renderHome] Using memory cache (fast path)');
             
@@ -394,7 +394,7 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
         let responseData = null;
 
         // Use memory cache if available (Stale-While-Revalidate)
-        if (memoryCache.shopData) {
+        if (memoryCache.shopData && req.query.force_refresh !== 'true') {
             responseData = memoryCache.shopData;
             console.log('[renderShop] Using memory cache (fast path)');
             

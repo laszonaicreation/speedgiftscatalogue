@@ -16,7 +16,16 @@ async function run() {
             return;
         }
 
-        console.log("Warming up main home page...");
+        console.log("Forcing Cloud Functions Memory Cache Refresh...");
+        try {
+            await fetch("https://speedgifts.net/?force_refresh=true");
+            await fetch("https://speedgifts.net/shop?force_refresh=true");
+            console.log("Memory Cache refreshed successfully.");
+        } catch(e) {
+            console.error("Failed to force refresh memory cache:", e);
+        }
+
+        console.log("Warming up main home page (CDN)...");
         try {
             await fetch("https://speedgifts.net/");
             console.log("Main page warmed up successfully.");
