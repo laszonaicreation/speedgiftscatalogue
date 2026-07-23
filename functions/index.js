@@ -173,6 +173,12 @@ exports.renderProduct = onRequest({ maxInstances: 1 }, async (req, res) => {
 });
 
 exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
+    // Block missing static files and malicious bot scanners (like .php) from returning the 200 OK HTML page
+    if (req.path.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js|json|webmanifest|woff|woff2|ttf|eot|php|env|bak|zip|tar|gz|sql|xml|txt)$/i)) {
+        res.set('Cache-Control', 'public, max-age=86400');
+        return res.status(404).send('Not found');
+    }
+    console.log('Req:', req.ip, req.originalUrl, req.headers['user-agent']);
     try {
         const appId = req.query.appId || 'speed-catalogue';
         const now = Date.now();
