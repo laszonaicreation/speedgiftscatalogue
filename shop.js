@@ -620,12 +620,12 @@ function buildCard(p, index) {
             : `<div style="width:100%;height:100%;background:#f3f4f6;"></div>`
         }
         </div>
-        <div class="px-1 text-left flex justify-between items-start shop-card-meta">
+        <div class="px-1 text-left flex justify-between items-start mt-4">
             <div class="flex-1 min-w-0">
-                <h3 class="capitalize truncate text-gray-900 font-semibold shop-card-title">${p.name || 'Product'}</h3>
+                <h3 class="capitalize truncate leading-none text-gray-900 font-semibold">${p.name || 'Product'}</h3>
                 ${priceHtml}
             </div>
-            <div class="wish-btn desktop-wish-fix hidden-mobile shop-card-heart ${p.inStock === false ? 'z-20' : ''}" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
+            <div class="wish-btn desktop-wish-fix hidden-mobile ${p.inStock === false ? 'z-20' : ''}" onclick="event.stopPropagation(); toggleCardWish(event, '${p.id}')">
                 <i class="fa-solid fa-heart"></i>
             </div>
         </div>
