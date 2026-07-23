@@ -246,6 +246,24 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
         }
 
         if (!responseData) {
+            let firestoreCacheSnap = null;
+            try {
+                firestoreCacheSnap = await db.doc(`artifacts/${appId}/public/data/config/home_aggregated_cache`).get();
+                if (firestoreCacheSnap.exists) {
+                    const fCache = firestoreCacheSnap.data();
+                    if (fCache.serverSyncTime >= liveSyncTime && req.query.force_refresh !== 'true') {
+                        responseData = fCache;
+                        console.log('[renderHome] Using Firestore aggregated cache (1 read instead of 250)');
+                        memoryCache.homeData = responseData;
+                        memoryCache.homeDataTime = now;
+                    }
+                }
+            } catch (err) {
+                console.error('Error reading aggregated cache:', err);
+            }
+        }
+
+        if (!responseData) {
             console.log('[renderHome] Fetching from Firestore (cache miss or stale)');
             const today = new Date().toISOString().split('T')[0];
             const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
@@ -287,6 +305,14 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
             // Save to memory cache
             memoryCache.homeData = responseData;
             memoryCache.homeDataTime = now;
+
+            // Save to Firestore Aggregated Cache
+            try {
+                await db.doc(`artifacts/${appId}/public/data/config/home_aggregated_cache`).set(responseData);
+                console.log('[renderHome] Saved new aggregated cache to Firestore');
+            } catch (err) {
+                console.error('Failed to save home aggregated cache:', err);
+            }
         }
 
         if (req.query.warmup === 'true') {
@@ -446,6 +472,24 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
         }
 
         if (!responseData) {
+            let firestoreCacheSnap = null;
+            try {
+                firestoreCacheSnap = await db.doc(`artifacts/${appId}/public/data/config/shop_aggregated_cache`).get();
+                if (firestoreCacheSnap.exists) {
+                    const fCache = firestoreCacheSnap.data();
+                    if (fCache.serverSyncTime >= liveSyncTime && req.query.force_refresh !== 'true') {
+                        responseData = fCache;
+                        console.log('[renderShop] Using Firestore aggregated cache (1 read instead of 250)');
+                        memoryCache.shopData = responseData;
+                        memoryCache.shopDataTime = now;
+                    }
+                }
+            } catch (err) {
+                console.error('Error reading shop aggregated cache:', err);
+            }
+        }
+
+        if (!responseData) {
             console.log('[renderShop] Fetching from Firestore (cache miss or stale)');
             const dataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
 
@@ -497,6 +541,14 @@ exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
             // Save to memory cache
             memoryCache.shopData = responseData;
             memoryCache.shopDataTime = now;
+
+            // Save to Firestore Aggregated Cache
+            try {
+                await db.doc(`artifacts/${appId}/public/data/config/shop_aggregated_cache`).set(responseData);
+                console.log('[renderShop] Saved new aggregated cache to Firestore');
+            } catch (err) {
+                console.error('Failed to save shop aggregated cache:', err);
+            }
         }
 
         if (req.query.warmup === 'true') {
