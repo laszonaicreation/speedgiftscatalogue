@@ -12,6 +12,29 @@ const zlib = require('zlib');
 admin.initializeApp();
 const db = admin.firestore();
 
+// ─── IP Rate Limiter (Anti-DDoS) ───────────────────────────────────────
+const ipRateLimits = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 60; // Max 60 requests per minute per IP
+
+function isRateLimited(req) {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    if (ip === 'unknown') return false;
+    const now = Date.now();
+    let data = ipRateLimits.get(ip);
+    if (!data) {
+        ipRateLimits.set(ip, { count: 1, firstRequest: now });
+        return false;
+    }
+    if (now - data.firstRequest > RATE_LIMIT_WINDOW) {
+        data.count = 1;
+        data.firstRequest = now;
+        return false;
+    }
+    data.count++;
+    return data.count > MAX_REQUESTS;
+}
+
 // ─── Global In-Memory Cache ───────────────────────────────────────
 const memoryCache = {
     homeData: null,
@@ -28,6 +51,14 @@ const memoryCache = {
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 exports.renderProduct = onRequest({ maxInstances: 1 }, async (req, res) => {
+    // Block missing static files and ALL malicious bot scanners from returning the 200 OK HTML page
+    if (req.path.match(/\.[a-zA-Z0-9]{1,7}$/i)) {
+        res.set('Cache-Control', 'public, max-age=86400');
+        return res.status(404).send('Not found');
+    }
+    if (isRateLimited(req)) {
+        return res.status(429).send('Too Many Requests');
+    }
     try {
         // The frontend sometimes uses ?id=... and sometimes ?p=...
         let productId = req.query.id || req.query.p;
@@ -173,10 +204,14 @@ exports.renderProduct = onRequest({ maxInstances: 1 }, async (req, res) => {
 });
 
 exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
-    // Block missing static files and malicious bot scanners (like .php) from returning the 200 OK HTML page
-    if (req.path.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js|json|webmanifest|woff|woff2|ttf|eot|php|env|bak|zip|tar|gz|sql|xml|txt)$/i)) {
+    // Block missing static files and ALL malicious bot scanners from returning the 200 OK HTML page
+    // This regex catches any request ending in a dot followed by 1 to 7 alphanumeric characters (e.g. .php, .zip, .html, .env)
+    if (req.path.match(/\.[a-zA-Z0-9]{1,7}$/i)) {
         res.set('Cache-Control', 'public, max-age=86400');
         return res.status(404).send('Not found');
+    }
+    if (isRateLimited(req)) {
+        return res.status(429).send('Too Many Requests');
     }
     console.log('Req:', req.ip, req.originalUrl, req.headers['user-agent']);
     try {
@@ -372,6 +407,14 @@ exports.renderHome = onRequest({ maxInstances: 1 }, async (req, res) => {
 });
 
 exports.renderShop = onRequest({ maxInstances: 1 }, async (req, res) => {
+    // Block missing static files and ALL malicious bot scanners from returning the 200 OK HTML page
+    if (req.path.match(/\.[a-zA-Z0-9]{1,7}$/i)) {
+        res.set('Cache-Control', 'public, max-age=86400');
+        return res.status(404).send('Not found');
+    }
+    if (isRateLimited(req)) {
+        return res.status(429).send('Too Many Requests');
+    }
     try {
         const appId = req.query.appId || 'speed-catalogue';
         const now = Date.now();
