@@ -71,7 +71,7 @@ export function initSlider({ db, appId, doc, setDoc }) {
         const isMobile = window.matchMedia("(max-width: 767px)").matches;
         const sortedSliders = [...DATA.s].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 
-        const isUrl = (val) => val && typeof val === 'string' && val.trim() !== '' && val !== 'img/';
+        const isUrl = (val) => val && typeof val === 'string' && val.trim() !== '' && val !== 'img/' && val !== 'img';
 
         const visibleSliders = sortedSliders.filter(s => {
             const hasMobile = isUrl(s.mobileImg);
