@@ -846,7 +846,8 @@ exports.generateThumbnail = onObjectFinalized({ memory: "512MiB", maxInstances: 
         const thumbPath = filePath.replace('.webp', '_thumb.webp');
         await bucket.file(thumbPath).save(thumbBuffer, {
             metadata: {
-                contentType: 'image/webp'
+                contentType: 'image/webp',
+                cacheControl: 'public, max-age=31536000, immutable'
             }
         });
 
@@ -875,3 +876,6 @@ exports.updateGlobalSync = onDocumentWritten({ document: 'artifacts/{appId}/publ
     }, { merge: true });
 });
 // RESTART INSTANCE 3
+
+// duplicate import removed
+exports.fixCacheControl = onRequest({ timeoutSeconds: 500, memory: '1GiB' }, async (req, res) => { try { const bucket = admin.storage().bucket(); const [files] = await bucket.getFiles(); let count = 0; const batchSize = 100; for (let i = 0; i < files.length; i += batchSize) { const batch = files.slice(i, i + batchSize); await Promise.all(batch.map(async (file) => { if (file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i)) { await file.setMetadata({ cacheControl: 'public, max-age=31536000, immutable' }); count++; } })); } res.status(200).send(`Updated metadata for ${count} image files.`); } catch (e) { console.error(e); res.status(500).send(e.toString()); } });

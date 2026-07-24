@@ -1031,27 +1031,30 @@ async function refreshData(isNavigationOnly = false) {
         const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img, 200)).filter(u => u && u !== 'img/');
         const prodsToLoad = DATA.p.map(p => getOptimizedUrl(p.img, 600)).filter(u => u && u !== 'img/');
         
-        const allToPreload = [...new Set([...iconsToLoad, ...prodsToLoad])];
-        
-        if (allToPreload.length > 0) {
-            let chunkIndex = 0;
-            const chunkSize = 15;
+        if (!sessionStorage.getItem('sg_images_preloaded')) {
+            const allToPreload = [...new Set([...iconsToLoad, ...prodsToLoad])];
             
-            const preloadChunk = () => {
-                if (chunkIndex >= allToPreload.length) return;
+            if (allToPreload.length > 0) {
+                sessionStorage.setItem('sg_images_preloaded', 'true');
+                let chunkIndex = 0;
+                const chunkSize = 15;
                 
-                const chunk = allToPreload.slice(chunkIndex, chunkIndex + chunkSize);
-                chunk.forEach(url => {
-                    const img = new Image();
-                    img.src = url;
-                });
+                const preloadChunk = () => {
+                    if (chunkIndex >= allToPreload.length) return;
+                    
+                    const chunk = allToPreload.slice(chunkIndex, chunkIndex + chunkSize);
+                    chunk.forEach(url => {
+                        const img = new Image();
+                        img.src = url;
+                    });
+                    
+                    chunkIndex += chunkSize;
+                    setTimeout(preloadChunk, 2000);
+                };
                 
-                chunkIndex += chunkSize;
-                setTimeout(preloadChunk, 2000);
-            };
-            
-            // Wait 5 seconds before starting to preserve immediate page interaction speed
-            setTimeout(preloadChunk, 5000);
+                // Wait 5 seconds before starting to preserve immediate page interaction speed
+                setTimeout(preloadChunk, 5000);
+            }
         }
     } catch (err) {
         console.error(err);
