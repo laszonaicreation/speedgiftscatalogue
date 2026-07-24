@@ -335,29 +335,35 @@ async function fetchData() {
         const iconsToLoad = DATA.categories.map(c => getOptimizedUrl(c.img, 200)).filter(u => u && u !== 'img/');
         const prodsToLoad = DATA.products.map(p => getOptimizedUrl(p.img, 600)).filter(u => u && u !== 'img/');
         
-        if (!sessionStorage.getItem('sg_images_preloaded')) {
-            const allToPreload = [...new Set([...iconsToLoad, ...prodsToLoad])];
+        const allToPreload = [...new Set([...iconsToLoad, ...prodsToLoad])];
+        
+        if (allToPreload.length > 0 && !sessionStorage.getItem('sg_images_preloaded')) {
+            let chunkIndex = parseInt(sessionStorage.getItem('sg_preload_idx') || '0', 10);
             
-            if (allToPreload.length > 0) {
-                sessionStorage.setItem('sg_images_preloaded', 'true');
-                let chunkIndex = 0;
+            if (chunkIndex < allToPreload.length) {
                 const chunkSize = 15;
                 
                 const preloadChunk = () => {
-                    if (chunkIndex >= allToPreload.length) return;
+                    let currentIdx = parseInt(sessionStorage.getItem('sg_preload_idx') || '0', 10);
+                    if (currentIdx >= allToPreload.length) {
+                        sessionStorage.setItem('sg_images_preloaded', 'true');
+                        return;
+                    }
                     
-                    const chunk = allToPreload.slice(chunkIndex, chunkIndex + chunkSize);
+                    const chunk = allToPreload.slice(currentIdx, currentIdx + chunkSize);
                     chunk.forEach(url => {
                         const img = new Image();
                         img.src = url;
                     });
                     
-                    chunkIndex += chunkSize;
+                    sessionStorage.setItem('sg_preload_idx', (currentIdx + chunkSize).toString());
                     setTimeout(preloadChunk, 2000);
                 };
                 
                 // Wait 5 seconds before starting to preserve immediate page interaction speed
                 setTimeout(preloadChunk, 5000);
+            } else {
+                sessionStorage.setItem('sg_images_preloaded', 'true');
             }
         }
     } catch (err) {
