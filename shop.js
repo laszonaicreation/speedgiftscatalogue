@@ -329,6 +329,34 @@ async function fetchData() {
         bindSearchInputs();
         setMobileCategorySearchVisibility();
         updateSelectionBar();
+        
+        // Aggressive Background Preloading
+        // Preload all product images and category icons in chunks so memory cache is fully primed
+        const iconsToLoad = DATA.categories.map(c => getOptimizedUrl(c.img, 200)).filter(u => u && u !== 'img/');
+        const prodsToLoad = DATA.products.map(p => getOptimizedUrl(p.img, 600)).filter(u => u && u !== 'img/');
+        
+        const allToPreload = [...new Set([...iconsToLoad, ...prodsToLoad])];
+        
+        if (allToPreload.length > 0) {
+            let chunkIndex = 0;
+            const chunkSize = 15;
+            
+            const preloadChunk = () => {
+                if (chunkIndex >= allToPreload.length) return;
+                
+                const chunk = allToPreload.slice(chunkIndex, chunkIndex + chunkSize);
+                chunk.forEach(url => {
+                    const img = new Image();
+                    img.src = url;
+                });
+                
+                chunkIndex += chunkSize;
+                setTimeout(preloadChunk, 2000);
+            };
+            
+            // Wait 5 seconds before starting to preserve immediate page interaction speed
+            setTimeout(preloadChunk, 5000);
+        }
     } catch (err) {
         console.error('[ShopPage] fetchData error:', err);
         hideSkeleton();

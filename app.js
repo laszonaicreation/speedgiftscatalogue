@@ -1026,28 +1026,33 @@ async function refreshData(isNavigationOnly = false) {
         }
 
 
-        // Preload in background (non-blocking)
-        const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img, 200)).filter(u => u && u !== 'img/').slice(0, 10);
-        const stockFilter = (items) => items;
-        let filteredForPreload = [];
-        if (state.filter !== 'all') filteredForPreload = stockFilter(DATA.p.filter(p => p.catId === state.filter));
-        else filteredForPreload = stockFilter(DATA.p);
-
-        filteredForPreload.sort((a, b) => {
-            const pinA = a.isPinned ? 1 : 0;
-            const pinB = b.isPinned ? 1 : 0;
-            if (pinA !== pinB) return pinB - pinA;
-            return (b.updatedAt || 0) - (a.updatedAt || 0);
-        });
-
-        const prodsToLoad = filteredForPreload.slice(0, 8).map(p => getOptimizedUrl(p.img, 600)).filter(u => u && u !== 'img/');
-        const allToPreload = [...new Set([...prodsToLoad, ...iconsToLoad])];
-
-        // Fire and forget (don't await)
-        allToPreload.forEach(url => {
-            const img = new Image();
-            img.src = url;
-        });
+        // Aggressive Background Preloading
+        // Preload all product images and category icons in chunks so memory cache is fully primed
+        const iconsToLoad = DATA.c.map(c => getOptimizedUrl(c.img, 200)).filter(u => u && u !== 'img/');
+        const prodsToLoad = DATA.p.map(p => getOptimizedUrl(p.img, 600)).filter(u => u && u !== 'img/');
+        
+        const allToPreload = [...new Set([...iconsToLoad, ...prodsToLoad])];
+        
+        if (allToPreload.length > 0) {
+            let chunkIndex = 0;
+            const chunkSize = 15;
+            
+            const preloadChunk = () => {
+                if (chunkIndex >= allToPreload.length) return;
+                
+                const chunk = allToPreload.slice(chunkIndex, chunkIndex + chunkSize);
+                chunk.forEach(url => {
+                    const img = new Image();
+                    img.src = url;
+                });
+                
+                chunkIndex += chunkSize;
+                setTimeout(preloadChunk, 2000);
+            };
+            
+            // Wait 5 seconds before starting to preserve immediate page interaction speed
+            setTimeout(preloadChunk, 5000);
+        }
     } catch (err) {
         console.error(err);
     }
