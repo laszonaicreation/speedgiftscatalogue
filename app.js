@@ -995,7 +995,9 @@ async function refreshData(isNavigationOnly = false) {
             renderHome();
             
             requestAnimationFrame(() => {
-                window.scrollTo(0, scrollPos);
+                if (!state.skipScroll) {
+                    window.scrollTo(0, scrollPos);
+                }
                 document.body.style.minHeight = '';
             });
         };
@@ -1004,12 +1006,12 @@ async function refreshData(isNavigationOnly = false) {
             if (prodId && DATA.p.length > 0) {
                 viewDetail(prodId, true);
             } else {
-                if (needsRender) doSafeRender();
                 applyHomeSnapshotIfAny();
+                if (needsRender) doSafeRender();
             }
         } else {
-            if (needsRender) doSafeRender();
             applyHomeSnapshotIfAny();
+            if (needsRender) doSafeRender();
         }
 
         populateCatSelect();

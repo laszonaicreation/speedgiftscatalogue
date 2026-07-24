@@ -525,11 +525,13 @@ function renderProducts(append = false) {
     const startIdx = append ? (state.page - 1) * PAGE_SIZE : 0;
     const items = append ? all.slice(startIdx, state.page * PAGE_SIZE) : paged;
 
+    const frag = document.createDocumentFragment();
     items.forEach((p, i) => {
         const card = buildCard(p, append ? startIdx + i : i);
         if (append) card.classList.add('fade-in');
-        grid.appendChild(card);
+        frag.appendChild(card);
     });
+    grid.appendChild(frag);
 
     updateSelectAllButtonText(all);
     updateSelectionBar();
