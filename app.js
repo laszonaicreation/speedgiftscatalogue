@@ -11,6 +11,7 @@ import { fetchHomeDataBundle } from "./home-data.js";
 
 import { getHomeEmptyStateHtml, getHomeBestLoadMoreMarkup, ensureHomeLoadMoreContainer, syncHomeSearchUi, setHomeMobileNavActive, applyHomePostRenderScroll, renderHomeBestGridSection, renderHomeCategoryRow, getHomeBestsellerProducts, applyHomeBestsellerSeo, ensureHomeViewScaffold, getHomeRenderElements, runHomePostRenderTasks } from "./home-ui2.js";
 import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
+import { get as idbGet, set as idbSet } from 'https://cdn.jsdelivr.net/npm/idb-keyval@6/+esm';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAggNtKyGHlnjhx8vwbZFL5aM98awBt6Sw",
@@ -167,33 +168,33 @@ setTimeout(revealPage, 5000);
 // INSTANT CACHE RENDER — runs at module level after DOM is fully parsed
 // Provides zero-flash product display before Firebase auth resolves
 // ─────────────────────────────────────────────────────────────────────────────
-window._sgTryInstantCacheRender = function () {
+window._sgTryInstantCacheRender = async function () {
     try {
         if (DATA.p && DATA.p.length > 0) return; // Firebase already loaded — skip
         let cache = null;
-        const rawLocal = localStorage.getItem('speedgifts_home_cache');
-          let localCache = rawLocal ? JSON.parse(rawLocal) : null;
-          let ssrTime = window.__INJECTED_HOME_DATA__ ? (window.__INJECTED_HOME_DATA__.serverSyncTime || 0) : 0;
-          let localTime = localCache ? (localCache.serverSyncTime || 0) : 0;
+        const rawLocal = await idbGet('speedgifts_home_cache');
+        let localCache = rawLocal ? JSON.parse(rawLocal) : null;
+        let ssrTime = window.__INJECTED_HOME_DATA__ ? (window.__INJECTED_HOME_DATA__.serverSyncTime || 0) : 0;
+        let localTime = localCache ? (localCache.serverSyncTime || 0) : 0;
 
-          if (localTime >= ssrTime && localTime > 0) {
-              cache = localCache;
-              console.log('[Cache] Instant render from local cache (newer/equal) — products:', cache.p ? cache.p.length : 0);
-          } else if (window.__INJECTED_HOME_DATA__) {
-              cache = {
-                  p: window.__INJECTED_HOME_DATA__.p || [],
-                  c: window.__INJECTED_HOME_DATA__.c || [],
-                  m: window.__INJECTED_HOME_DATA__.m || [],
-                  s: window.__INJECTED_HOME_DATA__.s || [],
-                  announcements: window.__INJECTED_HOME_DATA__.announcements || [],
-                  popupSettings: window.__INJECTED_HOME_DATA__.popupSettings || { title: '', msg: '', img: '' },
-                  landingSettings: window.__INJECTED_HOME_DATA__.landingSettings || null,
-                  homeSettings: window.__INJECTED_HOME_DATA__.homeSettings || null,
-                  stats: window.__INJECTED_HOME_DATA__.stats || { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 },
-                  serverSyncTime: ssrTime
-              };
-              console.log('[Cache] Instant render from INJECTED SSR DATA — products:', cache.p.length);
-          }
+        if (localTime >= ssrTime && localTime > 0) {
+            cache = localCache;
+            console.log('[Cache] Instant render from local cache (newer/equal) — products:', cache.p ? cache.p.length : 0);
+        } else if (window.__INJECTED_HOME_DATA__) {
+            cache = {
+                p: window.__INJECTED_HOME_DATA__.p || [],
+                c: window.__INJECTED_HOME_DATA__.c || [],
+                m: window.__INJECTED_HOME_DATA__.m || [],
+                s: window.__INJECTED_HOME_DATA__.s || [],
+                announcements: window.__INJECTED_HOME_DATA__.announcements || [],
+                popupSettings: window.__INJECTED_HOME_DATA__.popupSettings || { title: '', msg: '', img: '' },
+                landingSettings: window.__INJECTED_HOME_DATA__.landingSettings || null,
+                homeSettings: window.__INJECTED_HOME_DATA__.homeSettings || null,
+                stats: window.__INJECTED_HOME_DATA__.stats || { adVisits: 0, adHops: 0, adInquiries: 0, adImpressions: 0, totalSessionSeconds: 0 },
+                serverSyncTime: ssrTime
+            };
+            console.log('[Cache] Instant render from INJECTED SSR DATA — products:', cache.p.length);
+        }
         
         if (!cache || !Array.isArray(cache.p) || cache.p.length === 0) return;
         DATA = cache;
@@ -845,8 +846,8 @@ async function refreshData(isNavigationOnly = false) {
                 if (DATA.p && DATA.p.length > 0 && liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
                     console.log('[Sync] Local data matches live database exactly, skipping full data fetch.');
                     try {
-                        localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
-                    } catch(e){}
+                        await idbSet('speedgifts_home_cache', JSON.stringify(DATA));
+                    } catch (e) { }
                     return; // Skip fetch entirely
                 }
                 console.log('[Sync] Local data is stale or sync time missing, fetching full updates...');
@@ -900,7 +901,7 @@ async function refreshData(isNavigationOnly = false) {
 
             // Save cache for next lightning-fast load
             try {
-                localStorage.setItem('speedgifts_home_cache', JSON.stringify(DATA));
+                await idbSet('speedgifts_home_cache', JSON.stringify(DATA));
             } catch (e) { }
 
             primeHomeCriticalAssets();

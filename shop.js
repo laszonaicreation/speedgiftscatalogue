@@ -15,7 +15,8 @@ import { mountSharedShell } from "./shared-shell.js?v=1784522732328";
 import { renderCategoriesSidebarMainLike, renderFavoritesSidebarMainLike } from "./shared-sidebar-renderers.js";
 import { createSelectionLink, copyTextToClipboard } from "./shared-selection.js";
 import { initCart, openCartSidebar, closeCartSidebar, updateCartBadges, mergeCartOnLogin, clearCart } from "./cart.js";
-import { getWishlistItems, initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout, updateAllWishlistUI } from "./wishlist.js";
+import { initWishlist, toggleWishlist, loadWishlist, clearWishlistOnLogout, getWishlistItems, updateAllWishlistUI } from './wishlist.js';
+import { get as idbGet, set as idbSet } from 'https://cdn.jsdelivr.net/npm/idb-keyval@6/+esm';
 
 // ─── Firebase Setup ──────────────────────────────────────────────
 const firebaseConfig = {
@@ -154,7 +155,7 @@ async function fetchData() {
     try {
         let hasInjected = false;
         
-        const rawLocal = localStorage.getItem('speedgifts_shop_cache');
+        const rawLocal = await idbGet('speedgifts_shop_cache');
         const localCache = rawLocal ? JSON.parse(rawLocal) : null;
         const localTime = localCache ? (localCache.serverSyncTime || 0) : 0;
         const ssrTime = window.__INJECTED_SHOP_DATA__ ? (window.__INJECTED_SHOP_DATA__.serverSyncTime || 0) : 0;
@@ -210,8 +211,8 @@ async function fetchData() {
             const dataChanged = oldSig !== newSig;
 
             try {
-                localStorage.setItem('speedgifts_shop_cache', JSON.stringify(DATA));
-            } catch (e) {}
+                await idbSet('speedgifts_shop_cache', JSON.stringify(DATA));
+            } catch (e) { }
 
             if (hasInjected && dataChanged) {
                 const scrollPos = window.scrollY || document.documentElement.scrollTop;
@@ -245,8 +246,8 @@ async function fetchData() {
                     if (DATA.products && DATA.products.length > 0 && liveSyncTime && ssrSyncTime && liveSyncTime.toString() === ssrSyncTime.toString()) {
                         console.log('[Sync] SSR Shop data matches live database exactly, skipping full data fetch.');
                         try {
-                            localStorage.setItem('speedgifts_shop_cache', JSON.stringify(DATA));
-                        } catch(e){}
+                            await idbSet('speedgifts_shop_cache', JSON.stringify(DATA));
+                        } catch (e) { }
                         return;
                     }
                     console.log('[Sync] SSR data is stale or sync time missing, fetching full updates...');
